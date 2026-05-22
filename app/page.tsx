@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { parseCSV } from "../lib/parser";
+import { parseCSV, HeaderMapping } from "../lib/parser";
 import { Timeline } from "@/components/Timeline";
 import { analyzeJoinability } from "../lib/joinability";
 import type {
@@ -19,6 +19,11 @@ import {
 } from "../lib/analysis";
 import { TimelineLegend } from "@/components/TimelineLegend";
 import { Analytics } from "@vercel/analytics/next"
+import { Footer } from "@/components/Footer";
+import { SqlPanel } from "@/components/SqlPanel";
+import { IssuesPanel } from "@/components/IssuesPanel";
+import { InputPanel } from "@/components/InputPanel";
+import { track } from "@vercel/analytics";
 
 const EXAMPLE_DATA = `source,entity_id,value,valid_from,valid_to,visible_from,visible_to
 contract,1,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
@@ -69,6 +74,36 @@ export default function Home() {
     ? Math.max(...rows.map((r) => new Date(r.valid_to).getTime()))
     : 1;
 
+  const [headerMappings, setHeaderMappings] = useState<HeaderMapping[]>([]);
+
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+
+  function loadExample() {
+    track("Example Loaded");
+    setInput(EXAMPLE_DATA);
+    analyzeRows(EXAMPLE_DATA);
+  }
+
+  function setValidationModeAndAnalyze(next: ValidationMode) {
+    setValidationMode(next);
+    if (input.trim()) analyzeRows(input, next);
+  }
+
+  function setSourceAAndAnalyze(next: string) {
+    setSourceA(next);
+    if (input.trim()) analyzeRows(input, validationMode, next, sourceB);
+  }
+
+  function setSourceBAndAnalyze(next: string) {
+    setSourceB(next);
+    if (input.trim()) analyzeRows(input, validationMode, sourceA, next);
+  }
+
+  function resetDates() {
+    setAsOfDate("");
+    setVisibleAsOf("");
+  }
+
   function getPosition(date: string) {
     const current = new Date(date).getTime();
     return ((current - minDate) / (maxDate - minDate)) * 100;
@@ -84,19 +119,90 @@ export default function Home() {
     return "#64748b";
   }
 
+  function applyColumnMapping(
+    rows: any[],
+    mappings: { original: string; normalized: string }[],
+    activeMapping: Record<string, string>
+  ) {
+    return rows.map((row) => {
+      const mappedRow: any = {};
+
+      mappings.forEach((mapping) => {
+        const targetColumn =
+          activeMapping[mapping.original] ?? mapping.normalized;
+
+        if (!targetColumn) return;
+
+        mappedRow[targetColumn] = row[mapping.normalized];
+      });
+
+      if (!mappedRow.source) {
+        mappedRow.source = "default";
+      }
+
+      if (!mappedRow.value) {
+        mappedRow.value = "";
+      }
+
+      if (!mappedRow.visible_from) {
+        mappedRow.visible_from = mappedRow.valid_from || "";
+      }
+
+      if (!mappedRow.visible_to) {
+        mappedRow.visible_to = "9999-12-31T00:00:00";
+      }
+
+      return mappedRow;
+    });
+  }
+
   function analyzeRows(
     rawInput: string,
     nextValidationMode = validationMode,
     nextSourceA = sourceA,
-    nextSourceB = sourceB
+    nextSourceB = sourceB,
+    nextColumnMapping = columnMapping
   ) {
-    const parsedRows = parseCSV(rawInput) as BitemporalRow[];
+    const parsed = parseCSV(rawInput);
+
+    const initialMapping: Record<string, string> = {};
+    parsed.headerMappings.forEach((m) => {
+      initialMapping[m.original] = m.normalized;
+    });
+
+    const activeMapping =
+      Object.keys(nextColumnMapping).length > 0
+        ? nextColumnMapping
+        : initialMapping;
+
+    const parsedRows = applyColumnMapping(
+      parsed.rows,
+      parsed.headerMappings,
+      activeMapping
+    ) as BitemporalRow[];
+
+    setHeaderMappings(parsed.headerMappings);
+    setColumnMapping(activeMapping);
+
     const sources = Array.from(
       new Set(parsedRows.map((r) => r.source).filter(Boolean))
     );
 
-    const left = nextSourceA || sources[0] || "";
-    const right = nextSourceB || sources[1] || "";
+    const hasMultipleSources = sources.length >= 2;
+
+    const validNextSourceA =
+      nextSourceA && sources.includes(nextSourceA) ? nextSourceA : "";
+
+    const validNextSourceB =
+      nextSourceB && sources.includes(nextSourceB) ? nextSourceB : "";
+
+    const left = hasMultipleSources
+      ? validNextSourceA || sources[0]
+      : "";
+
+    const right = hasMultipleSources
+      ? validNextSourceB || sources.find((s) => s !== left) || ""
+      : "";
 
     setRows(parsedRows);
     setSourceA(left);
@@ -109,7 +215,7 @@ export default function Home() {
     setFlaggedRows(detectFlaggedOverlapRows(parsedRows, nextValidationMode));
     setSelectedIssue(null);
 
-    if (left && right) {
+    if (left && right && left !== right) {
       setJoinIssues(analyzeJoinability(parsedRows, left, right));
     } else {
       setJoinIssues([]);
@@ -117,6 +223,7 @@ export default function Home() {
   }
 
   function analyze() {
+    track("Analyze Clicked");
     analyzeRows(input);
   }
 
@@ -181,448 +288,119 @@ WHERE ${sqlParts.join(" AND ")};`);
           Works with Databricks, Snowflake, BigQuery (CSV / TSV copy & paste)
         </p>
 
-        <button
-          onClick={() => {
-            setInput(EXAMPLE_DATA);
-            analyzeRows(EXAMPLE_DATA);
-          }}
-          style={{
-            margin: "10px 0 20px",
-            padding: "8px 14px",
-            borderRadius: 8,
-            border: "none",
-            background: "#22c55e",
-            color: "white",
-            fontWeight: "bold",
-            cursor: "pointer",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-          }}
-        >
-          Load Example
-        </button>
+        <InputPanel
+          input={input}
+          setInput={setInput}
+          onAnalyze={analyze}
+          onLoadExample={loadExample}
+          validationMode={validationMode}
+          setValidationModeAndAnalyze={setValidationModeAndAnalyze}
+          sourceA={sourceA}
+          sourceB={sourceB}
+          availableSources={availableSources}
+          setSourceAAndAnalyze={setSourceAAndAnalyze}
+          setSourceBAndAnalyze={setSourceBAndAnalyze}
+          asOfDate={asOfDate}
+          setAsOfDate={setAsOfDate}
+          visibleAsOf={visibleAsOf}
+          setVisibleAsOf={setVisibleAsOf}
+          resetDates={resetDates}
+          generateSQL={generateSQL}
+        />
 
-        <div
-          style={{
-            background: "#ffffff",
-            padding: 20,
-            borderRadius: 12,
-            marginBottom: 20,
-            border: "1px solid #1e293b",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-          }}
-        >
-          <textarea
-            style={{
-              width: "100%",
-              height: 150,
-              padding: 10,
-              borderRadius: 8,
-              border: "1px solid #ddd",
-              fontFamily: "monospace",
-            }}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="source,entity_id,value,valid_from,valid_to,visible_from,visible_to"
-          />
-
-          <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
-            Expected columns: source, entity_id, value, valid_from, valid_to,
-            visible_from, visible_to
-          </p>
-
+        {headerMappings.some((m) => m.original !== m.normalized) && (
           <div
             style={{
-              marginTop: 15,
-              display: "flex",
-              gap: 20,
-              flexWrap: "wrap",
-              alignItems: "flex-start",
+              marginBottom: 20,
+              padding: 12,
+              borderRadius: 8,
+              background: "#f8fafc",
+              border: "1px solid #cbd5e1",
+              color: "#0f172a",
+              fontSize: 13,
             }}
           >
-            <button
-              onClick={analyze}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 8,
-                border: "none",
-                background: "#3b82f6",
-                fontWeight: "bold",
-                boxShadow: "0 4px 10px rgba(59,130,246,0.4)",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              Analyze
-            </button>
+            <strong>Detected column mapping:</strong>
+          
+            <p style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>
+              We automatically mapped your column names:
+            </p>
 
-            <div>
-              <label style={{ fontSize: 12 }}>Validation Mode</label>
-              <br />
-              <select
-                value={validationMode}
-                onChange={(e) => {
-                  const next = e.target.value as ValidationMode;
-                  setValidationMode(next);
-                  if (input.trim()) analyzeRows(input, next);
-                }}
-              >
-                <option value="monotemporal">Valid time only</option>
-                <option value="bitemporal">Valid + visible time</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ fontSize: 12 }}>Source A</label>
-              <br />
-              <select
-                value={sourceA}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setSourceA(next);
-                  if (input.trim()) analyzeRows(input, validationMode, next, sourceB);
-                }}
-              >
-                <option value="">Auto</option>
-                {availableSources.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
+            <div style={{ marginTop: 8, fontFamily: "monospace" }}>
+              {headerMappings
+                .filter((m) => m.original !== m.normalized)
+                .map((m, i) => (
+                  <div key={i}>
+                    {m.original} → {m.normalized}
+                  </div>
                 ))}
-              </select>
             </div>
-
-            <div>
-              <label style={{ fontSize: 12 }}>Source B</label>
-              <br />
-              <select
-                value={sourceB}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setSourceB(next);
-                  if (input.trim()) analyzeRows(input, validationMode, sourceA, next);
-                }}
-              >
-                <option value="">Auto</option>
-                {availableSources.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ fontSize: 12 }}>Valid As-of Date</label>
-              <br />
-              <input
-                type="date"
-                value={asOfDate || ""}
-                onChange={(e) => setAsOfDate(e.target.value || "")}
-              />
-              <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
-                Filters rows by valid time.
-              </p>
-            </div>
-
-            <div>
-              <label style={{ fontSize: 12 }}>Visible As-of Timestamp</label>
-              <br />
-              <input
-                type="datetime-local"
-                value={visibleAsOf || ""}
-                onChange={(e) => setVisibleAsOf(e.target.value || "")}
-              />
-              <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
-                Filters rows by visible/system time.
-              </p>
-            </div>
-
-            <button
-              onClick={() => {
-                setAsOfDate("");
-                setVisibleAsOf("");
-              }}
-              style={{
-                padding: "8px 12px",
-                borderRadius: 8,
-                border: "1px solid #475569",
-                background: "#1e293b",
-                color: "#e2e8f0",
-                cursor: "pointer",
-              }}
-            >
-              Reset Dates
-            </button>
-
-            <button
-              onClick={generateSQL}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 8,
-                background: "#1e293b",
-                color: "white",
-                border: "none",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                cursor: "pointer",
-              }}
-            >
-              Generate SQL
-            </button>
           </div>
-        </div>
+        )}
+
+        {headerMappings.length > 0 && (
+          <div
+            style={{
+              marginBottom: 20,
+              padding: 12,
+              borderRadius: 8,
+              background: "#f8fafc",
+              border: "1px solid #cbd5e1",
+              color: "#0f172a",
+              fontSize: 13,
+            }}
+          >
+            <strong>Adjust column mapping:</strong>
+          
+            <p style={{ fontSize: 12, color: "#64748b", marginBottom: 10 }}>
+              We automatically mapped your columns. Adjust if needed:
+            </p>
+
+            <div style={{ marginTop: 10 }}>
+              {headerMappings.map((m, i) => (
+                <div key={i} style={{ marginBottom: 6 }}>
+                  {m.original} →{" "}
+                  <select
+                    value={columnMapping[m.original] || m.normalized}
+                    onChange={(e) => {
+                      const nextMapping = {
+                        ...columnMapping,
+                        [m.original]: e.target.value,
+                      };
+                    
+                      setColumnMapping(nextMapping);
+                    
+                      if (input.trim()) {
+                        analyzeRows(input, validationMode, sourceA, sourceB, nextMapping);
+                      }
+                    }}
+                  >
+                    <option value="entity_id">entity_id</option>
+                    <option value="valid_from">valid_from</option>
+                    <option value="valid_to">valid_to</option>
+                    <option value="visible_from">visible_from</option>
+                    <option value="visible_to">visible_to</option>
+                    <option value="value">value</option>
+                    <option value="source">source</option>
+                    <option value="">ignore</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
-          <div
-            style={{
-              flex: 1,
-              background: "#ffffff",
-              border: "1px solid #1e293b",
-              padding: 20,
-              borderRadius: 12,
-              boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-              color: "#0f172a",
-            }}
-          >
-            <h3 style={{ marginBottom: 12, fontSize: 18 }}>Errors</h3>
+          <IssuesPanel
+            result={result}
+            drifts={drifts}
+            joinIssues={joinIssues}
+            selectedIssue={selectedIssue}
+            setSelectedIssue={setSelectedIssue}
+          />
 
-            {result.length > 0 ? (
-              result.map((e, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: 10,
-                    marginBottom: 8,
-                    borderRadius: 8,
-                    background: e.includes("OVERLAP") ? "#fee2e2" : "#fef3c7",
-                    border: e.includes("OVERLAP")
-                      ? "1px solid #ef4444"
-                      : "1px solid #f59e0b",
-                    color: "#111827",
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {e}
-                </div>
-              ))
-            ) : (
-              <p>No errors</p>
-            )}
-
-            {drifts.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <h4>Source Drift</h4>
-                {drifts.map((d, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      padding: 10,
-                      marginBottom: 8,
-                      borderRadius: 8,
-                      background: "#fef3c7",
-                      border: "1px solid #f59e0b",
-                      color: "#92400e",
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {d}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {joinIssues.length > 0 && (
-              <div style={{ marginTop: 16 }}>
-                <h4 style={{ marginBottom: 10 }}>Joinability Issues</h4>
-
-                {joinIssues.map((j, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setSelectedIssue(j)}
-                    style={{
-                      cursor: "pointer",
-                      padding: 10,
-                      marginBottom: 8,
-                      borderRadius: 8,
-                      background: j.type === "JOIN_GAP" ? "#fee2e2" : "#fef3c7",
-                      border:
-                        selectedIssue === j
-                          ? "2px solid #0f172a"
-                          : j.type === "JOIN_GAP"
-                          ? "1px solid #ef4444"
-                          : "1px solid #f59e0b",
-                      color: j.type === "JOIN_GAP" ? "#991b1b" : "#92400e",
-                      fontFamily: "monospace",
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <strong>{j.type}</strong>
-                    <br />
-                    {j.source} → {j.targetSource}
-                    <br />
-                    Entity: {j.entity_id}
-                    <br />
-                    Valid: {j.valid_from} → {j.valid_to}
-                    <br />
-                    Matches: {j.matchingRows}
-                    <br />
-                    Reason:{" "}
-                    {j.reason === "NO_VISIBLE_OVERLAP"
-                      ? "No visible-time overlap"
-                      : j.reason === "NO_VALID_MATCH"
-                      ? "No valid-time match"
-                      : "Multiple matches"}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              background: "#ffffff",
-              padding: 20,
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-              color: "#0f172a",
-            }}
-          >
-            <h3>SQL</h3>
-
-            <pre
-              style={{
-                marginTop: 10,
-                padding: "8px 12px",
-                borderRadius: 8,
-                background: "#111827",
-                color: "#e5e7eb",
-                border: "none",
-                cursor: "pointer",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {sql || "No SQL generated yet"}
-            </pre>
-
-            <button
-              style={{
-                marginTop: 10,
-                padding: "8px 12px",
-                borderRadius: 8,
-                background: "#e2e8f0",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: "bold",
-              }}
-              onClick={() => {
-                if (!sql) return;
-                navigator.clipboard.writeText(sql);
-              }}
-            >
-              Copy SQL
-            </button>
-
-            {selectedIssue && (
-              <div
-                style={{
-                  marginTop: 20,
-                  background: "#f1f5f9",
-                  border: "1px solid #cbd5f5",
-                  borderRadius: 12,
-                  padding: 20,
-                }}
-              >
-
-                <h3 style={{ marginTop: 0 }}>
-                  Why does this JOIN fail?
-                </h3>
-
-                <p style={{ fontWeight: "bold", marginBottom: 10 }}>
-                  This row cannot be joined cleanly to the other source.
-                </p>
-
-                <p>
-                  Visible time:
-                  <br />
-                  {selectedIssue.visible_from?.slice(0, 10)} →{" "}
-                  {selectedIssue.visible_to?.slice(0, 10) || "∞"}
-                </p>
-
-                {selectedIssue.type === "JOIN_GAP" && (
-                  <>
-                    <p>No matching row exists in the other data source.</p>
-
-                    {selectedIssue.reason === "NO_VISIBLE_OVERLAP" && (
-                      <>
-                        <p>
-                          The records do not overlap in visible/system time.
-                        </p>
-                    
-                        <p>
-                          Contract visible until:{" "}
-                          {selectedIssue.visible_to?.slice(0, 10)}
-                          <br />
-                          Object visible from:{" "}
-                          {selectedIssue.visible_from?.slice(0, 10)}
-                        </p>
-                    
-                        <p>
-                          → They never exist at the same time
-                        </p>
-                    
-                        <p>
-                          → The JOIN returns no rows
-                        </p>
-                      </>
-                    )}
-
-                    {selectedIssue.reason === "NO_VALID_MATCH" && (
-                      <>
-                        <p>
-                          No row in the other source overlaps in valid time.
-                        </p>
-                        <p>→ There is no matching business-time record.</p>
-                      </>
-                    )}
-                  </>
-                )}
-
-                {selectedIssue.type === "JOIN_AMBIGUITY" && (
-                  <>
-                    <p>Multiple matching rows were found.</p>
-                    <p>→ The JOIN result is ambiguous.</p>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          <SqlPanel sql={sql} selectedIssue={selectedIssue} />
         </div>
-
-        <p
-          style={{
-            fontSize: 13,
-            color: "#94a3b8",
-            marginTop: 4,
-            marginBottom: 8,
-          }}
-        >
-          Joinability checks compare records with the same entity_id across
-          source A and source B.
-        </p>
-
-        <p
-          style={{
-            fontSize: 13,
-            color: "#94a3b8",
-            marginTop: -4,
-            marginBottom: 12,
-          }}
-        >
-          Each bar is one input row on the valid-time axis. Join issues are
-          shown on the source A row.
-        </p>
 
         <Timeline
           rows={filteredRows}
@@ -633,49 +411,13 @@ WHERE ${sqlParts.join(" AND ")};`);
           getPosition={getPosition}
           getWidth={getWidth}
           getSourceColor={getSourceColor}
+          onSelectIssue={setSelectedIssue}
         />
 
         <TimelineLegend />
-
-        <div
-          style={{
-            marginTop: 40,
-            textAlign: "center",
-            fontSize: 12,
-            color: "#94a3b8",
-          }}
-        >
-          Built by{" "}
-          <a
-            href="https://www.linkedin.com/in/jakob-frohnhaus/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "#60a5fa",
-              marginLeft: 4,
-              fontWeight: 500,
-              textDecoration: "none",
-            }}
-          >
-            Jakob Frohnhaus
-          </a>
-
-          <div style={{ marginTop: 6 }}>
-            Want this for your team? →{" "}
-            <a
-              href="https://www.linkedin.com/in/jakob-frohnhaus/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: "#60a5fa",
-                textDecoration: "none",
-              }}
-            >
-              Contact me
-            </a>
-          </div>
-        </div>
+        <Footer />
       </div>
+      <Analytics />
     </main>
   );
 }

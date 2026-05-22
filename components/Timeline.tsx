@@ -9,6 +9,7 @@ type TimelineProps = {
   getPosition: (date: string) => number;
   getWidth: (from: string, to: string) => number;
   getSourceColor: (source: string) => string;
+  onSelectIssue?: (issue: JoinabilityIssue) => void;
 };
 
 export function Timeline({
@@ -20,6 +21,7 @@ export function Timeline({
   getPosition,
   getWidth,
   getSourceColor,
+  onSelectIssue,
 }: TimelineProps) {
   return (
     <div
@@ -120,6 +122,7 @@ export function Timeline({
                 <div
                   key={`join-${k}`}
                   title={`${j.type}: ${j.message}`}
+                  onClick={() => onSelectIssue?.(j)}
                   style={{
                     position: "absolute",
                     left: `${getPosition(j.valid_from)}%`,
@@ -132,7 +135,8 @@ export function Timeline({
                     boxSizing: "border-box",
                     borderRadius: 999,
                     pointerEvents: "auto",
-                    zIndex: 3,
+                    cursor: "pointer",
+                    zIndex: 4,
                   }}
                 />
               ))}
