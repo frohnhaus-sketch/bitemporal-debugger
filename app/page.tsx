@@ -4,6 +4,12 @@ import { useState } from "react";
 import { parseCSV } from "../lib/parser";
 import { Timeline } from "@/components/Timeline";
 import { analyzeJoinability } from "../lib/joinability";
+import type {
+  BitemporalRow,
+  JoinabilityIssue,
+  OverlapIssue,
+  ValidationMode,
+} from "../lib/types";
 import {
   detectDrift,
   detectOverlaps,
@@ -11,26 +17,57 @@ import {
   detectFlaggedOverlapRows,
   detectOverlapMarkers,
 } from "../lib/analysis";
-import type {
-  BitemporalRow,
-  JoinabilityIssue,
-  OverlapIssue,
-  ValidationMode,
-} from "../lib/types";
+import { TimelineLegend } from "@/components/TimelineLegend";
+import { Analytics } from "@vercel/analytics/next"
+
+const EXAMPLE_DATA = `source,entity_id,value,valid_from,valid_to,visible_from,visible_to
+contract,1,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+object,1,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+object,1,Y,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+contract,2,A,2024-01-01,2024-03-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+contract,2,B,2024-05-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+object,2,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+contract,3,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,2024-06-01T00:00:00
+object,3,X,2024-01-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00
+contract,4,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+object,4,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+contract,5,A,2024-01-01,2024-06-30,2024-01-01T00:00:00,2024-04-01T00:00:00
+contract,5,B,2024-05-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00
+object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
   const [input, setInput] = useState("");
-  const [result, setResult] = useState<string[]>([]);
   const [rows, setRows] = useState<BitemporalRow[]>([]);
+  const [result, setResult] = useState<string[]>([]);
   const [joinIssues, setJoinIssues] = useState<JoinabilityIssue[]>([]);
+  const [selectedIssue, setSelectedIssue] = useState<JoinabilityIssue | null>(null);
+
   const [flaggedRows, setFlaggedRows] = useState<Set<number>>(new Set());
   const [gaps, setGaps] = useState<any[]>([]);
+  const [drifts, setDrifts] = useState<string[]>([]);
+  const [overlapMarkers, setOverlapMarkers] = useState<OverlapIssue[]>([]);
+
   const [asOfDate, setAsOfDate] = useState("");
   const [visibleAsOf, setVisibleAsOf] = useState("");
   const [sql, setSql] = useState("");
-  const [drifts, setDrifts] = useState<string[]>([]);
-  const [overlapMarkers, setOverlapMarkers] = useState<OverlapIssue[]>([]);
-  const [validationMode, setValidationMode] = useState<ValidationMode>("monotemporal");
+
+  const [validationMode, setValidationMode] =
+    useState<ValidationMode>("monotemporal");
+
+  const [sourceA, setSourceA] = useState("");
+  const [sourceB, setSourceB] = useState("");
+
+  const availableSources = Array.from(
+    new Set(rows.map((r) => r.source).filter(Boolean))
+  );
+
+  const minDate = rows.length
+    ? Math.min(...rows.map((r) => new Date(r.valid_from).getTime()))
+    : 0;
+
+  const maxDate = rows.length
+    ? Math.max(...rows.map((r) => new Date(r.valid_to).getTime()))
+    : 1;
 
   function getPosition(date: string) {
     const current = new Date(date).getTime();
@@ -42,53 +79,73 @@ export default function Home() {
   }
 
   function getSourceColor(source: string) {
-    if (source === "contract") return "#2563eb";
-    if (source === "object") return "#16a34a";
+    if (source === sourceA) return "#2563eb";
+    if (source === sourceB) return "#16a34a";
     return "#64748b";
   }
 
-  function analyzeRows(rawInput: string) {
+  function analyzeRows(
+    rawInput: string,
+    nextValidationMode = validationMode,
+    nextSourceA = sourceA,
+    nextSourceB = sourceB
+  ) {
     const parsedRows = parseCSV(rawInput) as BitemporalRow[];
-  
+    const sources = Array.from(
+      new Set(parsedRows.map((r) => r.source).filter(Boolean))
+    );
+
+    const left = nextSourceA || sources[0] || "";
+    const right = nextSourceB || sources[1] || "";
+
     setRows(parsedRows);
+    setSourceA(left);
+    setSourceB(right);
+
+    setResult(detectOverlaps(parsedRows, nextValidationMode));
     setGaps(detectGaps(parsedRows));
     setDrifts(detectDrift(parsedRows));
-    setOverlapMarkers(detectOverlapMarkers(parsedRows, validationMode));
-    setFlaggedRows(detectFlaggedOverlapRows(parsedRows, validationMode));
-    setJoinIssues(analyzeJoinability(parsedRows, "contract", "object"));
-    setResult(detectOverlaps(parsedRows, validationMode));  
+    setOverlapMarkers(detectOverlapMarkers(parsedRows, nextValidationMode));
+    setFlaggedRows(detectFlaggedOverlapRows(parsedRows, nextValidationMode));
+    setSelectedIssue(null);
+
+    if (left && right) {
+      setJoinIssues(analyzeJoinability(parsedRows, left, right));
+    } else {
+      setJoinIssues([]);
+    }
   }
-  
+
   function analyze() {
     analyzeRows(input);
   }
 
-const filteredRows = rows.filter((r) => {
-  const validOk = asOfDate
-    ? new Date(asOfDate) >= new Date(r.valid_from) &&
-      new Date(asOfDate) <= new Date(r.valid_to)
-    : true;
+  const filteredRows = rows.filter((r) => {
+    const validOk = asOfDate
+      ? new Date(asOfDate) >= new Date(r.valid_from) &&
+        new Date(asOfDate) <= new Date(r.valid_to)
+      : true;
 
-  const visibleOk = visibleAsOf
-    ? new Date(visibleAsOf) >= new Date(r.visible_from) &&
-      new Date(visibleAsOf) < new Date(r.visible_to || "9999-12-31T00:00:00")
-    : true;
+    const visibleOk = visibleAsOf
+      ? new Date(visibleAsOf) >= new Date(r.visible_from) &&
+        new Date(visibleAsOf) <
+          new Date(r.visible_to || "9999-12-31T00:00:00")
+      : true;
 
-  return validOk && visibleOk;
-});
+    return validOk && visibleOk;
+  });
 
   function generateSQL() {
-    const sqlParts = [];
+    const sqlParts: string[] = [];
 
     if (asOfDate) {
       sqlParts.push(`'${asOfDate}' BETWEEN valid_from AND valid_to`);
     }
 
     if (visibleAsOf) {
-      sqlParts.push(`
-  '${visibleAsOf}' >= visible_from
-  AND '${visibleAsOf}' < COALESCE(visible_to, '9999-12-31')
-      `);
+      sqlParts.push(
+        `'${visibleAsOf}' >= visible_from AND '${visibleAsOf}' < COALESCE(visible_to, '9999-12-31')`
+      );
     }
 
     if (sqlParts.length === 0) {
@@ -96,18 +153,10 @@ const filteredRows = rows.filter((r) => {
       return;
     }
 
-      setSql(`SELECT *
-    FROM your_table
-    WHERE ${sqlParts.join(" AND ")};`);
+    setSql(`SELECT *
+FROM your_table
+WHERE ${sqlParts.join(" AND ")};`);
   }
-
-  const minDate = rows.length
-    ? Math.min(...rows.map(r => new Date(r.valid_from).getTime()))
-    : 0;
-
-  const maxDate = rows.length
-    ? Math.max(...rows.map(r => new Date(r.valid_to).getTime()))
-    : 1;
 
   return (
     <main
@@ -120,60 +169,25 @@ const filteredRows = rows.filter((r) => {
       }}
     >
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-
-        {/* HEADER */}
         <h1 style={{ marginBottom: 12, color: "#ffffff" }}>
           Why is this JOIN wrong?
         </h1>
 
-        <p style={{ color: "#94a3b8", marginBottom: 20 }}>
+        <p style={{ color: "#94a3b8", marginBottom: 8 }}>
           Paste your query result → see exactly why your joins are broken
         </p>
 
-        <p style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
-          Works with Databricks, Snowflake, BigQuery (copy & paste)
+        <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
+          Works with Databricks, Snowflake, BigQuery (CSV / TSV copy & paste)
         </p>
 
         <button
           onClick={() => {
-            const exampleData = `source,entity_id,value,valid_from,valid_to,visible_from,visible_to
-
-# ENTITY 1 — echte JOIN_AMBIGUITY
-contract,1,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-
-object,1,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-object,1,Y,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-
-
-# ENTITY 2 — Gap
-contract,2,A,2024-01-01,2024-03-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-contract,2,B,2024-05-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-
-object,2,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-
-
-# ENTITY 3 — Visible-time Join Gap (der wichtigste Case)
-contract,3,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,2024-06-01T00:00:00
-
-object,3,X,2024-01-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00
-
-
-# ENTITY 4 — Perfekter Join (Control Case)
-contract,4,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-
-object,4,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-
-
-# ENTITY 5 — Drift (visible time verschoben)
-contract,5,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-
-object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
-          
-            setInput(exampleData);
-            analyzeRows(exampleData);
+            setInput(EXAMPLE_DATA);
+            analyzeRows(EXAMPLE_DATA);
           }}
           style={{
-            margin: "10px 0",
+            margin: "10px 0 20px",
             padding: "8px 14px",
             borderRadius: 8,
             border: "none",
@@ -187,7 +201,6 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
           Load Example
         </button>
 
-        {/* INPUT CARD */}
         <div
           style={{
             background: "#ffffff",
@@ -212,35 +225,20 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
             placeholder="source,entity_id,value,valid_from,valid_to,visible_from,visible_to"
           />
 
-          <div style={{ marginTop: 15, display: "flex", gap: 20 }}>
+          <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+            Expected columns: source, entity_id, value, valid_from, valid_to,
+            visible_from, visible_to
+          </p>
 
-          <div>
-            <label style={{ fontSize: 12 }}>Validation Mode</label>
-            <br />
-            <select
-              value={validationMode}
-              onChange={(e) => {
-                const newValidationMode = e.target.value as ValidationMode;
-                setValidationMode(newValidationMode);
-              
-                if (input.trim()) {
-                  const parsedRows = parseCSV(input) as BitemporalRow[];
-                
-                  setRows(parsedRows);
-                  setResult(detectOverlaps(parsedRows, newValidationMode));
-                  setGaps(detectGaps(parsedRows));
-                  setDrifts(detectDrift(parsedRows));
-                  setOverlapMarkers(detectOverlapMarkers(parsedRows, newValidationMode));
-                  setFlaggedRows(detectFlaggedOverlapRows(parsedRows, newValidationMode));
-                  setJoinIssues(analyzeJoinability(parsedRows, "contract", "object"));
-                }
-              }}
-            >
-              <option value="monotemporal">Valid time only</option>
-              <option value="bitemporal">Valid + visible time</option>
-            </select>
-          </div>
-            
+          <div
+            style={{
+              marginTop: 15,
+              display: "flex",
+              gap: 20,
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+            }}
+          >
             <button
               onClick={analyze}
               style={{
@@ -258,6 +256,62 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
             </button>
 
             <div>
+              <label style={{ fontSize: 12 }}>Validation Mode</label>
+              <br />
+              <select
+                value={validationMode}
+                onChange={(e) => {
+                  const next = e.target.value as ValidationMode;
+                  setValidationMode(next);
+                  if (input.trim()) analyzeRows(input, next);
+                }}
+              >
+                <option value="monotemporal">Valid time only</option>
+                <option value="bitemporal">Valid + visible time</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: 12 }}>Source A</label>
+              <br />
+              <select
+                value={sourceA}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setSourceA(next);
+                  if (input.trim()) analyzeRows(input, validationMode, next, sourceB);
+                }}
+              >
+                <option value="">Auto</option>
+                {availableSources.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: 12 }}>Source B</label>
+              <br />
+              <select
+                value={sourceB}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setSourceB(next);
+                  if (input.trim()) analyzeRows(input, validationMode, sourceA, next);
+                }}
+              >
+                <option value="">Auto</option>
+                {availableSources.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label style={{ fontSize: 12 }}>Valid As-of Date</label>
               <br />
               <input
@@ -269,24 +323,6 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
                 Filters rows by valid time.
               </p>
             </div>
-
-            <button
-              onClick={() => {
-                setAsOfDate("");
-                setVisibleAsOf("");
-              }}
-              style={{
-                marginTop: 10,
-                padding: "6px 10px",
-                borderRadius: 6,
-                border: "1px solid #475569",
-                background: "#1e293b",
-                color: "#e2e8f0",
-                cursor: "pointer",
-              }}
-            >
-              Reset Dates
-            </button>
 
             <div>
               <label style={{ fontSize: 12 }}>Visible As-of Timestamp</label>
@@ -300,6 +336,23 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
                 Filters rows by visible/system time.
               </p>
             </div>
+
+            <button
+              onClick={() => {
+                setAsOfDate("");
+                setVisibleAsOf("");
+              }}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid #475569",
+                background: "#1e293b",
+                color: "#e2e8f0",
+                cursor: "pointer",
+              }}
+            >
+              Reset Dates
+            </button>
 
             <button
               onClick={generateSQL}
@@ -318,10 +371,7 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
           </div>
         </div>
 
-        {/* GRID: ERRORS + SQL */}
         <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
-            
-          {/* ERRORS */}
           <div
             style={{
               flex: 1,
@@ -333,9 +383,7 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
               color: "#0f172a",
             }}
           >
-            <h3 style={{ marginBottom: 12, fontSize: 18 }}>
-              Errors
-            </h3>
+            <h3 style={{ marginBottom: 12, fontSize: 18 }}>Errors</h3>
 
             {result.length > 0 ? (
               result.map((e, i) => (
@@ -346,7 +394,9 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
                     marginBottom: 8,
                     borderRadius: 8,
                     background: e.includes("OVERLAP") ? "#fee2e2" : "#fef3c7",
-                    border: e.includes("OVERLAP") ? "1px solid #ef4444" : "1px solid #f59e0b",
+                    border: e.includes("OVERLAP")
+                      ? "1px solid #ef4444"
+                      : "1px solid #f59e0b",
                     color: "#111827",
                     fontFamily: "monospace",
                   }}
@@ -358,75 +408,76 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
               <p>No errors</p>
             )}
 
-          {drifts.length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              <h4>Source Drift</h4>
-          
-              {drifts.map((d, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: 10,
-                    marginBottom: 8,
-                    borderRadius: 8,
-                    background: "#fef3c7",
-                    border: "1px solid #f59e0b",
-                    color: "#92400e",
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {d}
-                </div>
-              ))}
-            </div>
-          )}
+            {drifts.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <h4>Source Drift</h4>
+                {drifts.map((d, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: 10,
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      background: "#fef3c7",
+                      border: "1px solid #f59e0b",
+                      color: "#92400e",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {d}
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {joinIssues.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <h4 style={{ marginBottom: 10 }}>Joinability Issues</h4>
-          
-              {joinIssues.map((j, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: 10,
-                    marginBottom: 8,
-                    borderRadius: 8,
-                    background: j.type === "JOIN_GAP" ? "#fee2e2" : "#fef3c7",
-                    border:
-                      j.type === "JOIN_GAP"
-                        ? "1px solid #ef4444"
-                        : "1px solid #f59e0b",
-                    color: j.type === "JOIN_GAP" ? "#991b1b" : "#92400e",
-                    fontFamily: "monospace",
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <strong>{j.type}</strong>
-                  <br />
-                  {j.source} → {j.targetSource}
-                  <br />
-                  Entity: {j.entity_id}
-                  <br />
-                  Valid: {j.valid_from} → {j.valid_to}
-                  <br />
-                  Matches: {j.matchingRows}
-                  <br />
-                  Reason: {
-                    j.reason === "NO_VISIBLE_OVERLAP"
+            {joinIssues.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <h4 style={{ marginBottom: 10 }}>Joinability Issues</h4>
+
+                {joinIssues.map((j, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedIssue(j)}
+                    style={{
+                      cursor: "pointer",
+                      padding: 10,
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      background: j.type === "JOIN_GAP" ? "#fee2e2" : "#fef3c7",
+                      border:
+                        selectedIssue === j
+                          ? "2px solid #0f172a"
+                          : j.type === "JOIN_GAP"
+                          ? "1px solid #ef4444"
+                          : "1px solid #f59e0b",
+                      color: j.type === "JOIN_GAP" ? "#991b1b" : "#92400e",
+                      fontFamily: "monospace",
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <strong>{j.type}</strong>
+                    <br />
+                    {j.source} → {j.targetSource}
+                    <br />
+                    Entity: {j.entity_id}
+                    <br />
+                    Valid: {j.valid_from} → {j.valid_to}
+                    <br />
+                    Matches: {j.matchingRows}
+                    <br />
+                    Reason:{" "}
+                    {j.reason === "NO_VISIBLE_OVERLAP"
                       ? "No visible-time overlap"
                       : j.reason === "NO_VALID_MATCH"
                       ? "No valid-time match"
-                      : "Multiple matches"
-                  }
-                </div>
-              ))}
-            </div>
-          )}
+                      : "Multiple matches"}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* SQL */}
           <div
             style={{
               flex: 1,
@@ -435,6 +486,7 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
               borderRadius: 12,
               border: "1px solid #e5e7eb",
               boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+              color: "#0f172a",
             }}
           >
             <h3>SQL</h3>
@@ -448,6 +500,7 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
                 color: "#e5e7eb",
                 border: "none",
                 cursor: "pointer",
+                whiteSpace: "pre-wrap",
               }}
             >
               {sql || "No SQL generated yet"}
@@ -470,110 +523,158 @@ object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
             >
               Copy SQL
             </button>
+
+            {selectedIssue && (
+              <div
+                style={{
+                  marginTop: 20,
+                  background: "#f1f5f9",
+                  border: "1px solid #cbd5f5",
+                  borderRadius: 12,
+                  padding: 20,
+                }}
+              >
+
+                <h3 style={{ marginTop: 0 }}>
+                  Why does this JOIN fail?
+                </h3>
+
+                <p style={{ fontWeight: "bold", marginBottom: 10 }}>
+                  This row cannot be joined cleanly to the other source.
+                </p>
+
+                <p>
+                  Visible time:
+                  <br />
+                  {selectedIssue.visible_from?.slice(0, 10)} →{" "}
+                  {selectedIssue.visible_to?.slice(0, 10) || "∞"}
+                </p>
+
+                {selectedIssue.type === "JOIN_GAP" && (
+                  <>
+                    <p>No matching row exists in the other data source.</p>
+
+                    {selectedIssue.reason === "NO_VISIBLE_OVERLAP" && (
+                      <>
+                        <p>
+                          The records do not overlap in visible/system time.
+                        </p>
+                    
+                        <p>
+                          Contract visible until:{" "}
+                          {selectedIssue.visible_to?.slice(0, 10)}
+                          <br />
+                          Object visible from:{" "}
+                          {selectedIssue.visible_from?.slice(0, 10)}
+                        </p>
+                    
+                        <p>
+                          → They never exist at the same time
+                        </p>
+                    
+                        <p>
+                          → The JOIN returns no rows
+                        </p>
+                      </>
+                    )}
+
+                    {selectedIssue.reason === "NO_VALID_MATCH" && (
+                      <>
+                        <p>
+                          No row in the other source overlaps in valid time.
+                        </p>
+                        <p>→ There is no matching business-time record.</p>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {selectedIssue.type === "JOIN_AMBIGUITY" && (
+                  <>
+                    <p>Multiple matching rows were found.</p>
+                    <p>→ The JOIN result is ambiguous.</p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-      <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, marginBottom: 8 }}>
-        Joinability checks compare records with the same entity_id across source A and source B.
-      </p>
-
-      <p style={{ fontSize: 13, color: "#64748b", marginTop: -8, marginBottom: 8 }}>
-        Each bar is one input row on the valid-time axis. Join issues are shown on the source A row.
-      </p>
-
-      <Timeline
-        rows={filteredRows}
-        gaps={gaps}
-        overlapMarkers={overlapMarkers}
-        joinIssues={joinIssues}
-        flaggedRows={flaggedRows}
-        getPosition={getPosition}
-        getWidth={getWidth}
-        getSourceColor={getSourceColor}
-      />
-
-      <div
-        style={{
-          marginTop: 16,
-          display: "flex",
-          gap: 20,
-          flexWrap: "wrap",
-          fontSize: 12,
-          color: "#cbd5f5",
-          padding: "8px 12px",
-          background: "#1e293b",
-          borderRadius: 8,
-        }}
-      >
-
-        <span style={{ color: "#e5e7eb", marginRight: 12 }}>
-          ⬜ valid-time axis
-        </span>
-
-        <span style={{ color: "#60a5fa", marginRight: 12 }}>
-          🟦 data source A
-        </span>
-
-        <span style={{ color: "#4ade80", marginRight: 12 }}>
-          🟩 data source B
-        </span>
-
-        <span style={{ marginRight: 12 }}>
-          🟨 gap (missing valid time)
-        </span>
-      
-        <span style={{ marginRight: 12 }}>
-          🔴 overlap (conflicting records)
-        </span>
-      
-        <span style={{ marginRight: 12 }}>
-          🔴 dashed (no join result)
-        </span>
-      
-        <span style={{ marginRight: 12 }}>
-          🟠 dashed (multiple join matches)
-        </span>
-
-</div>
-      <div
-        style={{
-          marginTop: 40,
-          textAlign: "center",
-          fontSize: 12,
-          color: "#94a3b8",
-        }}
-      >
-        Built by{" "}
-        <a
-          href="https://www.linkedin.com/in/jakob-frohnhaus/"
-          target="_blank"
-          rel="noopener noreferrer"
+        <p
           style={{
-            color: "#60a5fa",
-            marginLeft: 4,
-            fontWeight: 500,
-            textDecoration: "none",
+            fontSize: 13,
+            color: "#94a3b8",
+            marginTop: 4,
+            marginBottom: 8,
           }}
         >
-          Jakob Frohnhaus
-        </a>
-        
-        <div style={{ marginTop: 6 }}>
-          Want this for your team? →{" "}
+          Joinability checks compare records with the same entity_id across
+          source A and source B.
+        </p>
+
+        <p
+          style={{
+            fontSize: 13,
+            color: "#94a3b8",
+            marginTop: -4,
+            marginBottom: 12,
+          }}
+        >
+          Each bar is one input row on the valid-time axis. Join issues are
+          shown on the source A row.
+        </p>
+
+        <Timeline
+          rows={filteredRows}
+          gaps={gaps}
+          overlapMarkers={overlapMarkers}
+          joinIssues={joinIssues}
+          flaggedRows={flaggedRows}
+          getPosition={getPosition}
+          getWidth={getWidth}
+          getSourceColor={getSourceColor}
+        />
+
+        <TimelineLegend />
+
+        <div
+          style={{
+            marginTop: 40,
+            textAlign: "center",
+            fontSize: 12,
+            color: "#94a3b8",
+          }}
+        >
+          Built by{" "}
           <a
             href="https://www.linkedin.com/in/jakob-frohnhaus/"
             target="_blank"
             rel="noopener noreferrer"
             style={{
               color: "#60a5fa",
+              marginLeft: 4,
+              fontWeight: 500,
               textDecoration: "none",
             }}
           >
-            Contact me
+            Jakob Frohnhaus
           </a>
-        </div>
-      </div>
 
+          <div style={{ marginTop: 6 }}>
+            Want this for your team? →{" "}
+            <a
+              href="https://www.linkedin.com/in/jakob-frohnhaus/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: "#60a5fa",
+                textDecoration: "none",
+              }}
+            >
+              Contact me
+            </a>
+          </div>
+        </div>
       </div>
     </main>
   );
