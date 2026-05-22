@@ -7,7 +7,11 @@ export function detectDelimiter(text: string) {
 }
 
 export function parseCSV(text: string) {
-  const lines = text.trim().split("\n");
+  const lines = text
+    .split("\n")
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith("#"))
+    .filter(line => line && !line.startsWith("#"));
 
   const delimiter = detectDelimiter(text);
   const headers = lines[0].split(delimiter).map((h) => h.trim());

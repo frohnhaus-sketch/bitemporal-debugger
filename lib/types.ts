@@ -37,3 +37,5 @@ export type OverlapIssue = {
   to: string;
   message: string;
 };
+
+export type ValidationMode = "monotemporal" | "bitemporal";

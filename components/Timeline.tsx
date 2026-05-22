@@ -49,7 +49,7 @@ export function Timeline({
           <div
             style={{
               height: 22,
-              background: "#334155",
+              background: "#e5e7eb",
               borderRadius: 999,
               position: "relative",
               overflow: "hidden",
