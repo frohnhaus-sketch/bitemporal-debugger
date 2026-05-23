@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { parseCSV, HeaderMapping } from "../lib/parser";
+import { parseCSV } from "../lib/parser";
+import type { HeaderMapping } from "../lib/parser";
 import { Timeline } from "@/components/Timeline";
 import { analyzeJoinability } from "../lib/joinability";
 import type {
@@ -18,12 +19,13 @@ import {
   detectOverlapMarkers,
 } from "../lib/analysis";
 import { TimelineLegend } from "@/components/TimelineLegend";
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/next";
 import { Footer } from "@/components/Footer";
 import { SqlPanel } from "@/components/SqlPanel";
 import { IssuesPanel } from "@/components/IssuesPanel";
 import { InputPanel } from "@/components/InputPanel";
 import { track } from "@vercel/analytics";
+import { DataPreview } from "@/components/DataPreview";
 
 const EXAMPLE_DATA = `source,entity_id,value,valid_from,valid_to,visible_from,visible_to
 contract,1,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
@@ -45,7 +47,8 @@ export default function Home() {
   const [rows, setRows] = useState<BitemporalRow[]>([]);
   const [result, setResult] = useState<string[]>([]);
   const [joinIssues, setJoinIssues] = useState<JoinabilityIssue[]>([]);
-  const [selectedIssue, setSelectedIssue] = useState<JoinabilityIssue | null>(null);
+  const [selectedIssue, setSelectedIssue] =
+    useState<JoinabilityIssue | null>(null);
 
   const [flaggedRows, setFlaggedRows] = useState<Set<number>>(new Set());
   const [gaps, setGaps] = useState<any[]>([]);
@@ -62,6 +65,9 @@ export default function Home() {
   const [sourceA, setSourceA] = useState("");
   const [sourceB, setSourceB] = useState("");
 
+  const [headerMappings, setHeaderMappings] = useState<HeaderMapping[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+
   const availableSources = Array.from(
     new Set(rows.map((r) => r.source).filter(Boolean))
   );
@@ -73,10 +79,6 @@ export default function Home() {
   const maxDate = rows.length
     ? Math.max(...rows.map((r) => new Date(r.valid_to).getTime()))
     : 1;
-
-  const [headerMappings, setHeaderMappings] = useState<HeaderMapping[]>([]);
-
-  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
 
   function loadExample() {
     track("Example Loaded");
@@ -136,18 +138,11 @@ export default function Home() {
         mappedRow[targetColumn] = row[mapping.normalized];
       });
 
-      if (!mappedRow.source) {
-        mappedRow.source = "default";
-      }
-
-      if (!mappedRow.value) {
-        mappedRow.value = "";
-      }
-
+      if (!mappedRow.source) mappedRow.source = "default";
+      if (!mappedRow.value) mappedRow.value = "";
       if (!mappedRow.visible_from) {
         mappedRow.visible_from = mappedRow.valid_from || "";
       }
-
       if (!mappedRow.visible_to) {
         mappedRow.visible_to = "9999-12-31T00:00:00";
       }
@@ -196,9 +191,7 @@ export default function Home() {
     const validNextSourceB =
       nextSourceB && sources.includes(nextSourceB) ? nextSourceB : "";
 
-    const left = hasMultipleSources
-      ? validNextSourceA || sources[0]
-      : "";
+    const left = hasMultipleSources ? validNextSourceA || sources[0] : "";
 
     const right = hasMultipleSources
       ? validNextSourceB || sources.find((s) => s !== left) || ""
@@ -251,7 +244,7 @@ export default function Home() {
 
     if (visibleAsOf) {
       sqlParts.push(
-        `'${visibleAsOf}' >= visible_from AND '${visibleAsOf}' < COALESCE(visible_to, '9999-12-31')`
+        `'${visibleAsOf}' >= visible_from AND '${visibleAsOf}' < visible_to`
       );
     }
 
@@ -277,118 +270,172 @@ WHERE ${sqlParts.join(" AND ")};`);
     >
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <h1 style={{ marginBottom: 12, color: "#ffffff" }}>
-          Why is this JOIN wrong?
+          Why does this JOIN fail?
         </h1>
 
         <p style={{ color: "#94a3b8", marginBottom: 8 }}>
-          Paste your query result → see exactly why your joins are broken
+          Paste your query result → click the broken row → see exactly why it
+          fails
         </p>
+
+        <p style={{ color: "#64748b", marginBottom: 4, marginTop: 8 }}>
+          Example:
+        </p>
+
+        <pre
+          style={{
+            color: "#94a3b8",
+            background: "#020617",
+            padding: 10,
+            borderRadius: 6,
+            fontSize: 12,
+            overflowX: "auto",
+          }}
+        >
+          {`CONTRACT_ID,START_DATE,END_DATE,CREATED_AT
+1,2026-01-01,2026-12-31,2026-01-01T00:00:00`}
+        </pre>
 
         <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
           Works with Databricks, Snowflake, BigQuery (CSV / TSV copy & paste)
         </p>
-
-        <InputPanel
-          input={input}
-          setInput={setInput}
-          onAnalyze={analyze}
-          onLoadExample={loadExample}
-          validationMode={validationMode}
-          setValidationModeAndAnalyze={setValidationModeAndAnalyze}
-          sourceA={sourceA}
-          sourceB={sourceB}
-          availableSources={availableSources}
-          setSourceAAndAnalyze={setSourceAAndAnalyze}
-          setSourceBAndAnalyze={setSourceBAndAnalyze}
-          asOfDate={asOfDate}
-          setAsOfDate={setAsOfDate}
-          visibleAsOf={visibleAsOf}
-          setVisibleAsOf={setVisibleAsOf}
-          resetDates={resetDates}
-          generateSQL={generateSQL}
-        />
-
-        {headerMappings.some((m) => m.original !== m.normalized) && (
+                  
+        <div
+          style={{
+            display: "flex",
+            gap: 20,
+            marginBottom: 20,
+            alignItems: "stretch",
+          }}
+        >
           <div
             style={{
-              marginBottom: 20,
-              padding: 12,
-              borderRadius: 8,
-              background: "#f8fafc",
-              border: "1px solid #cbd5e1",
-              color: "#0f172a",
-              fontSize: 13,
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <strong>Detected column mapping:</strong>
+            <InputPanel
+              input={input}
+              setInput={setInput}
+              onAnalyze={analyze}
+              onLoadExample={loadExample}
+              validationMode={validationMode}
+              setValidationModeAndAnalyze={setValidationModeAndAnalyze}
+              sourceA={sourceA}
+              sourceB={sourceB}
+              availableSources={availableSources}
+              setSourceAAndAnalyze={setSourceAAndAnalyze}
+              setSourceBAndAnalyze={setSourceBAndAnalyze}
+              asOfDate={asOfDate}
+              setAsOfDate={setAsOfDate}
+              visibleAsOf={visibleAsOf}
+              setVisibleAsOf={setVisibleAsOf}
+              resetDates={resetDates}
+              generateSQL={generateSQL}
+            />
+          </div>
           
-            <p style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>
-              We automatically mapped your column names:
-            </p>
-
-            <div style={{ marginTop: 8, fontFamily: "monospace" }}>
-              {headerMappings
-                .filter((m) => m.original !== m.normalized)
-                .map((m, i) => (
-                  <div key={i}>
-                    {m.original} → {m.normalized}
+          {headerMappings.length > 0 && (
+            <div
+            style={{
+              display: "flex",
+              gap: 20,
+              marginBottom: 0,
+              alignItems: "stretch",
+            }}
+            >
+              <aside
+                style={{
+                  width: 200,
+                  flexShrink: 0,
+                  background: "#f1f5f9",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: 12,
+                  padding: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <strong style={{ display: "block", marginBottom: 2 }}>
+                  Column mapping
+                </strong>
+              
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "#64748b",
+                    marginTop: 0,
+                    marginBottom: 8,
+                  }}
+                >
+                  Adjust if needed
+                </p>
+                
+                {headerMappings.map((m, i) => (
+                  <div key={i} style={{ marginBottom: 4 }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#64748b",
+                        marginBottom: 1,
+                      }}
+                    >
+                      {m.original}
+                    </div>
+                    
+                    <select
+                      value={columnMapping[m.original] || m.normalized}
+                      onChange={(e) => {
+                        const nextMapping = {
+                          ...columnMapping,
+                          [m.original]: e.target.value,
+                        };
+                      
+                        setColumnMapping(nextMapping);
+                      
+                        if (input.trim()) {
+                          analyzeRows(
+                            input,
+                            validationMode,
+                            sourceA,
+                            sourceB,
+                            nextMapping
+                          );
+                        }
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "5px 8px",
+                        borderRadius: 6,
+                        border: "1px solid #cbd5e1",
+                        fontSize: 14,
+                      }}
+                    >
+                      <option value="entity_id">entity_id</option>
+                      <option value="valid_from">valid_from</option>
+                      <option value="valid_to">valid_to</option>
+                      <option value="visible_from">visible_from</option>
+                      <option value="visible_to">visible_to</option>
+                      <option value="value">value</option>
+                      <option value="source">source</option>
+                      <option value="">ignore</option>
+                    </select>
                   </div>
                 ))}
+              </aside>
             </div>
-          </div>
-        )}
-
-        {headerMappings.length > 0 && (
-          <div
-            style={{
-              marginBottom: 20,
-              padding: 12,
-              borderRadius: 8,
-              background: "#f8fafc",
-              border: "1px solid #cbd5e1",
-              color: "#0f172a",
-              fontSize: 13,
-            }}
-          >
-            <strong>Adjust column mapping:</strong>
-          
-            <p style={{ fontSize: 12, color: "#64748b", marginBottom: 10 }}>
-              We automatically mapped your columns. Adjust if needed:
-            </p>
-
-            <div style={{ marginTop: 10 }}>
-              {headerMappings.map((m, i) => (
-                <div key={i} style={{ marginBottom: 6 }}>
-                  {m.original} →{" "}
-                  <select
-                    value={columnMapping[m.original] || m.normalized}
-                    onChange={(e) => {
-                      const nextMapping = {
-                        ...columnMapping,
-                        [m.original]: e.target.value,
-                      };
-                    
-                      setColumnMapping(nextMapping);
-                    
-                      if (input.trim()) {
-                        analyzeRows(input, validationMode, sourceA, sourceB, nextMapping);
-                      }
-                    }}
-                  >
-                    <option value="entity_id">entity_id</option>
-                    <option value="valid_from">valid_from</option>
-                    <option value="valid_to">valid_to</option>
-                    <option value="visible_from">visible_from</option>
-                    <option value="visible_to">visible_to</option>
-                    <option value="value">value</option>
-                    <option value="source">source</option>
-                    <option value="">ignore</option>
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+        
+        <div style={{ marginBottom: 20 }}>
+          <DataPreview
+            rows={rows}
+            joinIssues={joinIssues}
+            onSelectIssue={setSelectedIssue}
+          />
+        </div>
 
         <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
           <IssuesPanel
@@ -417,6 +464,7 @@ WHERE ${sqlParts.join(" AND ")};`);
         <TimelineLegend />
         <Footer />
       </div>
+
       <Analytics />
     </main>
   );
