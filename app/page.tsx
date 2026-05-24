@@ -1,5 +1,6 @@
 "use client";
 
+import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
 import { useState } from "react";
 import { parseCSV } from "../lib/parser";
 import type { HeaderMapping } from "../lib/parser";
@@ -7,7 +8,7 @@ import { Timeline } from "@/components/Timeline";
 import { analyzeJoinability } from "../lib/joinability";
 import type {
   BitemporalRow,
-  JoinabilityIssue,
+  AggregatedJoinabilityIssue,
   OverlapIssue,
   ValidationMode,
 } from "../lib/types";
@@ -15,7 +16,6 @@ import {
   detectDrift,
   detectOverlaps,
   detectGaps,
-  detectFlaggedOverlapRows,
   detectOverlapMarkers,
 } from "../lib/analysis";
 import { TimelineLegend } from "@/components/TimelineLegend";
@@ -23,107 +23,148 @@ import { Analytics } from "@vercel/analytics/next";
 import { Footer } from "@/components/Footer";
 import { SqlPanel } from "@/components/SqlPanel";
 import { IssuesPanel } from "@/components/IssuesPanel";
-import { InputPanel } from "@/components/InputPanel";
 import { track } from "@vercel/analytics";
 import { DataPreview } from "@/components/DataPreview";
+import type { DriftSummary } from "../lib/types";
 
-const EXAMPLE_DATA = `source,entity_id,value,valid_from,valid_to,visible_from,visible_to
-contract,1,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-object,1,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-object,1,Y,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-contract,2,A,2024-01-01,2024-03-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-contract,2,B,2024-05-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-object,2,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-contract,3,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,2024-06-01T00:00:00
-object,3,X,2024-01-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00
-contract,4,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-object,4,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-contract,5,A,2024-01-01,2024-06-30,2024-01-01T00:00:00,2024-04-01T00:00:00
-contract,5,B,2024-05-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00
-object,5,X,2024-01-01,2024-12-31,2024-01-02T12:00:00,9999-12-31T00:00:00`;
+const EXAMPLE_A = `entity_id,value,valid_from,valid_to,visible_from,visible_to
+1,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+2,A,2024-01-01,2024-03-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+2,B,2024-05-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+3,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,2024-06-01T00:00:00`;
+
+const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
+1,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+1,Y,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+2,X,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+3,X,2024-01-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
-  const [input, setInput] = useState("");
+  const [headerMappingsA, setHeaderMappingsA] = useState<HeaderMapping[]>([]);
+  const [headerMappingsB, setHeaderMappingsB] = useState<HeaderMapping[]>([]);
+  const [columnMappingA, setColumnMappingA] = useState<Record<string, string>>({});
+  const [columnMappingB, setColumnMappingB] = useState<Record<string, string>>({});
   const [rows, setRows] = useState<BitemporalRow[]>([]);
   const [result, setResult] = useState<string[]>([]);
-  const [joinIssues, setJoinIssues] = useState<JoinabilityIssue[]>([]);
-  const [selectedIssue, setSelectedIssue] =
-    useState<JoinabilityIssue | null>(null);
-
-  const [flaggedRows, setFlaggedRows] = useState<Set<number>>(new Set());
+  const [joinIssues, setJoinIssues] = useState<AggregatedJoinabilityIssue[]>([]);
+  const [selectedIssue, setSelectedIssue] = useState<AggregatedJoinabilityIssue | null>(null);
+  const [inputA, setInputA] = useState("");
+  const [inputB, setInputB] = useState("");
+  const [sourceNameA, setSourceNameA] = useState("source_a");
+  const [sourceNameB, setSourceNameB] = useState("source_b");
   const [gaps, setGaps] = useState<any[]>([]);
-  const [drifts, setDrifts] = useState<string[]>([]);
+  const [drifts, setDrifts] = useState<DriftSummary[]>([]);
   const [overlapMarkers, setOverlapMarkers] = useState<OverlapIssue[]>([]);
-
   const [asOfDate, setAsOfDate] = useState("");
   const [visibleAsOf, setVisibleAsOf] = useState("");
   const [sql, setSql] = useState("");
-
-  const [validationMode, setValidationMode] =
-    useState<ValidationMode>("monotemporal");
-
-  const [sourceA, setSourceA] = useState("");
-  const [sourceB, setSourceB] = useState("");
-
-  const [headerMappings, setHeaderMappings] = useState<HeaderMapping[]>([]);
-  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
-
-  const availableSources = Array.from(
-    new Set(rows.map((r) => r.source).filter(Boolean))
-  );
-
+  const [validationMode, setValidationMode] = useState<ValidationMode>("monotemporal");
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const minDate = rows.length
     ? Math.min(...rows.map((r) => new Date(r.valid_from).getTime()))
     : 0;
-
   const maxDate = rows.length
-    ? Math.max(...rows.map((r) => new Date(r.valid_to).getTime()))
+    ? Math.max(
+        ...rows.map((r) => {
+          const t = new Date(r.valid_to).getTime();
+          return !String(r.valid_to).includes("T")
+            ? t + 24 * 60 * 60 * 1000
+            : t;
+        })
+      )
     : 1;
+  const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null);
+
+  function resetAnalysis() {
+    setRows([]);
+    setResult([]);
+    setJoinIssues([]);
+    setSelectedIssue(null);
+    setGaps([]);
+    setDrifts([]);
+    setOverlapMarkers([]);
+    setSql("");
+    setHasAnalyzed(false);
+  }
+
+  function buildColumnMapping(
+    mappings: HeaderMapping[],
+    currentMapping: Record<string, string>
+  ) {
+    const nextMapping: Record<string, string> = {};
+
+    mappings.forEach((m) => {
+      nextMapping[m.original] = currentMapping[m.original] ?? m.normalized;
+    });
+
+    return nextMapping;
+  }
+
+  function updateMappingForSourceA(nextInputA = inputA) {
+    if (!nextInputA.trim()) {
+      setHeaderMappingsA([]);
+      setColumnMappingA({});
+      return;
+    }
+
+    const parsedA = parseCSV(nextInputA);
+    setHeaderMappingsA(parsedA.headerMappings);
+    setColumnMappingA(buildColumnMapping(parsedA.headerMappings, columnMappingA));
+  }
+
+  function updateMappingForSourceB(nextInputB = inputB) {
+    if (!nextInputB.trim()) {
+      setHeaderMappingsB([]);
+      setColumnMappingB({});
+      return;
+    }
+
+    const parsedB = parseCSV(nextInputB);
+    setHeaderMappingsB(parsedB.headerMappings);
+    setColumnMappingB(buildColumnMapping(parsedB.headerMappings, columnMappingB));
+  }
+
+  function updateMappingsFromInputs(nextInputA = inputA, nextInputB = inputB) {
+    if (nextInputA.trim()) {
+      const parsedA = parseCSV(nextInputA);
+      setHeaderMappingsA(parsedA.headerMappings);
+      setColumnMappingA(buildColumnMapping(parsedA.headerMappings, columnMappingA));
+    } else {
+      setHeaderMappingsA([]);
+      setColumnMappingA({});
+    }
+
+    if (nextInputB.trim()) {
+      const parsedB = parseCSV(nextInputB);
+      setHeaderMappingsB(parsedB.headerMappings);
+      setColumnMappingB(buildColumnMapping(parsedB.headerMappings, columnMappingB));
+    } else {
+      setHeaderMappingsB([]);
+      setColumnMappingB({});
+    }
+  }
 
   function loadExample() {
     track("Example Loaded");
-    setInput(EXAMPLE_DATA);
-    analyzeRows(EXAMPLE_DATA);
+
+    setInputA(EXAMPLE_A);
+    setInputB(EXAMPLE_B);
+    setSourceNameA("contract");
+    setSourceNameB("object");
+    updateMappingsFromInputs(EXAMPLE_A, EXAMPLE_B);
+
+    resetAnalysis();
   }
 
-  function setValidationModeAndAnalyze(next: ValidationMode) {
-    setValidationMode(next);
-    if (input.trim()) analyzeRows(input, next);
-  }
-
-  function setSourceAAndAnalyze(next: string) {
-    setSourceA(next);
-    if (input.trim()) analyzeRows(input, validationMode, next, sourceB);
-  }
-
-  function setSourceBAndAnalyze(next: string) {
-    setSourceB(next);
-    if (input.trim()) analyzeRows(input, validationMode, sourceA, next);
-  }
-
-  function resetDates() {
-    setAsOfDate("");
-    setVisibleAsOf("");
-  }
-
-  function getPosition(date: string) {
-    const current = new Date(date).getTime();
-    return ((current - minDate) / (maxDate - minDate)) * 100;
-  }
-
-  function getWidth(from: string, to: string) {
-    return getPosition(to) - getPosition(from);
-  }
-
-  function getSourceColor(source: string) {
-    if (source === sourceA) return "#2563eb";
-    if (source === sourceB) return "#16a34a";
-    return "#64748b";
+  function copySourceAToB() {
+    setInputB(inputA);
+    updateMappingsFromInputs(inputA, inputA);
+    resetAnalysis();
   }
 
   function applyColumnMapping(
     rows: any[],
-    mappings: { original: string; normalized: string }[],
+    mappings: HeaderMapping[],
     activeMapping: Record<string, string>
   ) {
     return rows.map((row) => {
@@ -151,12 +192,10 @@ export default function Home() {
     });
   }
 
-  function analyzeRows(
+  function parseOneSource(
     rawInput: string,
-    nextValidationMode = validationMode,
-    nextSourceA = sourceA,
-    nextSourceB = sourceB,
-    nextColumnMapping = columnMapping
+    sourceName: string,
+    activeMapping: Record<string, string>
   ) {
     const parsed = parseCSV(rawInput);
 
@@ -165,59 +204,108 @@ export default function Home() {
       initialMapping[m.original] = m.normalized;
     });
 
-    const activeMapping =
-      Object.keys(nextColumnMapping).length > 0
-        ? nextColumnMapping
-        : initialMapping;
+    const mappingToUse =
+      Object.keys(activeMapping).length > 0 ? activeMapping : initialMapping;
 
-    const parsedRows = applyColumnMapping(
+    const mappedRows = applyColumnMapping(
       parsed.rows,
       parsed.headerMappings,
-      activeMapping
-    ) as BitemporalRow[];
+      mappingToUse
+    ).map((row) => ({
+      ...row,
+      source: sourceName || "source",
+    }));
 
-    setHeaderMappings(parsed.headerMappings);
-    setColumnMapping(activeMapping);
+    return {
+      rows: mappedRows,
+      headerMappings: parsed.headerMappings,
+      mapping: mappingToUse,
+    };
+  }
 
-    const sources = Array.from(
-      new Set(parsedRows.map((r) => r.source).filter(Boolean))
+  function analyzeTwoSourcesFromValues(
+    rawA: string,
+    rawB: string,
+    sourceAName: string,
+    sourceBName: string
+  ) {
+    if (!rawA.trim() || !rawB.trim()) {
+      resetAnalysis();
+      return;
+    }
+
+    const parsedA = parseOneSource(
+      rawA,
+      sourceAName || "source_a",
+      columnMappingA
     );
 
-    const hasMultipleSources = sources.length >= 2;
+    const parsedB = parseOneSource(
+      rawB,
+      sourceBName || "source_b",
+      columnMappingB
+    );
 
-    const validNextSourceA =
-      nextSourceA && sources.includes(nextSourceA) ? nextSourceA : "";
+    const combinedRows = [...parsedA.rows, ...parsedB.rows] as BitemporalRow[];
 
-    const validNextSourceB =
-      nextSourceB && sources.includes(nextSourceB) ? nextSourceB : "";
+    setRows(combinedRows);
+    setHeaderMappingsA(parsedA.headerMappings);
+    setHeaderMappingsB(parsedB.headerMappings);
+    setColumnMappingA(parsedA.mapping);
+    setColumnMappingB(parsedB.mapping);
 
-    const left = hasMultipleSources ? validNextSourceA || sources[0] : "";
-
-    const right = hasMultipleSources
-      ? validNextSourceB || sources.find((s) => s !== left) || ""
-      : "";
-
-    setRows(parsedRows);
-    setSourceA(left);
-    setSourceB(right);
-
-    setResult(detectOverlaps(parsedRows, nextValidationMode));
-    setGaps(detectGaps(parsedRows));
-    setDrifts(detectDrift(parsedRows));
-    setOverlapMarkers(detectOverlapMarkers(parsedRows, nextValidationMode));
-    setFlaggedRows(detectFlaggedOverlapRows(parsedRows, nextValidationMode));
+    setResult(detectOverlaps(combinedRows, validationMode));
+    setGaps(detectGaps(combinedRows));
+    setDrifts(detectDrift(combinedRows));
+    setOverlapMarkers(detectOverlapMarkers(combinedRows, validationMode));
     setSelectedIssue(null);
+    setJoinIssues(analyzeJoinability(combinedRows, sourceAName, sourceBName));
+    setHasAnalyzed(true);
+  }
 
-    if (left && right && left !== right) {
-      setJoinIssues(analyzeJoinability(parsedRows, left, right));
-    } else {
-      setJoinIssues([]);
+  function analyzeTwoSources() {
+    track("Analyze Two Sources Clicked");
+
+    if (!inputA.trim() || !inputB.trim()) {
+      resetAnalysis();
+      return;
+    }
+
+    analyzeTwoSourcesFromValues(inputA, inputB, sourceNameA, sourceNameB);
+  }
+
+  function setValidationModeAndAnalyze(next: ValidationMode) {
+    setValidationMode(next);
+
+    if (inputA.trim() && inputB.trim() && hasAnalyzed) {
+      analyzeTwoSourcesFromValues(inputA, inputB, sourceNameA, sourceNameB);
     }
   }
 
-  function analyze() {
-    track("Analyze Clicked");
-    analyzeRows(input);
+  function resetDates() {
+    setAsOfDate("");
+    setVisibleAsOf("");
+  }
+
+  function getPosition(date: string) {
+    const current = new Date(date).getTime();
+    return ((current - minDate) / (maxDate - minDate)) * 100;
+  }
+
+  function getWidth(from: string, to: string) {
+    const fromTime = new Date(from).getTime();
+    const toTime = new Date(to).getTime();
+
+    const isDateOnly = !to.includes("T");
+    const adjustedToTime = isDateOnly
+      ? toTime + 24 * 60 * 60 * 1000
+      : toTime;
+
+    return ((adjustedToTime - fromTime) / (maxDate - minDate)) * 100;
+  }
+
+  function getSourceColor(source: string) {
+    return source === sourceNameA ? "#475569" : "#64748b";
   }
 
   const filteredRows = rows.filter((r) => {
@@ -258,6 +346,13 @@ FROM your_table
 WHERE ${sqlParts.join(" AND ")};`);
   }
 
+  const joinGapCount = joinIssues.filter((i) => i.type === "JOIN_GAP").length;
+  const joinAmbiguityCount = joinIssues.filter(
+    (i) => i.type === "JOIN_AMBIGUITY"
+  ).length;
+  const overlapCount = result.length;
+  const totalIssueCount = joinGapCount + joinAmbiguityCount + overlapCount;
+
   return (
     <main
       style={{
@@ -274,12 +369,12 @@ WHERE ${sqlParts.join(" AND ")};`);
         </h1>
 
         <p style={{ color: "#94a3b8", marginBottom: 8 }}>
-          Paste your query result → click the broken row → see exactly why it
-          fails
+          Paste two query results → compare temporal differences → understand
+          why the JOIN fails.
         </p>
 
         <p style={{ color: "#64748b", marginBottom: 4, marginTop: 8 }}>
-          Example:
+          Example columns:
         </p>
 
         <pre
@@ -291,177 +386,336 @@ WHERE ${sqlParts.join(" AND ")};`);
             fontSize: 12,
             overflowX: "auto",
           }}
-        >
-          {`CONTRACT_ID,START_DATE,END_DATE,CREATED_AT
-1,2026-01-01,2026-12-31,2026-01-01T00:00:00`}
-        </pre>
+        >{`CONTRACT_ID,START_DATE,END_DATE,CREATED_AT
+1,2026-01-01,2026-12-31,2026-01-01T00:00:00`}</pre>
 
         <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
           Works with Databricks, Snowflake, BigQuery (CSV / TSV copy & paste)
         </p>
-                  
-        <div
-          style={{
-            display: "flex",
-            gap: 20,
-            marginBottom: 20,
-            alignItems: "stretch",
+
+        <TwoSourceInputPanel
+          inputA={inputA}
+          inputB={inputB}
+          setInputA={(value) => {
+            setInputA(value);
+            if (!value.trim()) resetAnalysis();
+            updateMappingForSourceA(value);
           }}
-        >
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <InputPanel
-              input={input}
-              setInput={setInput}
-              onAnalyze={analyze}
-              onLoadExample={loadExample}
-              validationMode={validationMode}
-              setValidationModeAndAnalyze={setValidationModeAndAnalyze}
-              sourceA={sourceA}
-              sourceB={sourceB}
-              availableSources={availableSources}
-              setSourceAAndAnalyze={setSourceAAndAnalyze}
-              setSourceBAndAnalyze={setSourceBAndAnalyze}
-              asOfDate={asOfDate}
-              setAsOfDate={setAsOfDate}
-              visibleAsOf={visibleAsOf}
-              setVisibleAsOf={setVisibleAsOf}
-              resetDates={resetDates}
-              generateSQL={generateSQL}
-            />
-          </div>
-          
-          {headerMappings.length > 0 && (
+          setInputB={(value) => {
+            setInputB(value);
+            if (!value.trim()) resetAnalysis();
+            updateMappingForSourceB(value);
+          }}
+          sourceNameA={sourceNameA}
+          sourceNameB={sourceNameB}
+          setSourceNameA={setSourceNameA}
+          setSourceNameB={setSourceNameB}
+          onAnalyze={analyzeTwoSources}
+          onLoadExample={loadExample}
+          onCopyAtoB={copySourceAToB}
+          controls={
             <div
-            style={{
-              display: "flex",
-              gap: 20,
-              marginBottom: 0,
-              alignItems: "stretch",
-            }}
+              style={{
+                background: "#ffffff",
+                padding: 12,
+                borderRadius: 10,
+                marginTop: 12,
+                marginBottom: 12,
+                display: "flex",
+                gap: 16,
+                flexWrap: "wrap",
+                alignItems: "flex-end",
+              }}
             >
-              <aside
+{(headerMappingsA.length > 0 || headerMappingsB.length > 0) && (
+  <div
+    style={{
+      width: "100%",
+      marginBottom: 12,
+      background: "#0f172a",
+      border: "1px solid #1e293b",
+      borderRadius: 10,
+      padding: 12,
+    }}
+  >
+    <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 10 }}>
+      Column mapping
+    </div>
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          border: "1px solid #1e293b",
+          borderRadius: 8,
+          padding: 10,
+          background: "#020617",
+        }}
+      >
+        <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
+          Source A mapping
+        </div>
+
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {headerMappingsA.map((m, i) => (
+            <div key={`a-${m.original}-${i}`}>
+              <div style={{ fontSize: 10, color: "#64748b" }}>
+                {m.original}
+              </div>
+
+              <select
+                value={columnMappingA[m.original] ?? m.normalized}
+                onChange={(e) => {
+                  setColumnMappingA({
+                    ...columnMappingA,
+                    [m.original]: e.target.value,
+                  });
+                }}
                 style={{
-                  width: 200,
-                  flexShrink: 0,
-                  background: "#f1f5f9",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: 12,
-                  padding: 10,
-                  display: "flex",
-                  flexDirection: "column",
+                  padding: "4px 6px",
+                  borderRadius: 6,
+                  border: "1px solid #334155",
+                  background: "#020617",
+                  color: "#e2e8f0",
+                  fontSize: 12,
                 }}
               >
-                <strong style={{ display: "block", marginBottom: 2 }}>
-                  Column mapping
-                </strong>
-              
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "#64748b",
-                    marginTop: 0,
-                    marginBottom: 8,
-                  }}
-                >
-                  Adjust if needed
-                </p>
-                
-                {headerMappings.map((m, i) => (
-                  <div key={i} style={{ marginBottom: 4 }}>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: "#64748b",
-                        marginBottom: 1,
-                      }}
-                    >
-                      {m.original}
-                    </div>
-                    
-                    <select
-                      value={columnMapping[m.original] || m.normalized}
-                      onChange={(e) => {
-                        const nextMapping = {
-                          ...columnMapping,
-                          [m.original]: e.target.value,
-                        };
-                      
-                        setColumnMapping(nextMapping);
-                      
-                        if (input.trim()) {
-                          analyzeRows(
-                            input,
-                            validationMode,
-                            sourceA,
-                            sourceB,
-                            nextMapping
-                          );
-                        }
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "5px 8px",
-                        borderRadius: 6,
-                        border: "1px solid #cbd5e1",
-                        fontSize: 14,
-                      }}
-                    >
-                      <option value="entity_id">entity_id</option>
-                      <option value="valid_from">valid_from</option>
-                      <option value="valid_to">valid_to</option>
-                      <option value="visible_from">visible_from</option>
-                      <option value="visible_to">visible_to</option>
-                      <option value="value">value</option>
-                      <option value="source">source</option>
-                      <option value="">ignore</option>
-                    </select>
-                  </div>
-                ))}
-              </aside>
+                <option value="entity_id">entity_id</option>
+                <option value="valid_from">valid_from</option>
+                <option value="valid_to">valid_to</option>
+                <option value="visible_from">visible_from</option>
+                <option value="visible_to">visible_to</option>
+                <option value="value">value</option>
+                <option value="">ignore</option>
+              </select>
             </div>
-          )}
+          ))}
         </div>
-        
-        <div style={{ marginBottom: 20 }}>
-          <DataPreview
-            rows={rows}
-            joinIssues={joinIssues}
-            onSelectIssue={setSelectedIssue}
-          />
-        </div>
+      </div>
 
-        <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
-          <IssuesPanel
-            result={result}
-            drifts={drifts}
-            joinIssues={joinIssues}
-            selectedIssue={selectedIssue}
-            setSelectedIssue={setSelectedIssue}
-          />
-
-          <SqlPanel sql={sql} selectedIssue={selectedIssue} />
+      <div
+        style={{
+          border: "1px solid #1e293b",
+          borderRadius: 8,
+          padding: 10,
+          background: "#020617",
+        }}
+      >
+        <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
+          Source B mapping
         </div>
 
-        <Timeline
-          rows={filteredRows}
-          gaps={gaps}
-          overlapMarkers={overlapMarkers}
-          joinIssues={joinIssues}
-          flaggedRows={flaggedRows}
-          getPosition={getPosition}
-          getWidth={getWidth}
-          getSourceColor={getSourceColor}
-          onSelectIssue={setSelectedIssue}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {headerMappingsB.map((m, i) => (
+            <div key={`b-${m.original}-${i}`}>
+              <div style={{ fontSize: 10, color: "#64748b" }}>
+                {m.original}
+              </div>
+
+              <select
+                value={columnMappingB[m.original] ?? m.normalized}
+                onChange={(e) => {
+                  setColumnMappingB({
+                    ...columnMappingB,
+                    [m.original]: e.target.value,
+                  });
+                }}
+                style={{
+                  padding: "4px 6px",
+                  borderRadius: 6,
+                  border: "1px solid #334155",
+                  background: "#020617",
+                  color: "#e2e8f0",
+                  fontSize: 12,
+                }}
+              >
+                <option value="entity_id">entity_id</option>
+                <option value="valid_from">valid_from</option>
+                <option value="valid_to">valid_to</option>
+                <option value="visible_from">visible_from</option>
+                <option value="visible_to">visible_to</option>
+                <option value="value">value</option>
+                <option value="">ignore</option>
+              </select>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+              <div>
+                <label style={{ fontSize: 12 }}>Validation Mode</label>
+                <br />
+                <select
+                  value={validationMode}
+                  onChange={(e) =>
+                    setValidationModeAndAnalyze(e.target.value as ValidationMode)
+                  }
+                >
+                  <option value="monotemporal">Valid time only</option>
+                  <option value="bitemporal">Valid + visible time</option>
+                </select>
+              </div>
+                
+              <div>
+                <label style={{ fontSize: 12 }}>Valid As-of Date</label>
+                <br />
+                <input
+                  type="date"
+                  value={asOfDate || ""}
+                  onChange={(e) => setAsOfDate(e.target.value || "")}
+                />
+              </div>
+                
+              <div>
+                <label style={{ fontSize: 12 }}>Visible As-of Timestamp</label>
+                <br />
+                <input
+                  type="datetime-local"
+                  value={visibleAsOf || ""}
+                  onChange={(e) => setVisibleAsOf(e.target.value || "")}
+                />
+              </div>
+                
+              <button
+                onClick={resetDates}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #475569",
+                  background: "#1e293b",
+                  color: "#e2e8f0",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                Reset Dates
+              </button>
+              
+              <button
+                onClick={generateSQL}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  background: "#1e293b",
+                  color: "white",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                Generate SQL
+              </button>
+            </div>
+          }
         />
 
-        <TimelineLegend />
+        {hasAnalyzed && (
+          <>
+            <div
+              style={{
+                background: totalIssueCount > 0 ? "#fee2e2" : "#dcfce7",
+                border:
+                  totalIssueCount > 0
+                    ? "1px solid #fca5a5"
+                    : "1px solid #86efac",
+                color: "#0f172a",
+                borderRadius: 12,
+                padding: 18,
+                marginBottom: 20,
+              }}
+            >
+              <h2 style={{ margin: "0 0 8px", fontSize: 22 }}>
+                {totalIssueCount > 0
+                  ? `❌ ${totalIssueCount} JOIN issues found`
+                  : "✅ No JOIN issues found"}
+              </h2>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  flexWrap: "wrap",
+                  fontSize: 14,
+                }}
+              >
+                <span>{joinGapCount} gaps</span>
+                <span>{joinAmbiguityCount} ambiguous matches</span>
+                <span>{overlapCount} overlaps</span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 20,
+                marginBottom: 20,
+              }}
+            >
+            <DataPreview
+              title={`Source A: ${sourceNameA}`}
+              rows={rows.filter((r) => r.source === sourceNameA)}
+              joinIssues={joinIssues}
+              onSelectIssue={setSelectedIssue}
+              hoveredEntityId={hoveredEntityId}
+              onHoverEntity={setHoveredEntityId}
+            />
+                        
+            <DataPreview
+              title={`Source B: ${sourceNameB}`}
+              rows={rows.filter((r) => r.source === sourceNameB)}
+              joinIssues={joinIssues}
+              onSelectIssue={setSelectedIssue}
+              hoveredEntityId={hoveredEntityId}
+              onHoverEntity={setHoveredEntityId}
+            />
+            </div>
+
+            <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
+              <IssuesPanel
+                result={result}
+                drifts={drifts}
+                joinIssues={joinIssues}
+                selectedIssue={selectedIssue}
+                setSelectedIssue={setSelectedIssue}
+              />
+
+              <SqlPanel sql={sql} selectedIssue={selectedIssue} />
+            </div>
+
+            <Timeline
+              rows={filteredRows}
+              gaps={gaps}
+              overlapMarkers={overlapMarkers}
+              joinIssues={joinIssues}
+              getPosition={getPosition}
+              getWidth={getWidth}
+              getSourceColor={getSourceColor}
+              onSelectIssue={setSelectedIssue}
+              highlightedEntityId={hoveredEntityId}
+            />
+
+            <TimelineLegend />
+          </>
+        )}
+
         <Footer />
       </div>
 

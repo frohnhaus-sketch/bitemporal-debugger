@@ -4,15 +4,22 @@ import {
   halfOpenTimestampIntervalsOverlap,
 } from "./dates";
 
+type AggregatedJoinabilityIssue = JoinabilityIssue & {
+  isAggregated?: boolean;
+  count?: number;
+  entityIds?: Array<string | number>;
+};
+
 export function analyzeJoinability(
   rows: BitemporalRow[],
   leftSource: string,
   rightSource: string
-): JoinabilityIssue[] {
+): AggregatedJoinabilityIssue[]
+{
   const leftRows = rows.filter((r) => r.source === leftSource);
   const rightRows = rows.filter((r) => r.source === rightSource);
 
-  return leftRows.flatMap((left): JoinabilityIssue[] => {
+  const issues = leftRows.flatMap((left): JoinabilityIssue[] => {
     const validMatches = rightRows.filter(
       (right) =>
         String(right.entity_id) === String(left.entity_id) &&
@@ -77,4 +84,45 @@ export function analyzeJoinability(
 
     return [];
   });
+
+  const groupedGaps = new Map<string, JoinabilityIssue[]>();
+
+  issues.forEach((issue) => {
+    if (issue.type !== "JOIN_GAP") return;
+
+    const key = [
+      issue.source,
+      issue.targetSource,
+      issue.reason,
+      issue.valid_from,
+      issue.valid_to,
+    ].join("|");
+
+    groupedGaps.set(key, [...(groupedGaps.get(key) || []), issue]);
+  });
+
+  const aggregatedGapKeys = new Set<string>();
+
+  const aggregatedGaps: AggregatedJoinabilityIssue[] = Array.from(
+    groupedGaps.entries()
+  ).map(([key, group]) => {
+    if (group.length === 1) {
+      return group[0];
+    }
+
+    aggregatedGapKeys.add(key);
+
+    return {
+      ...group[0],
+      isAggregated: true,
+      count: group.length,
+      entityIds: group.map((g) => g.entity_id),
+      entity_id: group[0].entity_id,
+      message: `${group.length} entities have the same join gap pattern`,
+    };
+  });
+
+  const nonGapIssues = issues.filter((issue) => issue.type !== "JOIN_GAP");
+
+  return [...aggregatedGaps, ...nonGapIssues];
 }

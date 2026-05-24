@@ -13,13 +13,11 @@ export function TimelineLegend() {
         color: "#cbd5e1",
       }}
     >
-      <span style={{ color: "#60a5fa" }}>🟦 source A row</span>
-      <span style={{ color: "#4ade80" }}>🟩 source B row</span>
       <span>⬜ valid-time axis</span>
-      <span>🟨 gap (missing valid time)</span>
-      <span>🔴 overlap (conflicting records)</span>
-      <span>🔴 dashed (no join result)</span>
-      <span>🟠 dashed (multiple join matches)</span>
+      <span style={{ color: "#f59e0b" }}>🟧 gap (missing valid time)</span>
+      <span style={{ color: "#ef4444" }}>🟥 overlap (conflicting records)</span>
+      <span style={{ color: "#ef4444" }}>🔴 dashed (no join result)</span>
+      <span style={{ color: "#f59e0b" }}>🟠 dashed (multiple matches)</span>
     </div>
   );
 }

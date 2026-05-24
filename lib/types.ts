@@ -9,6 +9,21 @@ export type BitemporalRow = {
   visible_to: string | null;
 };
 
+export type DriftSummary = {
+  sourceA: string;
+  sourceB: string;
+  lagMs: number;
+  entityCount: number;
+  entityIds: string[];
+  severity: "info" | "warning";
+};
+
+export type AggregatedJoinabilityIssue = JoinabilityIssue & {
+  isAggregated?: boolean;
+  count?: number;
+  entityIds?: Array<string | number>;
+};
+
 export type JoinabilityIssueReason =
   | "NO_VALID_MATCH"
   | "NO_VISIBLE_OVERLAP"

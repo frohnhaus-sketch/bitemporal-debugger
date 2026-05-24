@@ -2,66 +2,64 @@ import {
   closedDateIntervalsOverlap,
   halfOpenTimestampIntervalsOverlap,
 } from "./dates";
+import type { BitemporalRow, ValidationMode, OverlapIssue, DriftSummary } from "./types";
 
-import type { ValidationMode, OverlapIssue } from "./types";
-
-export function detectDrift(rows: any[]) {
-  const groupedBySource: Record<string, any[]> = {};
+export function detectDrift(rows: BitemporalRow[]): DriftSummary[] {
+  const byEntity = new Map<string, BitemporalRow[]>();
 
   rows.forEach((row) => {
-    const src = row.source || "default";
+    const key = String(row.entity_id);
+    byEntity.set(key, [...(byEntity.get(key) || []), row]);
+  });
 
-    if (!groupedBySource[src]) {
-      groupedBySource[src] = [];
+  const driftGroups = new Map<string, DriftSummary>();
+
+  byEntity.forEach((entityRows, entityId) => {
+    const sources = Array.from(new Set(entityRows.map((r) => r.source)));
+
+    if (sources.length !== 2) return;
+
+    const [sourceA, sourceB] = sources;
+
+    const rowsA = entityRows.filter((r) => r.source === sourceA);
+    const rowsB = entityRows.filter((r) => r.source === sourceB);
+
+    const firstA = rowsA
+      .map((r) => new Date(r.visible_from).getTime())
+      .sort((a, b) => a - b)[0];
+
+    const firstB = rowsB
+      .map((r) => new Date(r.visible_from).getTime())
+      .sort((a, b) => a - b)[0];
+
+    if (!firstA || !firstB) return;
+
+    const lagMs = firstB - firstA;
+
+    if (lagMs === 0) return;
+
+    const key = `${sourceA}|${sourceB}|${lagMs}`;
+
+    const existing = driftGroups.get(key);
+
+    if (existing) {
+      existing.entityCount += 1;
+      existing.entityIds.push(entityId);
+    } else {
+      driftGroups.set(key, {
+        sourceA,
+        sourceB,
+        lagMs,
+        entityCount: 1,
+        entityIds: [entityId],
+        severity: "info",
+      });
     }
-
-    groupedBySource[src].push(row);
   });
 
-  const driftIssues: string[] = [];
-  const sources = Object.keys(groupedBySource);
-
-  if (sources.length < 2) return driftIssues;
-
-  const [s1, s2] = sources;
-
-  const rows1 = groupedBySource[s1];
-  const rows2 = groupedBySource[s2];
-
-  rows1.forEach((a) => {
-    rows2.forEach((b) => {
-      if (String(a.entity_id) !== String(b.entity_id)) return;
-
-      const validOverlap = closedDateIntervalsOverlap(
-        a.valid_from,
-        a.valid_to,
-        b.valid_from,
-        b.valid_to
-      );
-
-      const visibleOverlap = halfOpenTimestampIntervalsOverlap(
-        a.visible_from,
-        a.visible_to ?? "",
-        b.visible_from,
-        b.visible_to ?? ""
-      );
-
-      if (!(validOverlap && visibleOverlap)) return;
-
-      const t1 = new Date(a.visible_from).getTime();
-      const t2 = new Date(b.visible_from).getTime();
-
-      const driftMs = Math.abs(t1 - t2);
-
-      if (driftMs > 1000) {
-        driftIssues.push(
-          `DRIFT (${a.entity_id}): ${s1} vs ${s2} = ${driftMs} ms`
-        );
-      }
-    });
-  });
-
-  return driftIssues;
+  return Array.from(driftGroups.values()).sort(
+    (a, b) => b.entityCount - a.entityCount
+  );
 }
 
 export function detectOverlaps(
