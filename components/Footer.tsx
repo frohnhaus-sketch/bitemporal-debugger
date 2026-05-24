@@ -37,6 +37,9 @@ export function Footer() {
           Contact me
         </a>
       </div>
+      <div style={{ marginTop: 6 }}>
+        <a href="/events" target="_blank">Analytics</a>
+      </div>
     </div>
   );
 }

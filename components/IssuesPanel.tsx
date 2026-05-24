@@ -157,6 +157,9 @@ export function IssuesPanel({
                   });
 
                   setSelectedIssue(issue);
+                  track("issue_selected", {
+                    type: issue.type,
+                  });
                 }}
                 style={{
                   cursor: "pointer",

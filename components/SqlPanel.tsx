@@ -1,5 +1,5 @@
 import type { JoinabilityIssue } from "@/lib/types";
-import { track } from "@vercel/analytics/server";
+import { track } from "@/lib/analytics";
 
 type SqlPanelProps = {
   sql: string;

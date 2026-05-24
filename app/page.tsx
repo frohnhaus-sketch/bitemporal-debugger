@@ -1,5 +1,5 @@
 "use client";
-
+import { track } from "@/lib/analytics";
 import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
 import { useState } from "react";
 import { parseCSV } from "../lib/parser";
@@ -23,7 +23,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { Footer } from "@/components/Footer";
 import { SqlPanel } from "@/components/SqlPanel";
 import { IssuesPanel } from "@/components/IssuesPanel";
-import { track } from "@vercel/analytics";
 import { DataPreview } from "@/components/DataPreview";
 import type { DriftSummary } from "../lib/types";
 
@@ -145,7 +144,7 @@ export default function Home() {
   }
 
   function loadExample() {
-    track("Example Loaded");
+    track("example_loaded");
 
     setInputA(EXAMPLE_A);
     setInputB(EXAMPLE_B);
@@ -157,6 +156,7 @@ export default function Home() {
   }
 
   function copySourceAToB() {
+    track("copy_a_to_b");
     setInputB(inputA);
     updateMappingsFromInputs(inputA, inputA);
     resetAnalysis();
@@ -264,7 +264,9 @@ export default function Home() {
   }
 
   function analyzeTwoSources() {
-    track("Analyze Two Sources Clicked");
+    track("analyze_clicked", {
+      hasBothSources: !!inputA.trim() && !!inputB.trim(),
+    });
 
     if (!inputA.trim() || !inputB.trim()) {
       resetAnalysis();
@@ -324,6 +326,7 @@ export default function Home() {
   });
 
   function generateSQL() {
+    track("sql_generated");
     const sqlParts: string[] = [];
 
     if (asOfDate) {
