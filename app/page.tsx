@@ -144,7 +144,9 @@ export default function Home() {
   }
 
   function loadExample() {
-    track("example_loaded");
+    track("example_loaded", {
+      type: "default_example"
+    });
 
     setInputA(EXAMPLE_A);
     setInputB(EXAMPLE_B);
