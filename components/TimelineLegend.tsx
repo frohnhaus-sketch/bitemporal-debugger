@@ -11,17 +11,24 @@ const legendItems = [
       "A missing valid-time period inside one source. History is incomplete for this entity.",
   },
   {
+    label: "No temporal match",
+    color: "#f59e0b",
+    dashed: true,
+    description:
+      "This row has no overlapping match in the other source for either valid-time or visible-time.",
+  },
+  {
     label: "Overlap",
     color: "#ef4444",
     description:
       "Two rows from the same source cover overlapping valid-time periods. This can create ambiguous results.",
   },
   {
-    label: "No temporal match",
-    color: "#f59e0b",
+    label: "Ambiguous join",
+    color: "#ef4444",
     dashed: true,
     description:
-      "This row has no overlapping match in the other source for either valid-time or visible-time.",
+      "Multiple matching rows found in the other source. The join result is not unique.",
   },
 ];
 

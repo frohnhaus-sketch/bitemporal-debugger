@@ -157,9 +157,6 @@ export function IssuesPanel({
                   });
 
                   setSelectedIssue(issue);
-                  track("issue_selected", {
-                    type: issue.type,
-                  });
                 }}
                 style={{
                   cursor: "pointer",
@@ -169,16 +166,16 @@ export function IssuesPanel({
                   background:
                     selectedIssue === issue
                       ? "#e0f2fe"
-                      : issue.type === "JOIN_GAP"
+                      : issue.type === "JOIN_AMBIGUITY"
                       ? "#fee2e2"
                       : "#fef3c7",
                   border:
                     selectedIssue === issue
                       ? "2px solid #0f172a"
-                      : issue.type === "JOIN_GAP"
+                      : issue.type === "JOIN_AMBIGUITY"
                       ? "1px solid #ef4444"
                       : "1px solid #f59e0b",
-                  color: issue.type === "JOIN_GAP" ? "#991b1b" : "#92400e",
+                  color: issue.type === "JOIN_AMBIGUITY" ? "#991b1b" : "#92400e",
                   fontFamily: "monospace",
                   fontSize: 13,
                   lineHeight: 1.5,
