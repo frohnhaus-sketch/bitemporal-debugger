@@ -23,6 +23,13 @@ const legendItems = [
     description:
       "This row has no overlapping match in the other source. Depending on the join type, this may produce NULLs or dropped rows.",
   },
+  {
+    label: "No visible-time match",
+    color: "#ef4444",
+    dashed: true,
+    description:
+      "A valid-time match exists, but the rows were not visible at the same transaction/load time.",
+  },
 ];
 
 export function TimelineLegend() {
