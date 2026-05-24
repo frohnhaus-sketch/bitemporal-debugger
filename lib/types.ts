@@ -54,3 +54,10 @@ export type OverlapIssue = {
 };
 
 export type ValidationMode = "monotemporal" | "bitemporal";
+
+export type HighlightTarget = {
+  entity_id: string;
+  source?: string;
+  valid_from?: string;
+  valid_to?: string;
+};

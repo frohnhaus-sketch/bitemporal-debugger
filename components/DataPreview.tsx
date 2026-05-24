@@ -1,33 +1,107 @@
-import { useState } from "react";
-import type { JoinabilityIssue } from "@/lib/types";
+import { useEffect, useMemo, useState } from "react";
+import type {
+  AggregatedJoinabilityIssue,
+  BitemporalRow,
+  HighlightTarget,
+  JoinabilityIssue,
+  OverlapIssue,
+} from "@/lib/types";
 
 type DataPreviewProps = {
   title: string;
-  rows: any[];
-  joinIssues?: JoinabilityIssue[];
-  onSelectIssue?: (issue: JoinabilityIssue) => void;
-  hoveredEntityId?: string | null;
-  onHoverEntity?: (entityId: string | null) => void;
+  rows: BitemporalRow[];
+  joinIssues?: AggregatedJoinabilityIssue[];
+  overlapMarkers?: OverlapIssue[];
+  onSelectIssue?: (issue: AggregatedJoinabilityIssue) => void;
+  highlightedRow?: HighlightTarget | null;
+  onHighlightRow?: (target: HighlightTarget | null) => void;
+  forceOpen?: boolean;
 };
 
 const COLUMN_STYLES: Record<string, string> = {
-  entity_id: "#94a3b8",      // soft grey-blue
-  valid_from: "#64748b",     // muted slate
+  entity_id: "#94a3b8",
+  valid_from: "#64748b",
   valid_to: "#64748b",
   visible_from: "#64748b",
   visible_to: "#64748b",
-  value: "#cbd5f5",          // leicht heller (nur minimaler Fokus)
+  value: "#cbd5f5",
 };
 
-const IMPORTANT_COLUMNS = Object.keys(COLUMN_STYLES);
+function getRowJoinIssue(
+  row: BitemporalRow,
+  joinIssues?: AggregatedJoinabilityIssue[]
+) {
+  return joinIssues?.find((issue) => {
+    const sameEntity = String(issue.entity_id) === String(row.entity_id);
+    const sameSource = issue.source === row.source;
+    const sameValidWindow =
+      issue.valid_from === row.valid_from && issue.valid_to === row.valid_to;
 
-function getRowIssue(row: any, joinIssues?: JoinabilityIssue[]) {
-  return joinIssues?.find(
-    (j) =>
-      String(j.entity_id) === String(row.entity_id) &&
-      j.source === row.source &&
-      j.valid_from === row.valid_from &&
-      j.valid_to === row.valid_to
+    if (issue.isAggregated) {
+      return (
+        issue.entityIds?.some(
+          (entityId) => String(entityId) === String(row.entity_id)
+        ) && sameSource
+      );
+    }
+
+    return sameEntity && sameSource && sameValidWindow;
+  });
+}
+
+function getRowOverlapIssue(row: BitemporalRow, overlapMarkers?: OverlapIssue[]) {
+  return overlapMarkers?.find((issue) => {
+    const sameEntity = String(issue.entity_id) === String(row.entity_id);
+    const sameSource = !("source" in issue) || issue.source === row.source;
+
+    return sameEntity && sameSource;
+  });
+}
+
+function getIssueRank({
+  joinIssue,
+  overlapIssue,
+}: {
+  joinIssue?: AggregatedJoinabilityIssue;
+  overlapIssue?: OverlapIssue;
+}) {
+  if (joinIssue?.type === "JOIN_GAP") return 1;
+  if (joinIssue?.type === "JOIN_AMBIGUITY") return 2;
+  if (overlapIssue) return 3;
+
+  return 4;
+}
+
+function getRowBackground({
+  joinIssue,
+  overlapIssue,
+  isHovered,
+}: {
+  joinIssue?: JoinabilityIssue;
+  overlapIssue?: OverlapIssue;
+  isHovered: boolean;
+}) {
+  if (isHovered) return "rgba(56, 189, 248, 0.20)";
+  if (joinIssue?.type === "JOIN_GAP") return "rgba(245, 158, 11, 0.22)";
+  if (joinIssue?.type === "JOIN_AMBIGUITY") return "rgba(245, 158, 11, 0.22)";
+  if (overlapIssue) return "rgba(239, 68, 68, 0.16)";
+
+  return "transparent";
+}
+
+function isSameEntity(row: BitemporalRow, highlightedRow?: HighlightTarget | null) {
+  return highlightedRow?.entity_id === String(row.entity_id);
+}
+
+function isExactHighlightedRow(
+  row: BitemporalRow,
+  highlightedRow?: HighlightTarget | null
+) {
+  return (
+    highlightedRow?.entity_id === String(row.entity_id) &&
+    highlightedRow?.source === row.source &&
+    highlightedRow?.valid_from === row.valid_from &&
+    highlightedRow?.valid_to === row.valid_to
   );
 }
 
@@ -35,18 +109,68 @@ export function DataPreview({
   title,
   rows,
   joinIssues = [],
+  overlapMarkers = [],
   onSelectIssue,
-  hoveredEntityId,
-  onHoverEntity,
+  highlightedRow,
+  onHighlightRow,
+  forceOpen,
 }: DataPreviewProps) {
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(10);
 
-  if (rows.length === 0) return null;
+  useEffect(() => {
+    if (forceOpen) {
+      setOpen(true);
+    }
+  }, [forceOpen]);
 
-  const columns = Object.keys(rows[0]).filter(
-    (col) => col !== "source"
-  );
+  useEffect(() => {
+    setLimit(10);
+  }, [rows]);
+
+  const columns = useMemo(() => {
+    if (rows.length === 0) return [];
+
+    return Object.keys(rows[0]).filter((column) => column !== "source");
+  }, [rows]);
+
+  const rowsWithIssues = useMemo(() => {
+    return rows
+      .map((row, originalIndex) => {
+        const joinIssue = getRowJoinIssue(row, joinIssues);
+        const overlapIssue = getRowOverlapIssue(row, overlapMarkers);
+        const rank = getIssueRank({
+          joinIssue,
+          overlapIssue,
+        });
+
+        return {
+          row,
+          originalIndex,
+          joinIssue,
+          overlapIssue,
+          rank,
+        };
+      })
+      .sort((a, b) => {
+        if (a.rank !== b.rank) return a.rank - b.rank;
+
+        const entityCompare = String(a.row.entity_id).localeCompare(
+          String(b.row.entity_id),
+          undefined,
+          { numeric: true }
+        );
+
+        if (entityCompare !== 0) return entityCompare;
+
+        return a.originalIndex - b.originalIndex;
+      });
+  }, [rows, joinIssues, overlapMarkers]);
+
+  const visibleRows = rowsWithIssues.slice(0, limit);
+  const issueRowCount = rowsWithIssues.filter((entry) => entry.rank < 4).length;
+
+  if (rows.length === 0) return null;
 
   return (
     <div
@@ -70,14 +194,15 @@ export function DataPreview({
           textAlign: "left",
           fontWeight: "bold",
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-1px)";
+        onMouseEnter={(event) => {
+          event.currentTarget.style.transform = "translateY(-1px)";
         }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
+        onMouseLeave={(event) => {
+          event.currentTarget.style.transform = "translateY(0)";
         }}
       >
-        {open ? "▼" : "▶"} {title} ({rows.length} rows)
+        {open ? "▼" : "▶"} {title} ({rows.length} rows
+        {issueRowCount > 0 ? `, ${issueRowCount} highlighted` : ""})
       </button>
 
       {open && (
@@ -91,103 +216,118 @@ export function DataPreview({
           >
             <thead>
               <tr>
-                {columns.map((col) => (
+                {columns.map((column) => (
                   <th
-                    key={col}
+                    key={column}
                     style={{
                       padding: "6px 8px",
                       textAlign: "left",
                       borderBottom: "1px solid #1e293b",
                       color: "#e2e8f0",
-                      background: COLUMN_STYLES[col]
-                        ? `${COLUMN_STYLES[col]}22`
+                      background: COLUMN_STYLES[column]
+                        ? `${COLUMN_STYLES[column]}22`
                         : "#020617",
                     }}
                   >
-                    {col}
+                    {column}
                   </th>
                 ))}
               </tr>
             </thead>
+
             <tbody>
-            {rows.slice(0, limit).map((row, i) => {
-              const issue = getRowIssue(row, joinIssues);
-            
-              return (
-                <tr
-                  key={i}
-                  onClick={() => issue && onSelectIssue?.(issue)}
-                  onMouseEnter={() => onHoverEntity?.(String(row.entity_id))}
-                  onMouseLeave={() => onHoverEntity?.(null)}
-                  title={issue ? "Click to debug this row" : undefined}
-                  style={{
-                    color: "#e2e8f0",
-                    cursor: issue ? "pointer" : "default",
-                    background:
-                      issue?.type === "JOIN_GAP"
-                        ? "rgba(239, 68, 68, 0.22)"
-                        : issue?.type === "JOIN_AMBIGUITY"
-                        ? "rgba(245, 158, 11, 0.22)"
-                        : "transparent",
-                  
-                    outline:
-                      hoveredEntityId && String(row.entity_id) === hoveredEntityId
-                        ? "2px solid #38bdf8"
-                        : "none",
-                  
-                    opacity:
-                      hoveredEntityId && String(row.entity_id) !== hoveredEntityId
-                        ? 0.45
-                        : 1,
-                  
-                    transition: "opacity 0.15s ease, outline 0.15s ease",
-                  }}
-                >
-                  {columns.map((col) => (
-                    <td
-                      key={col}
+              {visibleRows.map(
+                ({ row, originalIndex, joinIssue, overlapIssue }) => {
+                  const exactHighlighted = isExactHighlightedRow(row, highlightedRow);
+                  const sameEntityHighlighted = isSameEntity(row, highlightedRow);
+                  const hasIssue = Boolean(joinIssue || overlapIssue);
+
+                  return (
+                    <tr
+                      key={`${row.source}-${row.entity_id}-${row.valid_from}-${row.valid_to}-${originalIndex}`}
+                      onClick={() => joinIssue && onSelectIssue?.(joinIssue)}
+                      onMouseEnter={() =>
+                        onHighlightRow?.({
+                          entity_id: String(row.entity_id),
+                          source: row.source,
+                          valid_from: row.valid_from,
+                          valid_to: row.valid_to,
+                        })
+                      }
+                      onMouseLeave={() => onHighlightRow?.(null)}
+                      title={
+                        joinIssue
+                          ? "Click to debug this join issue"
+                          : overlapIssue
+                          ? "Overlap detected for this entity"
+                          : undefined
+                      }
                       style={{
-                        padding: "6px 8px",
-                        borderBottom: "1px solid #1e293b",
-                        whiteSpace: "nowrap",
-                        fontWeight: col === "value" ? "600" : "400",
+                        color: "#e2e8f0",
+                        cursor: joinIssue ? "pointer" : "default",
+                        background: exactHighlighted
+                          ? "rgba(56, 189, 248, 0.22)"
+                          : getRowBackground({
+                              joinIssue,
+                              overlapIssue,
+                              isHovered: false,
+                            }) !== "transparent"
+                          ? getRowBackground({
+                              joinIssue,
+                              overlapIssue,
+                              isHovered: false,
+                            })
+                          : sameEntityHighlighted
+                          ? "rgba(56, 189, 248, 0.08)"
+                          : "transparent",
+                          outline: exactHighlighted
+                            ? "2px solid #38bdf8"
+                            : sameEntityHighlighted
+                            ? "1px solid rgba(56, 189, 248, 0.55)"
+                            : "none",
+                        opacity: highlightedRow && !sameEntityHighlighted ? 0.7 : 1,
+                        transition:
+                          "opacity 0.15s ease, outline 0.15s ease, background 0.15s ease",
                       }}
                     >
-                      {String(row[col] ?? "")}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
+                      {columns.map((column) => (
+                        <td
+                          key={column}
+                          style={{
+                            padding: "6px 8px",
+                            borderBottom: "1px solid #1e293b",
+                            whiteSpace: "nowrap",
+                            fontWeight:
+                              column === "value" || hasIssue ? "600" : "400",
+                          }}
+                        >
+                          {String(row[column as keyof BitemporalRow] ?? "")}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                }
+              )}
             </tbody>
           </table>
 
           <div
             style={{
-              padding: 6,
-              fontSize: 11,
-              color: "#64748b",
-              textAlign: "right",
-            }}
-          >
-          <div
-            style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: 6,
+              padding: 8,
               fontSize: 11,
               color: "#64748b",
             }}
           >
             <span>
               showing {Math.min(limit, rows.length)} of {rows.length} rows
+              {issueRowCount > 0 ? " · problem rows shown first" : ""}
             </span>
-          
+
             <button
-              onClick={() =>
-                setLimit(limit === 10 ? rows.length : 10)
-              }
+              onClick={() => setLimit(limit === 10 ? rows.length : 10)}
               style={{
                 background: "none",
                 border: "none",
@@ -195,16 +335,15 @@ export function DataPreview({
                 cursor: "pointer",
                 fontSize: 11,
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-1px)";
+              onMouseEnter={(event) => {
+                event.currentTarget.style.transform = "translateY(-1px)";
               }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
+              onMouseLeave={(event) => {
+                event.currentTarget.style.transform = "translateY(0)";
               }}
             >
               {limit === 10 ? "show all" : "show less"}
             </button>
-          </div>
           </div>
         </div>
       )}

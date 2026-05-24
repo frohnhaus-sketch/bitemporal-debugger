@@ -1,23 +1,70 @@
+const legendItems = [
+  {
+    label: "Data row",
+    color: "#64748b",
+    description: "A normal valid-time row from one source.",
+  },
+  {
+    label: "Gap",
+    color: "#f59e0b",
+    description:
+      "A missing valid-time period inside one source. History is incomplete for this entity.",
+  },
+  {
+    label: "Overlap",
+    color: "#ef4444",
+    description:
+      "Two rows from the same source cover overlapping valid-time periods. This can create ambiguous results.",
+  },
+  {
+    label: "No temporal match",
+    color: "#f59e0b",
+    dashed: true,
+    description:
+      "This row has no overlapping match in the other source. Depending on the join type, this may produce NULLs or dropped rows.",
+  },
+];
+
 export function TimelineLegend() {
   return (
     <div
       style={{
-        marginTop: 16,
-        padding: "10px 12px",
-        background: "#1e293b",
-        borderRadius: 8,
         display: "flex",
-        gap: 18,
+        gap: 14,
         flexWrap: "wrap",
+        alignItems: "center",
+        marginTop: 12,
+        marginBottom: 20,
+        color: "#94a3b8",
         fontSize: 12,
-        color: "#cbd5e1",
       }}
     >
-      <span>⬜ valid-time axis</span>
-      <span style={{ color: "#f59e0b" }}>🟧 gap (missing valid time)</span>
-      <span style={{ color: "#ef4444" }}>🟥 overlap (conflicting records)</span>
-      <span style={{ color: "#ef4444" }}>🔴 dashed (no join result)</span>
-      <span style={{ color: "#f59e0b" }}>🟠 dashed (multiple matches)</span>
+      {legendItems.map((item) => (
+        <div
+          key={item.label}
+          title={item.description}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            cursor: "help",
+          }}
+        >
+          <span
+            style={{
+              width: 22,
+              height: 8,
+              borderRadius: 999,
+              background: item.dashed ? "transparent" : item.color,
+              border: item.dashed
+                ? `2px dashed ${item.color}`
+                : `1px solid ${item.color}`,
+              display: "inline-block",
+            }}
+          />
+          <span>{item.label}</span>
+        </div>
+      ))}
     </div>
   );
 }

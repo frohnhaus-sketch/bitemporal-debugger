@@ -11,6 +11,8 @@ import type {
   AggregatedJoinabilityIssue,
   OverlapIssue,
   ValidationMode,
+  DriftSummary,
+  HighlightTarget,
 } from "../lib/types";
 import {
   detectDrift,
@@ -24,7 +26,6 @@ import { Footer } from "@/components/Footer";
 import { SqlPanel } from "@/components/SqlPanel";
 import { IssuesPanel } from "@/components/IssuesPanel";
 import { DataPreview } from "@/components/DataPreview";
-import type { DriftSummary } from "../lib/types";
 
 const EXAMPLE_A = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 1,A,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
@@ -39,6 +40,8 @@ const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 3,X,2024-01-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
+  const [expandedSources, setExpandedSources] = useState<string[]>([]);
+  const [highlightedRow, setHighlightedRow] = useState<HighlightTarget | null>(null);
   const [headerMappingsA, setHeaderMappingsA] = useState<HeaderMapping[]>([]);
   const [headerMappingsB, setHeaderMappingsB] = useState<HeaderMapping[]>([]);
   const [columnMappingA, setColumnMappingA] = useState<Record<string, string>>({});
@@ -72,7 +75,6 @@ export default function Home() {
         })
       )
     : 1;
-  const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null);
 
   function resetAnalysis() {
     setRows([]);
@@ -261,7 +263,18 @@ export default function Home() {
     setDrifts(detectDrift(combinedRows));
     setOverlapMarkers(detectOverlapMarkers(combinedRows, validationMode));
     setSelectedIssue(null);
-    setJoinIssues(analyzeJoinability(combinedRows, sourceAName, sourceBName));
+    if (combinedRows.length > 0) {
+      // beide Sources aufklappen
+      setExpandedSources([sourceAName, sourceBName]);
+    }
+
+    const computedJoinIssues = analyzeJoinability(
+      combinedRows,
+      sourceAName,
+      sourceBName
+    );
+
+    setJoinIssues(computedJoinIssues);
     setHasAnalyzed(true);
   }
 
@@ -355,8 +368,48 @@ WHERE ${sqlParts.join(" AND ")};`);
   const joinAmbiguityCount = joinIssues.filter(
     (i) => i.type === "JOIN_AMBIGUITY"
   ).length;
+
+  const validGapCount = gaps.length;
   const overlapCount = result.length;
-  const totalIssueCount = joinGapCount + joinAmbiguityCount + overlapCount;
+
+  const hasCriticalIssues =
+    overlapCount > 0 || joinGapCount > 0 || joinAmbiguityCount > 0;
+
+  const totalIssueCount =
+    joinGapCount + joinAmbiguityCount + validGapCount + overlapCount;
+
+  const summaryStyle = hasCriticalIssues
+    ? {
+        background: "rgba(239, 68, 68, 0.15)",
+        border: "1px solid rgba(239, 68, 68, 0.4)",
+      }
+    : validGapCount > 0
+    ? {
+        background: "rgba(245, 158, 11, 0.16)",
+        border: "1px solid rgba(245, 158, 11, 0.45)",
+      }
+    : {
+        background: "rgba(34, 197, 94, 0.15)",
+        border: "1px solid rgba(34, 197, 94, 0.4)",
+      };
+
+  const summaryTitle = hasCriticalIssues
+    ? `❌ ${totalIssueCount} critical temporal issues found`
+    : validGapCount > 0
+    ? `⚠️ ${validGapCount} valid-time gap${validGapCount === 1 ? "" : "s"} found`
+    : "✅ No temporal issues found";
+  
+  const rootCause = joinIssues.find(
+    (issue) => issue.type === "JOIN_GAP" && issue.isAggregated
+  );
+  
+  const summaryMessage = hasCriticalIssues
+    ? totalIssueCount > 5
+      ? "Multiple join issues detected. This likely points to a systematic temporal mismatch rather than isolated bad records."
+      : "Some records cannot be joined reliably. The affected rows are already highlighted below."
+    : validGapCount > 0
+    ? `There are ${validGapCount} missing valid-time periods. Your history is incomplete, which may affect join results.`
+    : "No gaps, overlaps, or joinability issues detected. Your temporal data looks clean.";
 
   return (
     <main
@@ -635,22 +688,26 @@ WHERE ${sqlParts.join(" AND ")};`);
           <>
             <div
               style={{
-                background: totalIssueCount > 0 ? "#fee2e2" : "#dcfce7",
-                border:
-                  totalIssueCount > 0
-                    ? "1px solid #fca5a5"
-                    : "1px solid #86efac",
-                color: "#0f172a",
+                ...summaryStyle,
+                color: "#ffffff",
                 borderRadius: 12,
                 padding: 18,
                 marginBottom: 20,
               }}
             >
               <h2 style={{ margin: "0 0 8px", fontSize: 22 }}>
-                {totalIssueCount > 0
-                  ? `❌ ${totalIssueCount} JOIN issues found`
-                  : "✅ No JOIN issues found"}
+                {summaryTitle}
               </h2>
+              <p
+                style={{
+                  margin: "0 0 12px",
+                  fontSize: 14,
+                  color: "#ffffff",
+                  opacity: 0.9,
+                }}
+              >
+                {summaryMessage}
+              </p>
 
               <div
                 style={{
@@ -660,7 +717,8 @@ WHERE ${sqlParts.join(" AND ")};`);
                   fontSize: 14,
                 }}
               >
-                <span>{joinGapCount} gaps</span>
+                <span>{validGapCount} valid-time gaps</span>
+                <span>{joinGapCount} join gaps</span>
                 <span>{joinAmbiguityCount} ambiguous matches</span>
                 <span>{overlapCount} overlaps</span>
               </div>
@@ -679,8 +737,10 @@ WHERE ${sqlParts.join(" AND ")};`);
               rows={rows.filter((r) => r.source === sourceNameA)}
               joinIssues={joinIssues}
               onSelectIssue={setSelectedIssue}
-              hoveredEntityId={hoveredEntityId}
-              onHoverEntity={setHoveredEntityId}
+              highlightedRow={highlightedRow}
+              onHighlightRow={setHighlightedRow}
+              forceOpen={expandedSources.includes(sourceNameA)}
+              overlapMarkers={overlapMarkers}
             />
                         
             <DataPreview
@@ -688,8 +748,10 @@ WHERE ${sqlParts.join(" AND ")};`);
               rows={rows.filter((r) => r.source === sourceNameB)}
               joinIssues={joinIssues}
               onSelectIssue={setSelectedIssue}
-              hoveredEntityId={hoveredEntityId}
-              onHoverEntity={setHoveredEntityId}
+              highlightedRow={highlightedRow}
+              onHighlightRow={setHighlightedRow}
+              forceOpen={expandedSources.includes(sourceNameB)}
+              overlapMarkers={overlapMarkers}
             />
             </div>
 
@@ -714,7 +776,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               getWidth={getWidth}
               getSourceColor={getSourceColor}
               onSelectIssue={setSelectedIssue}
-              highlightedEntityId={hoveredEntityId}
+              highlightedEntityId={highlightedRow?.entity_id ?? null}
             />
 
             <TimelineLegend />
