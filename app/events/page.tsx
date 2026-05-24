@@ -2,12 +2,21 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export default async function EventsPage() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return (
+      <main style={{ padding: 32 }}>
+        <h1>Event Dashboard</h1>
+        <p>Missing Supabase environment variables.</p>
+      </main>
+    );
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   const { data: events, error } = await supabase
     .from("events")
     .select("*")
@@ -25,9 +34,10 @@ export default async function EventsPage() {
     }, {}) ?? {};
 
   return (
-    <main style={{ padding: 32 }}>
+    <main style={{ padding: 32, fontFamily: "Arial" }}>
       <h1>Event Dashboard</h1>
 
+      <h2>Counts</h2>
       <ul>
         {Object.entries(counts).map(([event, count]) => (
           <li key={event}>
@@ -36,12 +46,23 @@ export default async function EventsPage() {
         ))}
       </ul>
 
-      <table>
+      <h2>Latest Events</h2>
+      <table cellPadding={8} style={{ borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Event</th>
+            <th>Data</th>
+          </tr>
+        </thead>
         <tbody>
           {events?.map((e) => (
             <tr key={e.id}>
               <td>{new Date(e.created_at).toLocaleString()}</td>
               <td>{e.event}</td>
+              <td>
+                <pre>{JSON.stringify(e.data, null, 2)}</pre>
+              </td>
             </tr>
           ))}
         </tbody>
