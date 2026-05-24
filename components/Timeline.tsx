@@ -1,14 +1,24 @@
-import type { JoinabilityIssue, OverlapIssue } from "@/lib/types";
+import type { BitemporalRow, AggregatedJoinabilityIssue, OverlapIssue } from "@/lib/types";
+
+type GapIssue = {
+  entity_id: string | number;
+  source?: string;
+  from?: string;
+  to?: string;
+  valid_from?: string;
+  valid_to?: string;
+};
 
 type TimelineProps = {
-  rows: any[];
-  gaps: any[];
+  rows: BitemporalRow[];
+  gaps: GapIssue[];
   overlapMarkers: OverlapIssue[];
-  joinIssues: JoinabilityIssue[];
+  joinIssues: AggregatedJoinabilityIssue[];
   getPosition: (date: string) => number;
   getWidth: (from: string, to: string) => number;
   getSourceColor: (source: string) => string;
-  onSelectIssue?: (issue: JoinabilityIssue) => void;
+  onSelectIssue: (issue: AggregatedJoinabilityIssue) => void;
+  highlightedEntityId: string | null;
 };
 
 export function Timeline({
@@ -20,6 +30,7 @@ export function Timeline({
   getWidth,
   getSourceColor,
   onSelectIssue,
+  highlightedEntityId,
 }: TimelineProps) {
   const groupedRows = rows.reduce<Record<string, any[]>>((acc, row) => {
     const key = String(row.entity_id ?? "unknown");
@@ -64,7 +75,15 @@ function getEntitySourceOverlaps(entityId: string, source: string) {
       );
     
       return (
-        <div key={entityId} style={{ marginBottom: 28 }}>
+        <div
+          key={entityId}
+          style={{
+            marginBottom: 28,
+            opacity:
+              highlightedEntityId && highlightedEntityId !== entityId ? 0.35 : 1,
+            transition: "opacity 0.15s ease",
+          }}
+        >
           <h4 style={{ margin: "0 0 10px", color: "#0f172a" }}>
             Entity {entityId}
           </h4>
@@ -166,20 +185,27 @@ function getEntitySourceOverlaps(entityId: string, source: string) {
                     overflow: "hidden",
                   }}
                 >
-                  {sourceGaps.map((g, j) => (
-                    <div
-                      key={`gap-${j}`}
-                      title={`GAP: ${g.from} → ${g.to}`}
-                      style={{
-                        position: "absolute",
-                        left: `${getPosition(g.from)}%`,
-                        width: `${getWidth(g.from, g.to)}%`,
-                        height: "100%",
-                        background: "#f59e0b",
-                        opacity: 0.95,
-                      }}
-                    />
-                  ))}
+                  {sourceGaps.map((g, j) => {
+                    const gapFrom = g.from ?? g.valid_from;
+                    const gapTo = g.to ?? g.valid_to;
+                  
+                    if (!gapFrom || !gapTo) return null;
+                  
+                    return (
+                      <div
+                        key={`gap-${j}`}
+                        title={`GAP: ${gapFrom} → ${gapTo}`}
+                        style={{
+                          position: "absolute",
+                          left: `${getPosition(gapFrom)}%`,
+                          width: `${getWidth(gapFrom, gapTo)}%`,
+                          height: "100%",
+                          background: "#f59e0b",
+                          opacity: 0.95,
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             );
