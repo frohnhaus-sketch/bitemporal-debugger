@@ -137,7 +137,7 @@ function getEntitySourceOverlaps(entityId: string, source: string) {
                   .map((j, k) => (
                     <div
                       key={`join-${k}`}
-                      title={`${j.type}: ${j.message}`}
+                      title={j.message}
                       onClick={() => onSelectIssue?.(j)}
                       style={{
                         position: "absolute",
@@ -145,7 +145,7 @@ function getEntitySourceOverlaps(entityId: string, source: string) {
                         width: `${getWidth(j.valid_from, j.valid_to)}%`,
                         height: "100%",
                         border:
-                          j.type === "JOIN_GAP"
+                          j.type === "JOIN_AMBIGUITY"
                             ? "3px dashed #ef4444"
                             : "3px dashed #f59e0b",
                         boxSizing: "border-box",
