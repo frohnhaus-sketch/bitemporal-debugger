@@ -1,6 +1,7 @@
 import type { AggregatedJoinabilityIssue } from "@/lib/types";
 
 export type JoinExplanation = {
+  headline: string;
   title: string;
   summary: string;
   cause: string;
@@ -31,6 +32,7 @@ export function explainJoinIssue(
 
   if (issue.type === "JOIN_AMBIGUITY" || issue.reason === "MULTIPLE_MATCHES") {
     return {
+      headline: `${issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"} creates duplicate JOIN results.`,
       title: "Ambiguous join",
       summary: `${scope}. The join from ${direction} finds multiple possible matches.`,
       cause:
@@ -58,6 +60,7 @@ export function explainJoinIssue(
 
   if (issue.reason === "NO_VALID_MATCH") {
     return {
+      headline: `${issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"} has no valid-time match.`,
       title: "No valid-time match",
       summary: `${scope}. No row in ${issue.targetSource} covers the same valid-time period.`,
       cause: `The valid-time range ${issue.valid_from} → ${issue.valid_to} in ${issue.source} does not overlap with a matching row in ${issue.targetSource}.`,
@@ -89,6 +92,7 @@ export function explainJoinIssue(
 
   if (issue.reason === "NO_VISIBLE_OVERLAP") {
     return {
+      headline: `${issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"} has no visible-time overlap.`,
       title: "No visible-time overlap",
       summary: `${scope}. A valid-time match exists, but both records were not visible at the same time.`,
       cause:
@@ -115,6 +119,7 @@ export function explainJoinIssue(
   }
 
   return {
+    headline: "Join issue",
     title: "Join issue",
     summary: `${scope}. The join from ${direction} could not be resolved cleanly.`,
     cause: "The debugger found a temporal mismatch.",

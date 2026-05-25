@@ -403,7 +403,7 @@ WHERE ${sqlParts.join(" AND ")};`);
       };
 
   const summaryTitle = hasCriticalIssues
-    ? `❌ ${totalIssueCount} critical temporal issues found`
+    ? "❌ Your JOIN may return wrong or missing results"
     : validGapCount > 0
     ? `⚠️ ${validGapCount} valid-time gap${validGapCount === 1 ? "" : "s"} found`
     : "✅ No temporal issues found";
@@ -411,11 +411,28 @@ WHERE ${sqlParts.join(" AND ")};`);
   const rootCause = joinIssues.find(
     (issue) => issue.type === "JOIN_GAP" && issue.isAggregated
   );
+
+  const issueParts = [
+    joinGapCount > 0
+      ? `${joinGapCount} join gap${joinGapCount === 1 ? "" : "s"} = missing rows`
+      : null,
+    joinAmbiguityCount > 0
+      ? `${joinAmbiguityCount} ambiguous match${
+          joinAmbiguityCount === 1 ? "" : "es"
+        } = duplicate rows`
+      : null,
+    overlapCount > 0
+      ? `${overlapCount} overlap${overlapCount === 1 ? "" : "s"} = conflicting history`
+      : null,
+    validGapCount > 0
+      ? `${validGapCount} valid-time gap${
+          validGapCount === 1 ? "" : "s"
+        } = incomplete history`
+      : null,
+  ].filter(Boolean);
   
   const summaryMessage = hasCriticalIssues
-    ? totalIssueCount > 5
-      ? "Multiple join issues detected. This likely points to a systematic temporal mismatch rather than isolated bad records."
-      : "Some records cannot be joined reliably. The affected rows are already highlighted below."
+    ? `Detected: ${issueParts.join(" · ")}. Click an issue below to see the root cause and suggested fix.`
     : validGapCount > 0
     ? `There are ${validGapCount} missing valid-time periods. Your history is incomplete, which may affect join results.`
     : "No gaps, overlaps, or joinability issues detected. Your temporal data looks clean.";

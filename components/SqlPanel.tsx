@@ -149,8 +149,23 @@ ${
             <h3 style={{ marginTop: 0, marginBottom: 10 }}>
               Why does this JOIN fail?
             </h3>
-
-            <h4 style={{ margin: "0 0 10px 0", fontSize: 16 }}>
+                        
+            <div
+              style={{
+                marginBottom: 12,
+                padding: 12,
+                borderRadius: 10,
+                background: "#ffffff",
+                border: "1px solid rgba(15, 23, 42, 0.12)",
+                fontSize: 15,
+                fontWeight: 800,
+                color: "#0f172a",
+              }}
+            >
+              {explanation.headline}
+            </div>
+            
+            <h4 style={{ margin: "0 0 10px 0", fontSize: 15 }}>
               {explanation.title}
             </h4>
 
