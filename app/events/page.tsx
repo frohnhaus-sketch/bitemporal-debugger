@@ -1,6 +1,79 @@
+import type React from "react";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+
+type EventRow = {
+  id?: string | number;
+  event: string;
+  data?: Record<string, unknown> | null;
+  created_at: string;
+  referer?: string | null;
+  user_agent?: string | null;
+  ip_hash?: string | null;
+};
+
+function MetricCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div
+      style={{
+        background: "#020617",
+        border: "1px solid #1e293b",
+        borderRadius: 14,
+        padding: 16,
+      }}
+    >
+      <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 8 }}>
+        {label}
+      </div>
+      <div style={{ color: "#ffffff", fontSize: 28, fontWeight: 800 }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function formatEventName(event: string) {
+  return event
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function getTrafficSource(referer?: string | null) {
+  if (!referer) return "Direct / unknown";
+
+  try {
+    const host = new URL(referer).hostname.replace("www.", "");
+
+    if (host.includes("reddit")) return "Reddit";
+    if (host.includes("linkedin")) return "LinkedIn";
+    if (host.includes("google")) return "Google";
+    if (host.includes("vercel")) return "Vercel";
+    if (host.includes("localhost")) return "Localhost";
+
+    return host;
+  } catch {
+    return "Direct / unknown";
+  }
+}
+
+const thStyle: React.CSSProperties = {
+  textAlign: "left",
+  padding: "12px 14px",
+  fontWeight: 700,
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "14px",
+  verticalAlign: "top",
+  color: "#cbd5e1",
+};
 
 export default async function EventsPage() {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -17,56 +90,258 @@ export default async function EventsPage() {
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const { data: events, error } = await supabase
+  const { data, error } = await supabase
     .from("events")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(100);
 
   if (error) {
-    return <pre>{error.message}</pre>;
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#0f172a",
+          color: "#fecaca",
+          padding: 40,
+          fontFamily: "Inter, Arial, sans-serif",
+        }}
+      >
+        <pre>{error.message}</pre>
+      </main>
+    );
   }
 
-  const counts =
-    events?.reduce<Record<string, number>>((acc, e) => {
-      acc[e.event] = (acc[e.event] ?? 0) + 1;
-      return acc;
-    }, {}) ?? {};
+  const events = (data ?? []) as EventRow[];
+
+  const counts = events.reduce<Record<string, number>>((acc, e) => {
+    acc[e.event] = (acc[e.event] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const analyzeClicks = counts["analyze_clicked"] ?? 0;
+  const reportsCopied = counts["Debug Report Copied"] ?? 0;
+  const copyRate = analyzeClicks
+    ? Math.round((reportsCopied / analyzeClicks) * 100)
+    : 0;
+
+  const sourceCounts = events.reduce<Record<string, number>>((acc, event) => {
+    const source = getTrafficSource(event.referer);
+    acc[source] = (acc[source] ?? 0) + 1;
+    return acc;
+  }, {});
+  
+  const topSources = Object.entries(sourceCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
 
   return (
-    <main style={{ padding: 32, fontFamily: "Arial" }}>
-      <h1>Event Dashboard</h1>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#0f172a",
+        color: "#e2e8f0",
+        padding: 40,
+        fontFamily: "Inter, Arial, sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ marginBottom: 28 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              padding: "6px 10px",
+              borderRadius: 999,
+              background: "#020617",
+              border: "1px solid #1e293b",
+              color: "#93c5fd",
+              fontSize: 12,
+              fontWeight: 700,
+              marginBottom: 12,
+            }}
+          >
+            Product Analytics
+          </div>
 
-      <h2>Counts</h2>
-      <ul>
-        {Object.entries(counts).map(([event, count]) => (
-          <li key={event}>
-            {event}: {count}
-          </li>
-        ))}
-      </ul>
+          <h1 style={{ margin: 0, fontSize: 34, color: "#ffffff" }}>
+            Event Dashboard
+          </h1>
 
-      <h2>Latest Events</h2>
-      <table cellPadding={8} style={{ borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Event</th>
-            <th>Data</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events?.map((e) => (
-            <tr key={e.id}>
-              <td>{new Date(e.created_at).toLocaleString()}</td>
-              <td>{e.event}</td>
-              <td>
-                <pre>{JSON.stringify(e.data, null, 2)}</pre>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          <p style={{ marginTop: 8, color: "#94a3b8", fontSize: 14 }}>
+            Track how users move from loading examples to analyzing joins and
+            copying debug reports.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 14,
+            marginBottom: 28,
+          }}
+        >
+          <MetricCard label="Total events" value={events.length} />
+          <MetricCard label="Analyze clicks" value={analyzeClicks} />
+          <MetricCard
+            label="Examples loaded"
+            value={counts["example_loaded"] ?? 0}
+          />
+          <MetricCard label="Reports copied" value={reportsCopied} />
+          <MetricCard label="Copy rate" value={`${copyRate}%`} />
+        </div>
+
+        <section
+          style={{
+            background: "#020617",
+            border: "1px solid #1e293b",
+            borderRadius: 14,
+            padding: 18,
+            marginBottom: 28,
+          }}
+        >
+          <h2 style={{ margin: "0 0 14px", fontSize: 18, color: "#ffffff" }}>
+            Top sources
+          </h2>
+      
+          {topSources.length === 0 ? (
+            <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>
+              No source data yet.
+            </p>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {topSources.map(([source, count]) => (
+                <div
+                  key={source}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "160px 1fr 48px",
+                    gap: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ color: "#cbd5e1", fontSize: 13 }}>{source}</div>
+              
+                  <div
+                    style={{
+                      height: 8,
+                      borderRadius: 999,
+                      background: "#1e293b",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.max(
+                          8,
+                          (count / Math.max(...topSources.map(([, c]) => c))) * 100
+                        )}%`,
+                        height: "100%",
+                        borderRadius: 999,
+                        background: "#3b82f6",
+                      }}
+                    />
+                  </div>
+                  
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      textAlign: "right",
+                    }}
+                  >
+                    {count}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section
+          style={{
+            background: "#020617",
+            border: "1px solid #1e293b",
+            borderRadius: 14,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "16px 18px",
+              borderBottom: "1px solid #1e293b",
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: 18, color: "#ffffff" }}>
+              Recent events
+            </h2>
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: 13,
+              }}
+            >
+              <thead>
+                <tr style={{ background: "#0f172a", color: "#94a3b8" }}>
+                  <th style={thStyle}>Time</th>
+                  <th style={thStyle}>Event</th>
+                  <th style={thStyle}>Data</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {events.slice(0, 50).map((event, index) => (
+                  <tr
+                    key={event.id ?? index}
+                    style={{
+                      borderTop: "1px solid #1e293b",
+                    }}
+                  >
+                    <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                      {new Date(event.created_at).toLocaleString()}
+                    </td>
+
+                    <td style={tdStyle}>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          padding: "4px 8px",
+                          borderRadius: 999,
+                          background: "#1e293b",
+                          color: "#bfdbfe",
+                          fontWeight: 700,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formatEventName(event.event)}
+                      </span>
+                    </td>
+
+                    <td style={tdStyle}>
+                      <pre
+                        style={{
+                          margin: 0,
+                          color: "#94a3b8",
+                          fontSize: 12,
+                          whiteSpace: "pre-wrap",
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {JSON.stringify(event.data ?? {}, null, 2)}
+                      </pre>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

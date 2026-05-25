@@ -27,33 +27,91 @@ export function TwoSourceInputPanel({
   onCopyAtoB,
   controls,
 }: TwoSourceInputPanelProps) {
+  const canAnalyze = inputA.trim() && inputB.trim();
+
   return (
-    <div style={{ marginBottom: 20 }}>
-    
-      <button
-        onClick={onLoadExample}
+    <div style={{ marginBottom: 16 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        marginBottom: 18,
+      }}
+    >
+      <div
         style={{
-          margin: "0 0 12px",
-          padding: "7px 12px",
-          borderRadius: 8,
-          border: "none",
-          background: "#22c55e",
-          color: "white",
-          fontWeight: 600,
-          cursor: "pointer",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-          width: "fit-content",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-1px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          flexWrap: "wrap",
         }}
       >
-        Load Example
-      </button>
-
+        <button
+          onClick={onLoadExample}
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #334155",
+            background: "#020617",
+            color: "#cbd5e1",
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          Load example
+        </button>
+        
+        <button
+          onClick={() => {
+            if (!canAnalyze) return;
+            onAnalyze();
+          }}
+          disabled={!canAnalyze}
+          style={{
+            padding: "12px 20px",
+            borderRadius: 10,
+            background: "#2563eb",
+            color: "white",
+            border: "none",
+            fontWeight: 800,
+            fontSize: 15,
+            cursor: canAnalyze ? "pointer" : "not-allowed",
+            opacity: canAnalyze ? 1 : 0.5,
+            boxShadow: canAnalyze
+              ? "0 10px 28px rgba(37,99,235,0.35)"
+              : "none",
+            transform: canAnalyze ? "scale(1.02)" : "none",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          Analyze JOIN
+        </button>
+      </div>
+        
+      <p
+        style={{
+          margin: 0,
+          fontSize: 12,
+          color: "#94a3b8",
+        }}
+      >
+        Paste → Analyze → understand why the JOIN fails
+      </p>
+    </div>
       <div
         style={{
           display: "grid",
@@ -123,43 +181,9 @@ export function TwoSourceInputPanel({
         </div>
       </div>
 
-    {controls}
+      {controls}
 
-      <button
-        onClick={() => {
-          if (!inputA.trim() || !inputB.trim()) return;
-          onAnalyze();
-        }}
-        disabled={!inputA.trim() || !inputB.trim()}
-        style={{
-          marginTop: 12,
-          padding: "12px 18px",
-          borderRadius: 10,
-          background: "#2563eb",
-          color: "white",
-          border: "none",
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: !inputA.trim() || !inputB.trim() ? "not-allowed" : "pointer",
-          opacity: !inputA.trim() || !inputB.trim() ? 0.5 : 1,
-          boxShadow: !inputA.trim() || !inputB.trim()
-            ? "none"
-            : "0 4px 14px rgba(37, 99, 235, 0.35)",
-          transition: "all 0.15s ease",
-        }}
-        onMouseEnter={(e) => {
-          if (inputA.trim() && inputB.trim()) {
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
-      >
-        Analyze differences
-      </button>
-
-      <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>
+      <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8, }}>
         Debugging a self-join? Paste the same table in both fields.
       </p>
     </div>

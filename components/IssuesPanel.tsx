@@ -143,91 +143,98 @@ export function IssuesPanel({
         ) : (
           <>
             <p style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>
-              Click an issue to see why it happens
+              Click an issue to open the explanation below.
             </p>
 
-            {joinIssues.map((issue, index) => (
-              <div
-                key={index}
-                onClick={() => {
-                  track("Issue Opened", {
-                    type: issue.type,
-                    reason: issue.reason,
-                    aggregated: Boolean(issue.isAggregated),
-                  });
+            {joinIssues.map((issue, index) => {
+              const isSelected = selectedIssue === issue;
 
-                  setSelectedIssue(issue);
-                }}
-                style={{
-                  cursor: "pointer",
-                  padding: 10,
-                  marginBottom: 8,
-                  borderRadius: 8,
-                  background:
-                    selectedIssue === issue
+              return (
+                <div
+                  key={index}
+                  onClick={() => {
+                    track("issue_selected", {
+                      type: issue.type,
+                      reason: issue.reason,
+                      aggregated: Boolean(issue.isAggregated),
+                    });
+
+                    setSelectedIssue(issue);
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    padding: 10,
+                    marginBottom: 8,
+                    borderRadius: 8,
+                    background: isSelected
                       ? "#e0f2fe"
                       : issue.type === "JOIN_AMBIGUITY"
                       ? "#fee2e2"
                       : "#fef3c7",
-                  border:
-                    selectedIssue === issue
+                    border: isSelected
                       ? "2px solid #0f172a"
                       : issue.type === "JOIN_AMBIGUITY"
                       ? "1px solid #ef4444"
                       : "1px solid #f59e0b",
-                  color: issue.type === "JOIN_AMBIGUITY" ? "#991b1b" : "#92400e",
-                  fontFamily: "monospace",
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.transform = "scale(1.01)";
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.transform = "scale(1)";
-                }}
-              >
-                {issue.isAggregated ? (
-                  <>
-                    <strong>{issue.type} · systematic pattern</strong>
-                    <span style={{ float: "right", fontSize: 11, opacity: 0.6 }}>
-                      click for details →
-                    </span>
-                    <br />
-                    {issue.source} → {issue.targetSource}
-                    <br />
-                    {issue.count} entities affected
-                    <br />
-                    Valid: {issue.valid_from} → {issue.valid_to}
-                    <br />
-                    Reason: {formatJoinReason(issue.reason)}
-                    <br />
-                    Root cause: repeated valid-time window mismatch
-                    <br />
-                    Examples: {issue.entityIds?.slice(0, 8).join(", ")}
-                    {issue.entityIds && issue.entityIds.length > 8 ? " …" : ""}
-                  </>
-                ) : (
-                  <>
-                    <strong>{issue.type}</strong>
-                    <span style={{ float: "right", fontSize: 11, opacity: 0.6 }}>
-                      click for details →
-                    </span>
-                    <br />
-                    {issue.source} → {issue.targetSource}
-                    <br />
-                    Entity: {issue.entity_id}
-                    <br />
-                    Valid: {issue.valid_from} → {issue.valid_to}
-                    <br />
-                    Matches: {issue.matchingRows}
-                    <br />
-                    Reason: {formatJoinReason(issue.reason)}
-                  </>
-                )}
-              </div>
-            ))}
+                    color:
+                      issue.type === "JOIN_AMBIGUITY" ? "#991b1b" : "#92400e",
+                    fontFamily: "monospace",
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(event) => {
+                    event.currentTarget.style.transform = "scale(1.01)";
+                  }}
+                  onMouseLeave={(event) => {
+                    event.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
+                  {issue.isAggregated ? (
+                    <>
+                      <strong>{issue.type} · systematic pattern</strong>
+                      <span
+                        style={{ float: "right", fontSize: 11, opacity: 0.6 }}
+                      >
+                        explain →
+                      </span>
+                      <br />
+                      {issue.source} → {issue.targetSource}
+                      <br />
+                      {issue.count} entities affected
+                      <br />
+                      Valid: {issue.valid_from} → {issue.valid_to}
+                      <br />
+                      Reason: {formatJoinReason(issue.reason)}
+                      <br />
+                      Examples: {issue.entityIds?.slice(0, 8).join(", ")}
+                      {issue.entityIds && issue.entityIds.length > 8
+                        ? " …"
+                        : ""}
+                    </>
+                  ) : (
+                    <>
+                      <strong>{issue.type}</strong>
+                      <span
+                        style={{ float: "right", fontSize: 11, opacity: 0.6 }}
+                      >
+                        explain →
+                      </span>
+                      <br />
+                      {issue.source} → {issue.targetSource}
+                      <br />
+                      Entity: {issue.entity_id}
+                      <br />
+                      Valid: {issue.valid_from} → {issue.valid_to}
+                      <br />
+                      Matches: {issue.matchingRows}
+                      <br />
+                      Reason: {formatJoinReason(issue.reason)}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </>
         )}
       </div>

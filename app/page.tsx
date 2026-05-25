@@ -274,6 +274,16 @@ export default function Home() {
       sourceBName
     );
 
+    track("analysis_completed", {
+      rowCount: combinedRows.length,
+      sourceA: sourceAName,
+      sourceB: sourceBName,
+      joinIssues: computedJoinIssues.length,
+      joinGaps: computedJoinIssues.filter((i) => i.type === "JOIN_GAP").length,
+      ambiguities: computedJoinIssues.filter((i) => i.type === "JOIN_AMBIGUITY").length,
+      mode: validationMode,
+    });
+
     setJoinIssues(computedJoinIssues);
     setHasAnalyzed(true);
   }
@@ -421,35 +431,154 @@ WHERE ${sqlParts.join(" AND ")};`);
         color: "#0f172a",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <h1 style={{ marginBottom: 12, color: "#ffffff" }}>
-          Why does this JOIN fail?
-        </h1>
-
-        <p style={{ color: "#94a3b8", marginBottom: 8 }}>
-          Paste two query results → compare temporal differences → understand
-          why the JOIN fails.
-        </p>
-
-        <p style={{ color: "#64748b", marginBottom: 4, marginTop: 8 }}>
-          Example columns:
-        </p>
-
-        <pre
+    <div style={{ maxWidth: 1150, margin: "0 auto" }}>
+      <section style={{ marginBottom: 24 }}>
+        <div
           style={{
-            color: "#94a3b8",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 10px",
+            borderRadius: 999,
             background: "#020617",
-            padding: 10,
-            borderRadius: 6,
+            border: "1px solid #1e293b",
+            color: "#93c5fd",
             fontSize: 12,
-            overflowX: "auto",
+            fontWeight: 700,
+            marginBottom: 14,
           }}
-        >{`CONTRACT_ID,START_DATE,END_DATE,CREATED_AT
-1,2026-01-01,2026-12-31,2026-01-01T00:00:00`}</pre>
-
-        <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
-          Works with Databricks, Snowflake, BigQuery (CSV / TSV copy & paste)
+        >
+          Temporal JOIN Debugger
+        </div>
+        
+        <h1
+          style={{
+            margin: "0 0 12px",
+            color: "#ffffff",
+            fontSize: 38,
+            lineHeight: 1.1,
+            letterSpacing: -0.8,
+          }}
+        >
+          Debug broken temporal JOINs in seconds.
+        </h1>
+        
+        <p
+          style={{
+            color: "#cbd5e1",
+            fontSize: 18,
+            lineHeight: 1.5,
+            maxWidth: 820,
+            margin: "0 0 20px",
+          }}
+        >
+          Paste two query results and instantly see why your JOIN returns missing,
+          duplicated, or incorrect rows.
         </p>
+        
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginBottom: 18,
+          }}
+        >        
+          <span style={{ color: "#94a3b8", fontSize: 12, opacity: 0.7 }}>
+            Works with Databricks, Snowflake, BigQuery · CSV / TSV copy & paste
+          </span>
+        </div>
+          
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 10,
+            marginBottom: -5,
+          }}
+        >
+          <div
+            style={{
+              background: "#020617",
+              border: "1px solid #1e293b",
+              borderRadius: 10,
+              padding: 12,
+            }}
+          >
+            <div
+              style={{
+                color: "#e2e8f0",
+                fontSize: 12,
+                fontWeight: 800,
+                marginBottom: 6,
+              }}
+            >
+              Example input
+            </div>
+            
+            <pre
+              style={{
+                margin: 0,
+                color: "#93c5fd",
+                fontSize: 12,
+                lineHeight: 1.5,
+                overflowX: "auto",
+              }}
+            >{`CONTRACT_ID,START_DATE,END_DATE,CREATED_AT
+    1,2026-01-01,2026-12-31,2026-01-01T00:00:00`}</pre>
+          </div>
+            
+          <div
+            style={{
+              background: "#020617",
+              border: "1px solid #1e293b",
+              borderRadius: 10,
+              padding: 12,
+              color: "#94a3b8",
+              fontSize: 12,
+              lineHeight: 1.5,
+            }}
+          >
+            <div
+              style={{
+                color: "#e2e8f0",
+                fontWeight: 800,
+                marginBottom: 6,
+              }}
+            >
+              How time is interpreted
+            </div>
+            Valid-time uses inclusive date ranges{" "}
+            <code>[valid_from, valid_to]</code>. Visible-time uses half-open
+            timestamp ranges <code>[visible_from, visible_to)</code>.
+          </div>
+            
+          <div
+            style={{
+              background: "#020617",
+              border: "1px solid #1e293b",
+              borderRadius: 10,
+              padding: 12,
+              color: "#94a3b8",
+              fontSize: 12,
+              lineHeight: 1.5,
+            }}
+          >
+            <div
+              style={{
+                color: "#e2e8f0",
+                fontWeight: 800,
+                marginBottom: 6,
+              }}
+            >
+              Data privacy
+            </div>
+            Processing happens locally in your browser. Data is not stored. Avoid
+            pasting sensitive production data if unsure.
+          </div>
+        </div>
+      </section>
 
         <TwoSourceInputPanel
           inputA={inputA}
@@ -666,9 +795,9 @@ WHERE ${sqlParts.join(" AND ")};`);
                 style={{
                   padding: "8px 12px",
                   borderRadius: 8,
+                  border: "1px solid #475569",
                   background: "#1e293b",
-                  color: "white",
-                  border: "none",
+                  color: "#e2e8f0",
                   cursor: "pointer",
                 }}
                 onMouseEnter={(e) => {
