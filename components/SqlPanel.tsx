@@ -149,7 +149,7 @@ ${
             <h3 style={{ marginTop: 0, marginBottom: 10 }}>
               Why does this JOIN fail?
             </h3>
-                        
+
             <div
               style={{
                 marginBottom: 12,
@@ -182,7 +182,7 @@ ${
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <strong>Why it matters</strong>
+              <strong>Impact</strong>
               <br />
               {explanation.interpretation}
             </div>
@@ -252,7 +252,7 @@ ${
             </div>
 
             <div>
-              <strong>What to check next</strong>
+              <strong>Check next</strong>
               <ul style={{ margin: "6px 0 0 0", paddingLeft: 18 }}>
                 {explanation.hints.map((hint) => (
                   <li key={hint}>{hint}</li>
@@ -270,7 +270,7 @@ ${
                   border: "1px solid #86efac",
                 }}
               >
-                <strong>How to fix this</strong>
+                <strong>Most likely fix</strong>
                 <ul style={{ margin: "6px 0 0 0", paddingLeft: 18 }}>
                   {explanation.fixes.map((fix) => (
                     <li key={fix}>{fix}</li>
@@ -333,7 +333,7 @@ ${
               e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            Copy debug report
+            Copy explanation
           </button>
         </>
       )}

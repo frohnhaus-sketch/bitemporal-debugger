@@ -1,8 +1,53 @@
-import type { BitemporalRow, JoinabilityIssue } from "./types";
+import type { BitemporalRow, JoinabilityIssue, ValidationMode } from "./types";
 import {
   closedDateIntervalsOverlap,
   halfOpenTimestampIntervalsOverlap,
 } from "./dates";
+
+function validOverlap(a: BitemporalRow, b: BitemporalRow) {
+  return closedDateIntervalsOverlap(
+    a.valid_from,
+    a.valid_to,
+    b.valid_from,
+    b.valid_to
+  );
+}
+
+function visibleOverlap(a: BitemporalRow, b: BitemporalRow) {
+  return halfOpenTimestampIntervalsOverlap(
+    a.visible_from,
+    a.visible_to || "9999-12-31T00:00:00",
+    b.visible_from,
+    b.visible_to || "9999-12-31T00:00:00"
+  );
+}
+
+function recordsOverlapInMode(
+  a: BitemporalRow,
+  b: BitemporalRow,
+  validationMode: ValidationMode
+) {
+  if (validationMode === "bitemporal") {
+    return validOverlap(a, b) && visibleOverlap(a, b);
+  }
+
+  return validOverlap(a, b);
+}
+
+function hasAmbiguousMatches(
+  matches: BitemporalRow[],
+  validationMode: ValidationMode
+) {
+  for (let i = 0; i < matches.length; i++) {
+    for (let j = i + 1; j < matches.length; j++) {
+      if (recordsOverlapInMode(matches[i], matches[j], validationMode)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
 
 type AggregatedJoinabilityIssue = JoinabilityIssue & {
   isAggregated?: boolean;
@@ -13,9 +58,9 @@ type AggregatedJoinabilityIssue = JoinabilityIssue & {
 export function analyzeJoinability(
   rows: BitemporalRow[],
   leftSource: string,
-  rightSource: string
-): AggregatedJoinabilityIssue[]
-{
+  rightSource: string,
+  validationMode: ValidationMode = "monotemporal"
+): AggregatedJoinabilityIssue[] {
   const leftRows = rows.filter((r) => r.source === leftSource);
   const rightRows = rows.filter((r) => r.source === rightSource);
 
@@ -31,18 +76,23 @@ export function analyzeJoinability(
         )
     );
 
-    const fullMatches = validMatches.filter((right) =>
+    const bitemporalMatches = validMatches.filter((right) =>
       halfOpenTimestampIntervalsOverlap(
         left.visible_from,
-        left.visible_to ?? "",
+        left.visible_to || "9999-12-31T00:00:00",
         right.visible_from,
-        right.visible_to ?? ""
+        right.visible_to || "9999-12-31T00:00:00"
       )
     );
 
-    if (fullMatches.length === 0) {
+    const matches =
+      validationMode === "bitemporal" ? bitemporalMatches : validMatches;
+
+    if (matches.length === 0) {
       const reason =
-        validMatches.length > 0 ? "NO_VISIBLE_OVERLAP" : "NO_VALID_MATCH";
+        validationMode === "bitemporal" && validMatches.length > 0
+          ? "NO_VISIBLE_OVERLAP"
+          : "NO_VALID_MATCH";
 
       return [
         {
@@ -58,13 +108,13 @@ export function analyzeJoinability(
           reason,
           message:
             reason === "NO_VISIBLE_OVERLAP"
-              ? `Valid match exists, but no visible-time overlap with ${rightSource}`
-              : `No valid-time match found in ${rightSource}`,
+              ? `Valid-time match exists, but no visible-time overlap with ${rightSource}`
+              : `No matching row found in ${rightSource}`,
         },
       ];
     }
 
-    if (fullMatches.length > 1) {
+    if (matches.length > 1 && hasAmbiguousMatches(matches, validationMode)) {
       return [
         {
           entity_id: left.entity_id,
@@ -75,9 +125,12 @@ export function analyzeJoinability(
           visible_from: left.visible_from,
           visible_to: left.visible_to,
           type: "JOIN_AMBIGUITY",
-          matchingRows: fullMatches.length,
+          matchingRows: matches.length,
           reason: "MULTIPLE_MATCHES",
-          message: `${fullMatches.length} matching ${rightSource} rows found`,
+          message:
+            validationMode === "bitemporal"
+              ? `${matches.length} bitemporal matching ${rightSource} rows found`
+              : `${matches.length} valid-time matching ${rightSource} rows found`,
         },
       ];
     }

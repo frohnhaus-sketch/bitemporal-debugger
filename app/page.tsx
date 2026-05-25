@@ -230,7 +230,8 @@ export default function Home() {
     rawA: string,
     rawB: string,
     sourceAName: string,
-    sourceBName: string
+    sourceBName: string,
+    mode: ValidationMode = validationMode
   ) {
     if (!rawA.trim() || !rawB.trim()) {
       resetAnalysis();
@@ -257,10 +258,10 @@ export default function Home() {
     setColumnMappingA(parsedA.mapping);
     setColumnMappingB(parsedB.mapping);
 
-    setResult(detectOverlaps(combinedRows, validationMode));
+    setResult(detectOverlaps(combinedRows, mode));
     setGaps(detectGaps(combinedRows));
     setDrifts(detectDrift(combinedRows));
-    setOverlapMarkers(detectOverlapMarkers(combinedRows, validationMode));
+    setOverlapMarkers(detectOverlapMarkers(combinedRows, mode));
     setSelectedIssue(null);
     if (combinedRows.length > 0) {
       // beide Sources aufklappen
@@ -270,7 +271,8 @@ export default function Home() {
     const computedJoinIssues = analyzeJoinability(
       combinedRows,
       sourceAName,
-      sourceBName
+      sourceBName,
+      mode
     );
 
     track("analysis_completed", {
@@ -297,14 +299,26 @@ export default function Home() {
       return;
     }
 
-    analyzeTwoSourcesFromValues(inputA, inputB, sourceNameA, sourceNameB);
+    analyzeTwoSourcesFromValues(
+      inputA,
+      inputB,
+      sourceNameA,
+      sourceNameB,
+      validationMode
+    );
   }
 
   function setValidationModeAndAnalyze(next: ValidationMode) {
     setValidationMode(next);
 
     if (inputA.trim() && inputB.trim() && hasAnalyzed) {
-      analyzeTwoSourcesFromValues(inputA, inputB, sourceNameA, sourceNameB);
+      analyzeTwoSourcesFromValues(
+        inputA,
+        inputB,
+        sourceNameA,
+        sourceNameB,
+        next
+      );
     }
   }
 
@@ -430,7 +444,7 @@ WHERE ${sqlParts.join(" AND ")};`);
         } = incomplete history`
       : null,
   ].filter(Boolean);
-  
+
   const summaryMessage = hasCriticalIssues
     ? `Detected: ${issueParts.join(" · ")}. Click an issue below to see the root cause and suggested fix.`
     : validGapCount > 0
@@ -753,7 +767,7 @@ WHERE ${sqlParts.join(" AND ")};`);
   </div>
 )}
               <div>
-                <label style={{ fontSize: 12 }}>Validation Mode</label>
+                <label style={{ fontSize: 12 }}>Temporal validation mode</label>
                 <br />
                 <select
                   value={validationMode}
@@ -761,8 +775,8 @@ WHERE ${sqlParts.join(" AND ")};`);
                     setValidationModeAndAnalyze(e.target.value as ValidationMode)
                   }
                 >
-                  <option value="monotemporal">Valid time only</option>
-                  <option value="bitemporal">Valid + visible time</option>
+                  <option value="monotemporal">Valid-time only — stricter for history</option>
+                  <option value="bitemporal">Valid + visible time — bitemporal</option>
                 </select>
               </div>
                 
@@ -840,6 +854,25 @@ WHERE ${sqlParts.join(" AND ")};`);
                 marginBottom: 20,
               }}
             >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 8px",
+                borderRadius: 999,
+                background: "rgba(15, 23, 42, 0.45)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                color: "#ffffff",
+                fontSize: 12,
+                fontWeight: 700,
+                marginBottom: 10,
+              }}
+            >
+              {validationMode === "bitemporal"
+                ? "Valid + visible time analysis"
+                : "Valid-time only analysis"}
+            </div>
               <h2 style={{ margin: "0 0 8px", fontSize: 22 }}>
                 {summaryTitle}
               </h2>
@@ -867,6 +900,19 @@ WHERE ${sqlParts.join(" AND ")};`);
                 <span>{joinAmbiguityCount} ambiguous matches</span>
                 <span>{overlapCount} overlaps</span>
               </div>
+              <p
+                style={{
+                  margin: "12px 0 0",
+                  fontSize: 13,
+                  color: "#ffffff",
+                  opacity: 0.82,
+                  lineHeight: 1.5,
+                }}
+              >
+                {validationMode === "bitemporal"
+                  ? "Overlaps are only treated as critical when records overlap in both valid-time and visible-time."
+                  : "Overlaps are detected using valid-time only. Records may still be valid bitemporal history if their visible-time windows do not overlap."}
+              </p>
             </div>
 
             <div

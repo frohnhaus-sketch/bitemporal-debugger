@@ -2,7 +2,44 @@ import {
   closedDateIntervalsOverlap,
   halfOpenTimestampIntervalsOverlap,
 } from "./dates";
-import type { BitemporalRow, ValidationMode, OverlapIssue, DriftSummary } from "./types";
+import type {
+  BitemporalRow,
+  ValidationMode,
+  OverlapIssue,
+  DriftSummary,
+} from "./types";
+
+function hasValidOverlap(a: BitemporalRow, b: BitemporalRow) {
+  return closedDateIntervalsOverlap(
+    a.valid_from,
+    a.valid_to,
+    b.valid_from,
+    b.valid_to
+  );
+}
+
+function hasVisibleOverlap(a: BitemporalRow, b: BitemporalRow) {
+  return halfOpenTimestampIntervalsOverlap(
+    a.visible_from,
+    a.visible_to || "9999-12-31T00:00:00",
+    b.visible_from,
+    b.visible_to || "9999-12-31T00:00:00"
+  );
+}
+
+function isCriticalOverlap(
+  a: BitemporalRow,
+  b: BitemporalRow,
+  mode: ValidationMode
+) {
+  const validOverlap = hasValidOverlap(a, b);
+
+  if (mode === "monotemporal") {
+    return validOverlap;
+  }
+
+  return validOverlap && hasVisibleOverlap(a, b);
+}
 
 export function detectDrift(rows: BitemporalRow[]): DriftSummary[] {
   const byEntity = new Map<string, BitemporalRow[]>();
@@ -63,7 +100,7 @@ export function detectDrift(rows: BitemporalRow[]): DriftSummary[] {
 }
 
 export function detectOverlaps(
-  rows: any[],
+  rows: BitemporalRow[],
   mode: ValidationMode = "monotemporal"
 ) {
   const issues: string[] = [];
@@ -74,30 +111,13 @@ export function detectOverlaps(
       if (a.source !== b.source) return;
       if (String(a.entity_id) !== String(b.entity_id)) return;
 
-      const validOverlap = closedDateIntervalsOverlap(
-        a.valid_from,
-        a.valid_to,
-        b.valid_from,
-        b.valid_to
+      if (!isCriticalOverlap(a, b, mode)) return;
+
+      issues.push(
+        `${mode === "bitemporal" ? "BITEMPORAL " : ""}OVERLAP (${
+          a.source
+        }/${a.entity_id}): ${a.valid_from}-${a.valid_to}`
       );
-
-      const visibleOverlap = halfOpenTimestampIntervalsOverlap(
-        a.visible_from,
-        a.visible_to ?? "",
-        b.visible_from,
-        b.visible_to ?? ""
-      );
-
-      const isOverlap =
-        mode === "monotemporal"
-          ? validOverlap
-          : validOverlap && visibleOverlap;
-
-      if (isOverlap) {
-        issues.push(
-          `${mode === "bitemporal" ? "BITEMPORAL " : ""}OVERLAP (${a.source}/${a.entity_id}): ${a.valid_from}-${a.valid_to}`
-        );
-      }
     });
   });
 
@@ -105,7 +125,7 @@ export function detectOverlaps(
 }
 
 export function detectFlaggedOverlapRows(
-  rows: any[],
+  rows: BitemporalRow[],
   validationMode: ValidationMode = "monotemporal"
 ) {
   const flagged = new Set<number>();
@@ -116,26 +136,7 @@ export function detectFlaggedOverlapRows(
       if (a.source !== b.source) return;
       if (String(a.entity_id) !== String(b.entity_id)) return;
 
-      const validOverlap = closedDateIntervalsOverlap(
-        a.valid_from,
-        a.valid_to,
-        b.valid_from,
-        b.valid_to
-      );
-
-      const visibleOverlap = halfOpenTimestampIntervalsOverlap(
-        a.visible_from,
-        a.visible_to ?? "",
-        b.visible_from,
-        b.visible_to ?? ""
-      );
-
-      const isOverlap =
-        validationMode === "monotemporal"
-          ? validOverlap
-          : validOverlap && visibleOverlap;
-
-      if (isOverlap) {
+      if (isCriticalOverlap(a, b, validationMode)) {
         flagged.add(i);
       }
     });
@@ -144,10 +145,9 @@ export function detectFlaggedOverlapRows(
   return flagged;
 }
 
-export function detectGaps(rows: any[]) {
+export function detectGaps(rows: BitemporalRow[]) {
   const gaps: any[] = [];
-
-  const groups: Record<string, any[]> = {};
+  const groups: Record<string, BitemporalRow[]> = {};
 
   rows.forEach((row) => {
     const key = `${row.source || "default"}|${row.entity_id}`;
@@ -162,8 +162,7 @@ export function detectGaps(rows: any[]) {
   Object.values(groups).forEach((groupRows) => {
     const sorted = [...groupRows].sort(
       (a, b) =>
-        new Date(a.valid_from).getTime() -
-        new Date(b.valid_from).getTime()
+        new Date(a.valid_from).getTime() - new Date(b.valid_from).getTime()
     );
 
     for (let i = 0; i < sorted.length - 1; i++) {
@@ -193,7 +192,7 @@ export function detectGaps(rows: any[]) {
 }
 
 export function detectOverlapMarkers(
-  rows: any[],
+  rows: BitemporalRow[],
   mode: ValidationMode = "monotemporal"
 ) {
   const overlaps: OverlapIssue[] = [];
@@ -204,26 +203,7 @@ export function detectOverlapMarkers(
       if (a.source !== b.source) return;
       if (String(a.entity_id) !== String(b.entity_id)) return;
 
-      const validOverlap = closedDateIntervalsOverlap(
-        a.valid_from,
-        a.valid_to,
-        b.valid_from,
-        b.valid_to
-      );
-
-      const visibleOverlap = halfOpenTimestampIntervalsOverlap(
-        a.visible_from,
-        a.visible_to ?? "",
-        b.visible_from,
-        b.visible_to ?? ""
-      );
-
-      const isOverlap =
-        mode === "monotemporal"
-          ? validOverlap
-          : validOverlap && visibleOverlap;
-
-      if (!isOverlap) return;
+      if (!isCriticalOverlap(a, b, mode)) return;
 
       const from =
         new Date(a.valid_from) > new Date(b.valid_from)
@@ -242,8 +222,8 @@ export function detectOverlapMarkers(
         to,
         message:
           mode === "bitemporal"
-            ? `BITEMPORAL OVERLAP: records overlap in valid and visible time`
-            : `OVERLAP: records overlap in valid time`,
+            ? "BITEMPORAL OVERLAP: records overlap in valid-time and visible-time"
+            : "OVERLAP: records overlap in valid-time only",
       });
     });
   });
