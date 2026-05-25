@@ -196,7 +196,7 @@ export function IssuesPanel({
                       <span
                         style={{ float: "right", fontSize: 11, opacity: 0.6 }}
                       >
-                        explain →
+                        debug →
                       </span>
                       <br />
                       {issue.source} → {issue.targetSource}
@@ -218,7 +218,7 @@ export function IssuesPanel({
                       <span
                         style={{ float: "right", fontSize: 11, opacity: 0.6 }}
                       >
-                        explain →
+                        debug →
                       </span>
                       <br />
                       {issue.source} → {issue.targetSource}

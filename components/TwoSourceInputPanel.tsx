@@ -11,6 +11,7 @@ type TwoSourceInputPanelProps = {
   onLoadExample: () => void;
   onCopyAtoB: () => void;
   controls?: React.ReactNode;
+  analysisModeControl?: React.ReactNode;
 };
 
 export function TwoSourceInputPanel({
@@ -26,6 +27,7 @@ export function TwoSourceInputPanel({
   onLoadExample,
   onCopyAtoB,
   controls,
+  analysisModeControl,
 }: TwoSourceInputPanelProps) {
   const canAnalyze = inputA.trim() && inputB.trim();
 
@@ -76,13 +78,13 @@ export function TwoSourceInputPanel({
           }}
           disabled={!canAnalyze}
           style={{
-            padding: "12px 20px",
+            padding: "18px 24px",
             borderRadius: 10,
             background: "#2563eb",
             color: "white",
             border: "none",
             fontWeight: 800,
-            fontSize: 15,
+            fontSize: 16,
             cursor: canAnalyze ? "pointer" : "not-allowed",
             opacity: canAnalyze ? 1 : 0.5,
             boxShadow: canAnalyze
@@ -100,13 +102,15 @@ export function TwoSourceInputPanel({
         >
           Analyze JOIN
         </button>
+        {analysisModeControl}
       </div>
         
       <p
         style={{
-          margin: 0,
-          fontSize: 12,
-          color: "#94a3b8",
+          margin: "12px 0 0px",
+          fontSize: 16,
+          color: "#cbd5f5",
+          fontWeight: 500,
         }}
       >
         Paste → Analyze → understand why the JOIN fails

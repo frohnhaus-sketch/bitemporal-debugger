@@ -630,6 +630,30 @@ WHERE ${sqlParts.join(" AND ")};`);
           onAnalyze={analyzeTwoSources}
           onLoadExample={loadExample}
           onCopyAtoB={copySourceAToB}
+          analysisModeControl={
+            <div>
+              <label style={{ fontSize: 12, color: "#94a3b8" }}>
+                Temporal validation mode
+              </label>
+              <br />
+              <select
+                value={validationMode}
+                onChange={(e) =>
+                  setValidationModeAndAnalyze(e.target.value as ValidationMode)
+                }
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: "1px solid #334155",
+                  background: "#020617",
+                  color: "#e2e8f0",
+                }}
+              >
+                <option value="monotemporal">Valid-time only (strict)</option>
+                <option value="bitemporal">Bitemporal (valid + visible time)</option>
+              </select>
+            </div>
+          }
           controls={
             <div
               style={{
@@ -644,128 +668,128 @@ WHERE ${sqlParts.join(" AND ")};`);
                 alignItems: "flex-end",
               }}
             >
-{(headerMappingsA.length > 0 || headerMappingsB.length > 0) && (
-  <div
-    style={{
-      width: "100%",
-      marginBottom: 12,
-      background: "#0f172a",
-      border: "1px solid #1e293b",
-      borderRadius: 10,
-      padding: 12,
-    }}
-  >
-    <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 10 }}>
-      Column mapping
-    </div>
-
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-        gap: 12,
-      }}
-    >
-      <div
-        style={{
-          border: "1px solid #1e293b",
-          borderRadius: 8,
-          padding: 10,
-          background: "#020617",
-        }}
-      >
-        <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
-          Source A mapping
-        </div>
-
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          {headerMappingsA.map((m, i) => (
-            <div key={`a-${m.original}-${i}`}>
-              <div style={{ fontSize: 10, color: "#64748b" }}>
-                {m.original}
-              </div>
-
-              <select
-                value={columnMappingA[m.original] ?? m.normalized}
-                onChange={(e) => {
-                  setColumnMappingA({
-                    ...columnMappingA,
-                    [m.original]: e.target.value,
-                  });
-                }}
-                style={{
-                  padding: "4px 6px",
-                  borderRadius: 6,
-                  border: "1px solid #334155",
-                  background: "#020617",
-                  color: "#e2e8f0",
-                  fontSize: 12,
-                }}
-              >
-                <option value="entity_id">entity_id</option>
-                <option value="valid_from">valid_from</option>
-                <option value="valid_to">valid_to</option>
-                <option value="visible_from">visible_from</option>
-                <option value="visible_to">visible_to</option>
-                <option value="value">value</option>
-                <option value="">ignore</option>
-              </select>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div
-        style={{
-          border: "1px solid #1e293b",
-          borderRadius: 8,
-          padding: 10,
-          background: "#020617",
-        }}
-      >
-        <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
-          Source B mapping
-        </div>
-
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          {headerMappingsB.map((m, i) => (
-            <div key={`b-${m.original}-${i}`}>
-              <div style={{ fontSize: 10, color: "#64748b" }}>
-                {m.original}
-              </div>
-
-              <select
-                value={columnMappingB[m.original] ?? m.normalized}
-                onChange={(e) => {
-                  setColumnMappingB({
-                    ...columnMappingB,
-                    [m.original]: e.target.value,
-                  });
-                }}
-                style={{
-                  padding: "4px 6px",
-                  borderRadius: 6,
-                  border: "1px solid #334155",
-                  background: "#020617",
-                  color: "#e2e8f0",
-                  fontSize: 12,
-                }}
-              >
-                <option value="entity_id">entity_id</option>
-                <option value="valid_from">valid_from</option>
-                <option value="valid_to">valid_to</option>
-                <option value="visible_from">visible_from</option>
-                <option value="visible_to">visible_to</option>
-                <option value="value">value</option>
-                <option value="">ignore</option>
-              </select>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+              {(headerMappingsA.length > 0 || headerMappingsB.length > 0) && (
+                <div
+                  style={{
+                    width: "100%",
+                    marginBottom: 12,
+                    background: "#0f172a",
+                    border: "1px solid #1e293b",
+                    borderRadius: 10,
+                    padding: 12,
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 10 }}>
+                    Column mapping
+                  </div>
+                
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        border: "1px solid #1e293b",
+                        borderRadius: 8,
+                        padding: 10,
+                        background: "#020617",
+                      }}
+                    >
+                      <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
+                        Source A mapping
+                      </div>
+                    
+                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        {headerMappingsA.map((m, i) => (
+                          <div key={`a-${m.original}-${i}`}>
+                            <div style={{ fontSize: 10, color: "#64748b" }}>
+                              {m.original}
+                            </div>
+                        
+                            <select
+                              value={columnMappingA[m.original] ?? m.normalized}
+                              onChange={(e) => {
+                                setColumnMappingA({
+                                  ...columnMappingA,
+                                  [m.original]: e.target.value,
+                                });
+                              }}
+                              style={{
+                                padding: "4px 6px",
+                                borderRadius: 6,
+                                border: "1px solid #334155",
+                                background: "#020617",
+                                color: "#e2e8f0",
+                                fontSize: 12,
+                              }}
+                            >
+                              <option value="entity_id">entity_id</option>
+                              <option value="valid_from">valid_from</option>
+                              <option value="valid_to">valid_to</option>
+                              <option value="visible_from">visible_from</option>
+                              <option value="visible_to">visible_to</option>
+                              <option value="value">value</option>
+                              <option value="">ignore</option>
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                      
+                    <div
+                      style={{
+                        border: "1px solid #1e293b",
+                        borderRadius: 8,
+                        padding: 10,
+                        background: "#020617",
+                      }}
+                    >
+                      <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
+                        Source B mapping
+                      </div>
+                    
+                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        {headerMappingsB.map((m, i) => (
+                          <div key={`b-${m.original}-${i}`}>
+                            <div style={{ fontSize: 10, color: "#64748b" }}>
+                              {m.original}
+                            </div>
+                        
+                            <select
+                              value={columnMappingB[m.original] ?? m.normalized}
+                              onChange={(e) => {
+                                setColumnMappingB({
+                                  ...columnMappingB,
+                                  [m.original]: e.target.value,
+                                });
+                              }}
+                              style={{
+                                padding: "4px 6px",
+                                borderRadius: 6,
+                                border: "1px solid #334155",
+                                background: "#020617",
+                                color: "#e2e8f0",
+                                fontSize: 12,
+                              }}
+                            >
+                              <option value="entity_id">entity_id</option>
+                              <option value="valid_from">valid_from</option>
+                              <option value="valid_to">valid_to</option>
+                              <option value="visible_from">visible_from</option>
+                              <option value="visible_to">visible_to</option>
+                              <option value="value">value</option>
+                              <option value="">ignore</option>
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div>
                 <label style={{ fontSize: 12 }}>Temporal validation mode</label>
                 <br />
@@ -910,8 +934,8 @@ WHERE ${sqlParts.join(" AND ")};`);
                 }}
               >
                 {validationMode === "bitemporal"
-                  ? "Overlaps are only treated as critical when records overlap in both valid-time and visible-time."
-                  : "Overlaps are detected using valid-time only. Records may still be valid bitemporal history if their visible-time windows do not overlap."}
+                  ? "True bitemporal mode: records are only flagged when they conflict in both valid-time and visible-time."
+                  : "Valid-time only mode: stricter check. Records are flagged when they overlap in valid-time, even if they would be valid bitemporal history."}
               </p>
             </div>
 

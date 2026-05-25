@@ -32,20 +32,29 @@ function getRowJoinIssue(
   joinIssues?: AggregatedJoinabilityIssue[]
 ) {
   return joinIssues?.find((issue) => {
-    const sameEntity = String(issue.entity_id) === String(row.entity_id);
     const sameSource = issue.source === row.source;
+    const sameEntity = String(issue.entity_id) === String(row.entity_id);
+
+    // ⚠️ WICHTIG: IMMER valid window matchen
     const sameValidWindow =
-      issue.valid_from === row.valid_from && issue.valid_to === row.valid_to;
+      issue.valid_from === row.valid_from &&
+      issue.valid_to === row.valid_to;
+
+    if (!sameSource || !sameEntity) return false;
+
+    // 🔥 CRITICAL FIX:
+    // Aggregated Issues dürfen NICHT alle Rows der Entity matchen
+    // sondern nur die mit exakt gleichem valid window
 
     if (issue.isAggregated) {
-      return (
-        issue.entityIds?.some(
-          (entityId) => String(entityId) === String(row.entity_id)
-        ) && sameSource
+      const entityMatch = issue.entityIds?.some(
+        (id) => String(id) === String(row.entity_id)
       );
+
+      return entityMatch && sameValidWindow;
     }
 
-    return sameEntity && sameSource && sameValidWindow;
+    return sameValidWindow;
   });
 }
 
@@ -83,7 +92,7 @@ function getRowBackground({
 }) {
   if (isHovered) return "rgba(56, 189, 248, 0.20)";
   if (joinIssue?.type === "JOIN_GAP") return "rgba(245, 158, 11, 0.22)";
-  if (joinIssue?.type === "JOIN_AMBIGUITY") return "rgba(245, 158, 11, 0.22)";
+  if (joinIssue?.type === "JOIN_AMBIGUITY") return "rgba(239, 68, 68, 0.16)";
   if (overlapIssue) return "rgba(239, 68, 68, 0.16)";
 
   return "transparent";
@@ -202,7 +211,10 @@ export function DataPreview({
         }}
       >
         {open ? "▼" : "▶"} {title} ({rows.length} rows
-        {issueRowCount > 0 ? `, ${issueRowCount} highlighted` : ""})
+        {issueRowCount > 0
+          ? `, ${issueRowCount} issue row${issueRowCount === 1 ? "" : "s"}`
+          : ""}
+        )
       </button>
 
       {open && (
