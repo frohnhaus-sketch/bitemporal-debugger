@@ -523,7 +523,7 @@ WHERE ${sqlParts.join(" AND ")};`);
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "1.4fr 1fr 1fr",
             gap: 10,
             marginBottom: -5,
           }}
@@ -536,27 +536,43 @@ WHERE ${sqlParts.join(" AND ")};`);
               padding: 12,
             }}
           >
-            <div
-              style={{
-                color: "#e2e8f0",
-                fontSize: 12,
-                fontWeight: 800,
-                marginBottom: 6,
-              }}
-            >
-              Example input
-            </div>
-            
-            <pre
-              style={{
-                margin: 0,
-                color: "#93c5fd",
-                fontSize: 12,
-                lineHeight: 1.5,
-                overflowX: "auto",
-              }}
-            >{`CONTRACT_ID,START_DATE,END_DATE,CREATED_AT
-    1,2026-01-01,2026-12-31,2026-01-01T00:00:00`}</pre>
+          <div
+            style={{
+              color: "#e2e8f0",
+              fontSize: 12,
+              fontWeight: 800,
+              marginBottom: 6,
+            }}
+          >
+            Expected input
+          </div>
+          
+          <pre
+            style={{
+              margin: 0,
+              color: "#93c5fd",
+              fontSize: 12,
+              lineHeight: 1.5,
+              overflowX: "auto",
+            }}
+          >{`entity_id,value,valid_from,valid_to[,visible_from,visible_to]
+1,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`}</pre>
+
+          <p style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
+            visible_from and visible_to are optional. If omitted, data is treated as valid-time only.
+          </p>
+
+          <p
+            style={{
+              margin: "8px 0 0",
+              color: "#94a3b8",
+              fontSize: 12,
+              lineHeight: 1.4,
+            }}
+          >
+            Paste CSV or TSV. Column names are auto-detected and can be adjusted in the
+            mapping section below.
+          </p>
           </div>
             
           <div
