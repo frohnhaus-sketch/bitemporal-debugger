@@ -37,6 +37,8 @@ export function IssuesPanel({
   );
 
   const rootCause = aggregatedJoinGaps[0] ?? null;
+  const MAX_VISIBLE_JOIN_ISSUES = 50;
+  const visibleJoinIssues = joinIssues.slice(0, MAX_VISIBLE_JOIN_ISSUES);
 
   return (
     <div
@@ -235,6 +237,12 @@ export function IssuesPanel({
                 </div>
               );
             })}
+            {joinIssues.length > MAX_VISIBLE_JOIN_ISSUES && (
+              <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+                Showing first {MAX_VISIBLE_JOIN_ISSUES} of {joinIssues.length} join issues.
+                Use filters or aggregated patterns to narrow the result.
+              </div>
+            )}
           </>
         )}
       </div>

@@ -88,7 +88,14 @@ export function Timeline({
           color: "#475569",
         }}
       >
-        <span>■ Valid range</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 10, height: 10, background: "#64748b", display: "inline-block", borderRadius: 2 }} />
+          Data row (valid-time interval)
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 10, height: 10, background: "#e5e7eb", display: "inline-block", borderRadius: 2 }} />
+          Timeline (no data)
+        </span>
         <span style={{ color: "#f59e0b" }}>■ Gap / missing match</span>
         <span style={{ color: "#ef4444" }}>■ Overlap / ambiguity</span>
         <span style={{ color: "#64748b" }}>Dashed border = join issue</span>
@@ -169,7 +176,11 @@ export function Timeline({
                     .map((j, k) => (
                       <div
                         key={`join-${k}`}
-                        title={j.message}
+                        title={
+                          j.type === "JOIN_AMBIGUITY"
+                            ? "Ambiguous join: multiple matching records exist for this time range"
+                            : "No temporal match: no corresponding record exists in the other dataset for this period"
+                        }
                         onClick={() => onSelectIssue?.(j)}
                         style={{
                           position: "absolute",
@@ -220,6 +231,7 @@ export function Timeline({
                       return (
                         <div
                           key={j}
+                          title={`Gap: no valid record exists between ${from} and ${to}`}
                           style={{
                             position: "absolute",
                             left: `${getPosition(from)}%`,
@@ -260,6 +272,7 @@ export function Timeline({
                     {overlaps.map((o, k) => (
                       <div
                         key={k}
+                        title={`Overlap: multiple records are valid at the same time (${o.from} → ${o.to})`}
                         style={{
                           position: "absolute",
                           left: `${getPosition(o.from)}%`,
