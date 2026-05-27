@@ -1,8 +1,22 @@
-const legendItems = [
+type LegendItem = {
+  label: string;
+  color: string;
+  dashed?: boolean;
+  description: string;
+};
+
+const legendItems: LegendItem[] = [
   {
-    label: "Data row",
+    label: "Timeline (no data)",
+    color: "#e5e7eb",
+    description:
+      "Background timeline. Indicates periods where no data exists for this entity.",
+  },
+  {
+    label: "Data row (valid interval)",
     color: "#64748b",
-    description: "A normal valid-time row from one source.",
+    description:
+      "A valid-time interval from one source. This represents actual stored data.",
   },
   {
     label: "Gap",
@@ -42,7 +56,7 @@ export function TimelineLegend() {
         alignItems: "center",
         marginTop: 12,
         marginBottom: 20,
-        color: "#94a3b8",
+        color: "#475569",
         fontSize: 12,
       }}
     >
@@ -66,6 +80,7 @@ export function TimelineLegend() {
               border: item.dashed
                 ? `2px dashed ${item.color}`
                 : `1px solid ${item.color}`,
+              opacity: item.color === "#e5e7eb" ? 0.6 : 1,
               display: "inline-block",
             }}
           />

@@ -1,4 +1,5 @@
 "use client";
+import { IssueExplanation } from "@/components/IssueExplanation";
 import { track } from "@/lib/analytics";
 import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
 import { useState } from "react";
@@ -1012,7 +1013,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               onSelectIssue={setSelectedIssue}
               highlightedEntityId={highlightedRow?.entity_id ?? null}
             />
-
+            <IssueExplanation issue={selectedIssue} />
             <TimelineLegend />
           </>
         )}
