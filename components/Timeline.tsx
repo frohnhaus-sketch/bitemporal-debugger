@@ -69,37 +69,39 @@ export function Timeline({
         boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
       }}
     >
-      <div style={{ marginBottom: 16 }}>
+      {/* <div style={{ marginBottom: 16 }}>
         <h3 style={{ margin: 0, fontSize: 18 }}>
           Timeline
         </h3>
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>
           Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
         </p>
-      </div>
+      </div> */}
 
-      <div
+      <p
         style={{
-          display: "flex",
-          gap: 12,
-          flexWrap: "wrap",
-          marginBottom: 18,
+          margin: "4px 0 0",
           fontSize: 12,
-          color: "#475569",
+          color: "#64748b",
+          lineHeight: 1.6,
         }}
       >
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 10, height: 10, background: "#64748b", display: "inline-block", borderRadius: 2 }} />
-          Data row (valid-time interval)
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 10, height: 10, background: "#e5e7eb", display: "inline-block", borderRadius: 2 }} />
-          Timeline (no data)
-        </span>
-        <span style={{ color: "#f59e0b" }}>■ Gap / missing match</span>
-        <span style={{ color: "#ef4444" }}>■ Overlap / ambiguity</span>
-        <span style={{ color: "#64748b" }}>Dashed border = join issue</span>
-      </div>
+Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
+      {" "}
+      <span style={{ marginLeft: 8, marginRight: 14, opacity: 0.5 }}>—</span>
+      {" "}
+      <span style={{ color: "#64748b" }}>■</span> Valid interval
+      {" "}
+      ·
+      {" "}
+      <span style={{ color: "#f59e0b" }}>■</span> Gap
+      {" "}
+      ·
+      {" "}
+      <span style={{ color: "#ef4444" }}>■</span> Overlap
+      {" "}
+      · Dashed border = join issue
+      </p>
 
       {Object.entries(groupedRows).map(([entityId, entityRows]) => {
         const sources = Array.from(
@@ -110,6 +112,7 @@ export function Timeline({
           <div
             key={entityId}
             style={{
+              marginTop: 20,
               marginBottom: 28,
               opacity:
                 highlightedEntityId && highlightedEntityId !== entityId ? 0.35 : 1,

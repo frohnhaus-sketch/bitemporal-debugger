@@ -56,7 +56,7 @@ export function TimelineLegend() {
         alignItems: "center",
         marginTop: 12,
         marginBottom: 20,
-        color: "#475569",
+        color: "white",
         fontSize: 12,
       }}
     >

@@ -124,18 +124,22 @@ export function DataPreview({
   onHighlightRow,
   forceOpen,
 }: DataPreviewProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [limit, setLimit] = useState(10);
 
   useEffect(() => {
-    if (forceOpen) {
-      setOpen(true);
-    }
+    if (forceOpen) setOpen(true);
   }, [forceOpen]);
+
+  const rowSignature = useMemo(() => {
+    return rows
+      .map((r) => `${r.source}|${r.entity_id}|${r.valid_from}|${r.valid_to}|${r.visible_from}|${r.visible_to}`)
+      .join(";");
+  }, [rows]);
 
   useEffect(() => {
     setLimit(10);
-  }, [rows]);
+  }, [rowSignature]);
 
   const columns = useMemo(() => {
     if (rows.length === 0) return [];
