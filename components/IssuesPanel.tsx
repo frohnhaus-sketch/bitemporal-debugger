@@ -39,6 +39,9 @@ export function IssuesPanel({
   const rootCause = aggregatedJoinGaps[0] ?? null;
   const MAX_VISIBLE_JOIN_ISSUES = 50;
   const visibleJoinIssues = joinIssues.slice(0, MAX_VISIBLE_JOIN_ISSUES);
+  const MAX_VISIBLE_ERRORS = 20;
+  const uniqueErrors = Array.from(new Set(result));
+  const visibleErrors = uniqueErrors.slice(0, MAX_VISIBLE_ERRORS);
 
   return (
     <div
@@ -54,25 +57,33 @@ export function IssuesPanel({
     >
       <h3 style={{ marginBottom: 12, fontSize: 18 }}>Errors</h3>
 
-      {result.length > 0 ? (
-        result.map((error, index) => (
-          <div
-            key={index}
-            style={{
-              padding: 10,
-              marginBottom: 8,
-              borderRadius: 8,
-              background: error.includes("OVERLAP") ? "#fee2e2" : "#fef3c7",
-              border: error.includes("OVERLAP")
-                ? "1px solid #ef4444"
-                : "1px solid #f59e0b",
-              color: "#111827",
-              fontFamily: "monospace",
-            }}
-          >
-            {error}
-          </div>
-        ))
+      {uniqueErrors.length > 0 ? (
+        <>
+          {visibleErrors.map((error, index) => (
+            <div
+              key={index}
+              style={{
+                padding: 10,
+                marginBottom: 8,
+                borderRadius: 8,
+                background: error.includes("OVERLAP") ? "#fee2e2" : "#fef3c7",
+                border: error.includes("OVERLAP")
+                  ? "1px solid #ef4444"
+                  : "1px solid #f59e0b",
+                color: "#111827",
+                fontFamily: "monospace",
+              }}
+            >
+              {error}
+            </div>
+          ))}
+
+          {uniqueErrors.length > MAX_VISIBLE_ERRORS && (
+            <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+              Showing first {MAX_VISIBLE_ERRORS} of {uniqueErrors.length} unique errors.
+            </div>
+          )}
+        </>
       ) : (
         <p>No errors</p>
       )}
@@ -148,7 +159,7 @@ export function IssuesPanel({
               Click an issue to open the explanation below.
             </p>
 
-            {joinIssues.map((issue, index) => {
+            {visibleJoinIssues.map((issue, index) => {
               const isSelected = selectedIssue === issue;
 
               return (
