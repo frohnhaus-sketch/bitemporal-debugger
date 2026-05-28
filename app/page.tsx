@@ -64,6 +64,11 @@ export default function Home() {
   const [sql, setSql] = useState("");
   const [validationMode, setValidationMode] = useState<ValidationMode>("monotemporal");
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+
+  useEffect(() => {
+    track("page_view");
+  }, []);
+
   const minDate = rows.length
     ? Math.min(...rows.map((r) => new Date(r.valid_from).getTime()))
     : 0;
@@ -447,10 +452,6 @@ WHERE ${sqlParts.join(" AND ")};`);
         } = incomplete history`
       : null,
   ].filter(Boolean);
-
-  useEffect(() => {
-    track("page_view");
-  }, []);
 
   const summaryMessage = hasCriticalIssues
     ? `Detected: ${issueParts.join(" · ")}. Open a joinability issue below to inspect the root cause and suggested fix.`

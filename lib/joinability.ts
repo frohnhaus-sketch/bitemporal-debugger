@@ -1,4 +1,10 @@
-import type { BitemporalRow, JoinabilityIssue, ValidationMode } from "./types";
+import type {
+  AggregatedJoinabilityIssue,
+  BitemporalRow,
+  JoinabilityIssue,
+  ValidationMode,
+} from "./types";
+
 import {
   closedDateIntervalsOverlap,
   halfOpenTimestampIntervalsOverlap,
@@ -49,12 +55,6 @@ function hasAmbiguousMatches(
   return false;
 }
 
-type AggregatedJoinabilityIssue = JoinabilityIssue & {
-  isAggregated?: boolean;
-  count?: number;
-  entityIds?: Array<string | number>;
-};
-
 export function analyzeJoinability(
   rows: BitemporalRow[],
   leftSource: string,
@@ -86,7 +86,9 @@ export function analyzeJoinability(
     );
 
     const matches =
-      validationMode === "bitemporal" ? bitemporalMatches : validMatches;
+      validationMode === "bitemporal"
+        ? bitemporalMatches
+        : validMatches;
 
     if (matches.length === 0) {
       const reason =
@@ -114,7 +116,10 @@ export function analyzeJoinability(
       ];
     }
 
-    if (matches.length > 1 && hasAmbiguousMatches(matches, validationMode)) {
+    if (
+      matches.length > 1 &&
+      hasAmbiguousMatches(matches, validationMode)
+    ) {
       return [
         {
           entity_id: left.entity_id,
@@ -151,7 +156,10 @@ export function analyzeJoinability(
       issue.valid_to,
     ].join("|");
 
-    groupedGaps.set(key, [...(groupedGaps.get(key) || []), issue]);
+    groupedGaps.set(key, [
+      ...(groupedGaps.get(key) || []),
+      issue,
+    ]);
   });
 
   const aggregatedGapKeys = new Set<string>();
@@ -175,7 +183,9 @@ export function analyzeJoinability(
     };
   });
 
-  const nonGapIssues = issues.filter((issue) => issue.type !== "JOIN_GAP");
+  const nonGapIssues = issues.filter(
+    (issue) => issue.type !== "JOIN_GAP"
+  );
 
   return [...aggregatedGaps, ...nonGapIssues];
 }
