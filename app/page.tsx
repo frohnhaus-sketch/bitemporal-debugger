@@ -1032,6 +1032,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               gaps={gaps}
               overlapMarkers={overlapMarkers}
               joinIssues={joinIssues}
+              selectedIssue={selectedIssue}
               getPosition={getPosition}
               getWidth={getWidth}
               getSourceColor={getSourceColor}

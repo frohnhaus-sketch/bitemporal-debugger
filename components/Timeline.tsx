@@ -19,6 +19,7 @@ type TimelineProps = {
   getSourceColor: (source: string) => string;
   onSelectIssue: (issue: AggregatedJoinabilityIssue) => void;
   highlightedEntityId: string | null;
+  selectedIssue: AggregatedJoinabilityIssue | null;
 };
 
 export function Timeline({
@@ -31,10 +32,16 @@ export function Timeline({
   getSourceColor,
   onSelectIssue,
   highlightedEntityId,
+  selectedIssue,
 }: TimelineProps) {
 
   const MAX_TIMELINE_ROWS = 80;
   const visibleRows = rows.slice(0, MAX_TIMELINE_ROWS);
+  const focusedEntityId = selectedIssue
+    ? String(selectedIssue.entity_id)
+    : highlightedEntityId
+    ? String(highlightedEntityId)
+    : null;
 
   const groupedRows = visibleRows.reduce<Record<string, BitemporalRow[]>>((acc, row) => {
     const key = String(row.entity_id ?? "unknown");
@@ -69,14 +76,6 @@ export function Timeline({
         boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
       }}
     >
-      {/* <div style={{ marginBottom: 16 }}>
-        <h3 style={{ margin: 0, fontSize: 18 }}>
-          Timeline
-        </h3>
-        <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>
-          Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
-        </p>
-      </div> */}
 
       <p
         style={{
@@ -118,8 +117,7 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
             style={{
               marginTop: 20,
               marginBottom: 28,
-              opacity:
-                highlightedEntityId && highlightedEntityId !== entityId ? 0.35 : 1,
+              opacity: focusedEntityId && focusedEntityId !== entityId ? 0.25 : 1,
               transition: "opacity 0.15s ease",
             }}
           >
@@ -136,8 +134,23 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
               Entity {entityId}
             </h4>
 
-            {entityRows.map((r, i) => (
-              <div key={`${r.source}-${i}`} style={{ marginBottom: 12 }}>
+            {entityRows.map((r, i) => {
+              const isSelectedIssueRow =
+                selectedIssue &&
+                String(selectedIssue.entity_id) === String(r.entity_id) &&
+                selectedIssue.source === r.source &&
+                selectedIssue.valid_from === r.valid_from &&
+                selectedIssue.valid_to === r.valid_to;
+            
+              return (
+                <div
+                  key={`${r.source}-${i}`}
+                  style={{
+                    marginBottom: 12,
+                    opacity: selectedIssue && !isSelectedIssueRow ? 0.45 : 1,
+                    transition: "all 0.15s ease",
+                  }}
+                >
                 <div style={{ marginBottom: 2, fontSize: 12 }}>
                   <strong>
                     {r.source || "default"} / {r.entity_id}
@@ -168,9 +181,9 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
                       left: `${getPosition(r.valid_from)}%`,
                       width: `${getWidth(r.valid_from, r.valid_to)}%`,
                       height: "100%",
-                      background: getSourceColor(r.source),
-                      borderRadius: 4,
-                      zIndex: 1,
+                      boxShadow: isSelectedIssueRow
+                        ? "0 0 0 3px rgba(59,130,246,0.35)"
+                        : "none",
                     }}
                   />
 
@@ -206,7 +219,8 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
                     ))}
                 </div>
               </div>
-            ))}
+                );
+              })}
 
             {/* GAPS */}
             {sources.map((source) => {
