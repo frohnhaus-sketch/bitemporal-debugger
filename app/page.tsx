@@ -1,7 +1,7 @@
 "use client";
 import { track } from "@/lib/analytics";
 import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parseCSV } from "../lib/parser";
 import type { HeaderMapping } from "../lib/parser";
 import { Timeline } from "@/components/Timeline";
@@ -447,6 +447,10 @@ WHERE ${sqlParts.join(" AND ")};`);
         } = incomplete history`
       : null,
   ].filter(Boolean);
+
+  useEffect(() => {
+    track("page_view");
+  }, []);
 
   const summaryMessage = hasCriticalIssues
     ? `Detected: ${issueParts.join(" · ")}. Open a joinability issue below to inspect the root cause and suggested fix.`
