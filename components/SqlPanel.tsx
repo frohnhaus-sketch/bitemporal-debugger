@@ -140,16 +140,9 @@ ${
             Join debugger
           </div>
 
-          <h3
-            style={{
-              marginTop: 0,
-              marginBottom: 12,
-              fontSize: 26,
-              lineHeight: 1.2,
-            }}
-          >
-            Select a temporal issue
-          </h3>
+          <h2 style={{ marginTop: 0, marginBottom: 16 }}>
+            JOIN root cause analysis
+          </h2>
 
           <p
             style={{

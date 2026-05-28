@@ -449,7 +449,7 @@ WHERE ${sqlParts.join(" AND ")};`);
   ].filter(Boolean);
 
   const summaryMessage = hasCriticalIssues
-    ? `Detected: ${issueParts.join(" · ")}. Click an issue below to see the root cause and suggested fix.`
+    ? `Detected: ${issueParts.join(" · ")}. Open a joinability issue below to inspect the root cause and suggested fix.`
     : validGapCount > 0
     ? `There are ${validGapCount} missing valid-time periods. Your history is incomplete, which may affect join results.`
     : "No gaps, overlaps, or joinability issues detected. Your temporal data looks clean.";
@@ -627,18 +627,18 @@ WHERE ${sqlParts.join(" AND ")};`);
           </div>
         </div>
       </section>
-<div
-  style={{
-    fontSize: 15,
-    color: "#cbd5e1",
-    marginBottom: 18,
-    lineHeight: 1.6,
-  }}
->
-  Paste two temporal datasets below, adjust column mappings if needed,
-  then click <strong>Analyze JOIN</strong> to detect gaps, overlaps,
-  ambiguous matches, and bitemporal inconsistencies.
-</div>
+      <div
+        style={{
+          fontSize: 15,
+          color: "#cbd5e1",
+          marginBottom: 18,
+          lineHeight: 1.6,
+        }}
+      >
+        Paste two temporal datasets below, adjust column mappings if needed,
+        then click <strong>Analyze JOIN</strong> to detect gaps, overlaps,
+        ambiguous matches, and bitemporal inconsistencies.
+      </div>
         <TwoSourceInputPanel
           inputA={inputA}
           inputB={inputB}
