@@ -119,6 +119,7 @@ export default async function EventsPage() {
     return acc;
   }, {});
 
+  const pageViews = counts["page_view"] ?? 0;
   const analyzeClicks = counts["analyze_clicked"] ?? 0;
   const reportsCopied = counts["Debug Report Copied"] ?? 0;
   const copyRate = analyzeClicks
@@ -168,8 +169,7 @@ export default async function EventsPage() {
           </h1>
 
           <p style={{ marginTop: 8, color: "#94a3b8", fontSize: 14 }}>
-            Track how users move from loading examples to analyzing joins and
-            copying debug reports.
+            Track page views, example loads, analysis runs, SQL generation, and copied debug reports.
           </p>
         </div>
 
@@ -182,6 +182,7 @@ export default async function EventsPage() {
           }}
         >
           <MetricCard label="Total events" value={events.length} />
+          <MetricCard label="Page views" value={pageViews} />
           <MetricCard label="Analyze clicks" value={analyzeClicks} />
           <MetricCard
             label="Examples loaded"
