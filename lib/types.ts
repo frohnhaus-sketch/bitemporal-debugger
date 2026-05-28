@@ -61,3 +61,26 @@ export type HighlightTarget = {
   valid_from?: string;
   valid_to?: string;
 };
+
+export type GapIssue = {
+  entity_id: string | number;
+  source?: string;
+  from?: string;
+  to?: string;
+  valid_from?: string;
+  valid_to?: string;
+};
+
+export type SelectedDebugIssue =
+  | {
+      kind: "join";
+      issue: AggregatedJoinabilityIssue;
+    }
+  | {
+      kind: "overlap";
+      issue: OverlapIssue;
+    }
+  | {
+      kind: "gap";
+      issue: GapIssue;
+    };

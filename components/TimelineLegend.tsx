@@ -7,42 +7,42 @@ type LegendItem = {
 
 const legendItems: LegendItem[] = [
   {
-    label: "Timeline (no data)",
-    color: "#e5e7eb",
+    label: "No data",
+    color: "#d1d5db",
     description:
-      "Background timeline. Indicates periods where no data exists for this entity.",
+      "Background timeline without rows for this entity.",
   },
   {
-    label: "Data row (valid interval)",
+    label: "Valid interval",
     color: "#64748b",
     description:
-      "A valid-time interval from one source. This represents actual stored data.",
+      "A stored valid-time interval.",
   },
   {
     label: "Gap",
     color: "#f59e0b",
     description:
-      "A missing valid-time period inside one source. History is incomplete for this entity.",
+      "Missing valid-time history.",
   },
   {
-    label: "No temporal match",
+    label: "No match",
     color: "#f59e0b",
     dashed: true,
     description:
-      "This row has no overlapping match in the other source for either valid-time or visible-time.",
+      "No matching interval found in the other source.",
   },
   {
     label: "Overlap",
     color: "#ef4444",
     description:
-      "Two rows from the same source cover overlapping valid-time periods. This can create ambiguous results.",
+      "Overlapping valid-time rows.",
   },
   {
-    label: "Ambiguous join",
+    label: "Ambiguous",
     color: "#ef4444",
     dashed: true,
     description:
-      "Multiple matching rows found in the other source. The join result is not unique.",
+      "Multiple temporal matches found.",
   },
 ];
 
@@ -51,13 +51,14 @@ export function TimelineLegend() {
     <div
       style={{
         display: "flex",
-        gap: 14,
+        gap: 12,
         flexWrap: "wrap",
         alignItems: "center",
-        marginTop: 12,
-        marginBottom: 20,
-        color: "white",
-        fontSize: 12,
+        marginTop: 10,
+        marginBottom: 8,
+        color: "#cbd5e1",
+        fontSize: 11,
+        opacity: 0.9,
       }}
     >
       {legendItems.map((item) => (
@@ -67,20 +68,21 @@ export function TimelineLegend() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 6,
+            gap: 5,
             cursor: "help",
+            whiteSpace: "nowrap",
           }}
         >
           <span
             style={{
-              width: 22,
-              height: 8,
+              width: 18,
+              height: 7,
               borderRadius: 999,
               background: item.dashed ? "transparent" : item.color,
               border: item.dashed
                 ? `2px dashed ${item.color}`
                 : `1px solid ${item.color}`,
-              opacity: item.color === "#e5e7eb" ? 0.6 : 1,
+              opacity: item.color === "#d1d5db" ? 0.45 : 0.95,
               display: "inline-block",
             }}
           />

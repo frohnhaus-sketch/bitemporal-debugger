@@ -90,6 +90,10 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
       {" "}
       <span style={{ marginLeft: 8, marginRight: 14, opacity: 0.5 }}>—</span>
       {" "}
+      <span style={{ color: "#d1d5db" }}>■</span> No data
+      {" "}
+      ·
+      {" "}
       <span style={{ color: "#64748b" }}>■</span> Valid interval
       {" "}
       ·

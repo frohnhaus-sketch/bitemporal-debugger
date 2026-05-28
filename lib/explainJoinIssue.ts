@@ -32,7 +32,9 @@ export function explainJoinIssue(
 
   if (issue.type === "JOIN_AMBIGUITY" || issue.reason === "MULTIPLE_MATCHES") {
     return {
-      headline: `${issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"} creates duplicate JOIN results.`,
+      headline: `${
+        issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"
+      } creates duplicate JOIN results.`,
       title: "Ambiguous join",
       summary: `${scope}. The join from ${direction} finds multiple possible matches.`,
       cause:
@@ -51,16 +53,19 @@ export function explainJoinIssue(
         "Deduplicate rows for the same entity and valid-time window.",
         "Add a deterministic tie-breaker, for example latest visible_from.",
       ],
-      sqlSuggestion: `QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY entity_id, valid_from, valid_to
-        ORDER BY visible_from DESC
-      ) = 1`,
+      sqlSuggestion: `-- Keep one temporal match deterministically
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY entity_id, valid_from, valid_to
+  ORDER BY visible_from DESC
+) = 1`,
     };
   }
 
   if (issue.reason === "NO_VALID_MATCH") {
     return {
-      headline: `${issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"} has no valid-time match.`,
+      headline: `${
+        issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"
+      } has no valid-time match.`,
       title: "No valid-time match",
       summary: `${scope}. No row in ${issue.targetSource} covers the same valid-time period.`,
       cause: `The valid-time range ${issue.valid_from} → ${issue.valid_to} in ${issue.source} does not overlap with a matching row in ${issue.targetSource}.`,
@@ -80,19 +85,21 @@ export function explainJoinIssue(
         "Align the business validity rules between both sources.",
       ],
       sqlSuggestion: `-- Find source rows without a valid-time match
-      SELECT a.*
-      FROM source_a a
-      LEFT JOIN source_b b
-        ON a.entity_id = b.entity_id
-       AND a.valid_from <= b.valid_to
-       AND a.valid_to >= b.valid_from
-      WHERE b.entity_id IS NULL;`,
+SELECT a.*
+FROM source_a a
+LEFT JOIN source_b b
+  ON a.entity_id = b.entity_id
+ AND a.valid_from <= b.valid_to
+ AND a.valid_to >= b.valid_from
+WHERE b.entity_id IS NULL;`,
     };
   }
 
   if (issue.reason === "NO_VISIBLE_OVERLAP") {
     return {
-      headline: `${issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"} has no visible-time overlap.`,
+      headline: `${
+        issue.entity_id ? `Entity ${issue.entity_id}` : "This pattern"
+      } has no visible-time overlap.`,
       title: "No visible-time overlap",
       summary: `${scope}. A valid-time match exists, but both records were not visible at the same time.`,
       cause:
@@ -113,8 +120,8 @@ export function explainJoinIssue(
         "If correct for your use case, join against the latest visible record as of the analysis timestamp.",
       ],
       sqlSuggestion: `-- Require visible-time overlap
-      AND a.visible_from < b.visible_to
-      AND b.visible_from < a.visible_to`,
+AND a.visible_from < b.visible_to
+AND b.visible_from < a.visible_to`,
     };
   }
 

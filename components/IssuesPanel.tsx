@@ -55,7 +55,7 @@ export function IssuesPanel({
         color: "#0f172a",
       }}
     >
-      <h3 style={{ marginBottom: 12, fontSize: 18 }}>Errors</h3>
+      <h3 style={{ marginBottom: 12, fontSize: 18 }}>Temporal integrity issues</h3>
 
       {uniqueErrors.length > 0 ? (
         <>

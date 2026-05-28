@@ -68,7 +68,7 @@ export function TwoSourceInputPanel({
             e.currentTarget.style.transform = "translateY(0)";
           }}
         >
-          Load example
+          Load temporal join demo
         </button>
         
         <button
@@ -78,25 +78,29 @@ export function TwoSourceInputPanel({
           }}
           disabled={!canAnalyze}
           style={{
-            padding: "18px 24px",
+            padding: "16px 22px",
             borderRadius: 10,
-            background: "#2563eb",
+            background: canAnalyze ? "#1d4ed8" : "#1e293b",
             color: "white",
-            border: "none",
-            fontWeight: 800,
-            fontSize: 16,
+            border: "1px solid rgba(255,255,255,0.08)",
+            fontWeight: 700,
+            fontSize: 15,
             cursor: canAnalyze ? "pointer" : "not-allowed",
-            opacity: canAnalyze ? 1 : 0.5,
+            opacity: canAnalyze ? 1 : 0.55,
             boxShadow: canAnalyze
-              ? "0 10px 28px rgba(37,99,235,0.35)"
+              ? "0 4px 14px rgba(37,99,235,0.18)"
               : "none",
-            transform: canAnalyze ? "scale(1.02)" : "none",
             transition: "all 0.15s ease",
           }}
           onMouseEnter={(e) => {
+            if (!canAnalyze) return;
+            e.currentTarget.style.background = "#2563eb";
             e.currentTarget.style.transform = "translateY(-1px)";
           }}
+
           onMouseLeave={(e) => {
+            if (!canAnalyze) return;
+            e.currentTarget.style.background = "#1d4ed8";
             e.currentTarget.style.transform = "translateY(0)";
           }}
         >
@@ -163,7 +167,15 @@ export function TwoSourceInputPanel({
               padding: 10,
             }}
           />
-
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontSize: 13,
+              color: "#93c5fd",
+            }}          
+          >
+            Debugging a self-join? Paste the same table into Source A and Source B.
+          </p>
           <button
             onClick={onCopyAtoB}
             style={{
@@ -184,12 +196,7 @@ export function TwoSourceInputPanel({
           </button>
         </div>
       </div>
-
       {controls}
-
-      <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8, }}>
-        Debugging a self-join? Paste the same table in both fields.
-      </p>
     </div>
   );
 }

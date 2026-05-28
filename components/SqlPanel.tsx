@@ -79,7 +79,7 @@ ${
           whiteSpace: "pre-wrap",
         }}
       >
-        {sql || "No SQL generated yet"}
+        {sql || "Click “Generate SQL” to create an as-of query."}
       </pre>
 
       <div
@@ -123,39 +123,63 @@ ${
             background: "#f8fafc",
             border: "1px solid #cbd5e1",
             borderRadius: 12,
-            padding: 20,
-            fontSize: 13,
-            lineHeight: 1.6,
+            padding: 24,
             color: "#0f172a",
           }}
         >
           <div
             style={{
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: 700,
               textTransform: "uppercase",
-              letterSpacing: 0.6,
+              letterSpacing: 0.8,
               color: "#64748b",
-              marginBottom: 6,
+              marginBottom: 10,
             }}
           >
-            Debugger output
+            Join debugger
           </div>
-          
-          <h3 style={{ marginTop: 0, marginBottom: 10 }}>
-            Select an issue to debug the JOIN
+
+          <h3
+            style={{
+              marginTop: 0,
+              marginBottom: 12,
+              fontSize: 26,
+              lineHeight: 1.2,
+            }}
+          >
+            Select a temporal issue
           </h3>
-          
-          <p style={{ marginTop: 0, marginBottom: 10 }}>
-            The explanation panel will show:
+
+          <p
+            style={{
+              marginTop: 0,
+              marginBottom: 16,
+              color: "#475569",
+              lineHeight: 1.7,
+              maxWidth: 520,
+              fontSize: 15,
+            }}
+          >
+            The debugger explains why the JOIN becomes historically
+            incorrect and highlights the affected intervals, matching
+            behavior, and likely fixes.
           </p>
-          
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            <li>why the JOIN fails</li>
-            <li>which rows or patterns are affected</li>
-            <li>what to check next</li>
-            <li>likely fix suggestions</li>
-          </ul>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              fontSize: 15,
+              color: "#0f172a",
+            }}
+          >
+            <div>→ root cause analysis</div>
+            <div>→ affected temporal ranges</div>
+            <div>→ ambiguous or missing matches</div>
+            <div>→ suggested SQL debugging steps</div>
+          </div>
         </div>
       )}
 

@@ -1,5 +1,4 @@
 "use client";
-import { IssueExplanation } from "@/components/IssueExplanation";
 import { track } from "@/lib/analytics";
 import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
 import { useState } from "react";
@@ -494,7 +493,7 @@ WHERE ${sqlParts.join(" AND ")};`);
             letterSpacing: -0.8,
           }}
         >
-          Debug broken temporal JOINs in seconds.
+          Debug temporal SQL joins visually
         </h1>
         
         <p
@@ -506,8 +505,7 @@ WHERE ${sqlParts.join(" AND ")};`);
             margin: "0 0 20px",
           }}
         >
-          Paste two query results and instantly see why your JOIN returns missing,
-          duplicated, or incorrect rows.
+          Find gaps, overlaps, ambiguous matches, and bitemporal inconsistencies before they reach production.
         </p>
         
         <div
@@ -520,7 +518,7 @@ WHERE ${sqlParts.join(" AND ")};`);
           }}
         >        
           <span style={{ color: "#94a3b8", fontSize: 12, opacity: 0.7 }}>
-            Works with Databricks, Snowflake, BigQuery · CSV / TSV copy & paste
+            No signup. Runs entirely in your browser.
           </span>
         </div>
           
@@ -629,7 +627,18 @@ WHERE ${sqlParts.join(" AND ")};`);
           </div>
         </div>
       </section>
-
+<div
+  style={{
+    fontSize: 15,
+    color: "#cbd5e1",
+    marginBottom: 18,
+    lineHeight: 1.6,
+  }}
+>
+  Paste two temporal datasets below, adjust column mappings if needed,
+  then click <strong>Analyze JOIN</strong> to detect gaps, overlaps,
+  ambiguous matches, and bitemporal inconsistencies.
+</div>
         <TwoSourceInputPanel
           inputA={inputA}
           inputB={inputB}
@@ -678,28 +687,24 @@ WHERE ${sqlParts.join(" AND ")};`);
             <div
               style={{
                 background: "#ffffff",
-                padding: 12,
+                padding: 16,
                 borderRadius: 10,
                 marginTop: 12,
                 marginBottom: 12,
-                display: "flex",
-                gap: 16,
-                flexWrap: "wrap",
-                alignItems: "flex-end",
               }}
             >
               {(headerMappingsA.length > 0 || headerMappingsB.length > 0) && (
                 <div
                   style={{
                     width: "100%",
-                    marginBottom: 12,
+                    marginBottom: 0,
                     background: "#0f172a",
                     border: "1px solid #1e293b",
                     borderRadius: 10,
                     padding: 12,
                   }}
                 >
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 5 }}>
                     Column mapping
                   </div>
                 
@@ -810,20 +815,39 @@ WHERE ${sqlParts.join(" AND ")};`);
                   </div>
                 </div>
               )}
-              <div>
-                <label style={{ fontSize: 12 }}>Temporal validation mode</label>
-                <br />
-                <select
-                  value={validationMode}
-                  onChange={(e) =>
-                    setValidationModeAndAnalyze(e.target.value as ValidationMode)
-                  }
+              <div style={{ marginBottom: 18, marginTop: 18 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "#64748b",
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    marginBottom: 6,
+                  }}
                 >
-                  <option value="monotemporal">Valid-time only — stricter for history</option>
-                  <option value="bitemporal">Valid + visible time — bitemporal</option>
-                </select>
-              </div>
+                  As-of query & SQL generation
+                </div>
                 
+                <div
+                  style={{
+                    fontSize: 14,
+                    color: "#94a3b8",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Generate temporal SQL queries for a specific business-effective and
+                  visible-time state.
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  flexWrap: "wrap",
+                  alignItems: "flex-end",
+                }}
+              >
               <div>
                 <label style={{ fontSize: 12 }}>Valid As-of Date</label>
                 <br />
@@ -883,6 +907,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               >
                 Generate SQL
               </button>
+              </div>
             </div>
           }
         />
@@ -939,10 +964,10 @@ WHERE ${sqlParts.join(" AND ")};`);
                   fontSize: 14,
                 }}
               >
-                <span>{validGapCount} valid-time gaps</span>
-                <span>{joinGapCount} join gaps</span>
-                <span>{joinAmbiguityCount} ambiguous matches</span>
-                <span>{overlapCount} overlaps</span>
+                <span>valid-time gaps: {validGapCount}</span>
+                <span>join gaps: {joinGapCount}</span>
+                <span>ambiguous matches: {joinAmbiguityCount}</span>
+                <span>overlaps: {overlapCount}</span>
               </div>
               <p
                 style={{
@@ -1013,7 +1038,6 @@ WHERE ${sqlParts.join(" AND ")};`);
               onSelectIssue={setSelectedIssue}
               highlightedEntityId={highlightedRow?.entity_id ?? null}
             />
-            <IssueExplanation issue={selectedIssue} />
             <TimelineLegend />
           </>
         )}

@@ -8,7 +8,7 @@ export function Footer() {
         color: "#94a3b8",
       }}
     >
-      Built by{" "}
+      Built for debugging historized and bitemporal datasets. By{" "}
       <a
         href="https://www.linkedin.com/in/jakob-frohnhaus/"
         target="_blank"
