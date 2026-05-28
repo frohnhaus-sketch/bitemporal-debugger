@@ -1,9 +1,15 @@
 export function track(event: string, data?: Record<string, unknown>) {
-  if (
-    typeof window !== "undefined" &&
-    localStorage.getItem("ignoreAnalytics") === "true"
-  ) {
-    return;
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("ignoreAnalytics") === "true") {
+      localStorage.setItem("ignoreAnalytics", "true");
+      return;
+    }
+
+    if (localStorage.getItem("ignoreAnalytics") === "true") {
+      return;
+    }
   }
 
   fetch("/api/track", {
