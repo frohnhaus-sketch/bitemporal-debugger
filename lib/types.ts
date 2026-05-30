@@ -1,4 +1,18 @@
-// lib/types.ts
+export type TemporalIssue = {
+  id: string;
+  type: TemporalIssueType;
+  entity_id: string | number;
+  source?: string;
+  targetSource?: string;
+  from?: string;
+  to?: string;
+  severity: TemporalIssueSeverity;
+  affectedRows?: number[];
+  title: string;
+  explanation: string;
+  originalIssue?: SelectedDebugIssue;
+};
+
 export type BitemporalRow = {
   source: string;
   entity_id: string;
@@ -84,3 +98,11 @@ export type SelectedDebugIssue =
       kind: "gap";
       issue: GapIssue;
     };
+
+export type TemporalIssueType =
+  | "OVERLAP"
+  | "VALID_GAP"
+  | "JOIN_GAP"
+  | "JOIN_AMBIGUITY";
+
+export type TemporalIssueSeverity = "low" | "medium" | "high";

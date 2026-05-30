@@ -63,6 +63,71 @@ const COLUMN_ALIASES: Record<string, string> = {
   expired_at: "visible_to",
 };
 
+const REQUIRED_COLUMNS = ["entity_id", "valid_from", "valid_to"];
+
+function looksLikeDate(value: string | undefined) {
+  if (!value) return false;
+  return /^\d{4}-\d{2}-\d{2}/.test(value.trim());
+}
+
+function looksLikeHeaderCell(value: string | undefined) {
+  if (!value) return false;
+
+  const key = value.trim().toLowerCase();
+
+  return (
+    key in COLUMN_ALIASES ||
+    key.includes("valid") ||
+    key.includes("visible") ||
+    key.includes("system") ||
+    key.includes("transaction") ||
+    key.includes("entity") ||
+    key.endsWith("_id") ||
+    key === "id" ||
+    key === "value" ||
+    key === "status"
+  );
+}
+
+function inferHeaderlessMapping(firstValues: string[]): HeaderMapping[] {
+  const columnCount = firstValues.length;
+
+  const inferred =
+    columnCount <= 3
+      ? ["entity_id", "valid_from", "valid_to"]
+      : columnCount === 4
+      ? ["entity_id", "value", "valid_from", "valid_to"]
+      : columnCount === 5
+      ? ["entity_id", "value", "valid_from", "valid_to", "visible_from"]
+      : [
+          "entity_id",
+          "value",
+          "valid_from",
+          "valid_to",
+          "visible_from",
+          "visible_to",
+        ];
+
+  return firstValues.map((_, index) => ({
+    original: `column_${index + 1}`,
+    normalized: inferred[index] ?? "",
+  }));
+}
+
+function hasUsableHeaders(values: string[]) {
+  const normalized = values.map((value) => normalizeHeader(value).normalized);
+
+  const hasRequiredColumns = REQUIRED_COLUMNS.every((required) =>
+    normalized.includes(required)
+  );
+
+  const hasHeaderLikeCells = values.some((value) => looksLikeHeaderCell(value));
+  const firstRowLooksLikeData =
+    values.length >= 3 && looksLikeDate(values[1]) && looksLikeDate(values[2]);
+
+  return hasRequiredColumns || (hasHeaderLikeCells && !firstRowLooksLikeData);
+}
+
 export function normalizeHeader(header: string): HeaderMapping {
   const original = header.trim();
   const key = original.toLowerCase();
@@ -130,18 +195,23 @@ export function parseCSV(text: string): ParseResult {
   }
 
   const delimiter = detectDelimiter(text);
+  const firstValues = lines[0].split(delimiter).map(normalizeValue);
 
-  const headerMappings = lines[0]
-    .split(delimiter)
-    .map((h) => normalizeHeader(h));
+  const useHeaderRow = hasUsableHeaders(firstValues);
+
+  const headerMappings = useHeaderRow
+    ? firstValues.map((h) => normalizeHeader(h))
+    : inferHeaderlessMapping(firstValues);
 
   const headers = headerMappings.map((h) => h.normalized);
+  const dataLines = useHeaderRow ? lines.slice(1) : lines;
 
-  const rows = lines.slice(1).map((line) => {
+  const rows = dataLines.map((line) => {
     const values = line.split(delimiter);
     const obj: any = {};
 
     headers.forEach((h, i) => {
+      if (!h) return;
       obj[h] = normalizeValue(values[i]);
     });
 

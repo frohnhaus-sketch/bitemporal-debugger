@@ -1,4 +1,4 @@
-import type { AggregatedJoinabilityIssue, DriftSummary } from "@/lib/types";
+import type { AggregatedJoinabilityIssue, DriftSummary, TemporalIssue } from "@/lib/types";
 import { track } from "@vercel/analytics";
 
 type IssuesPanelProps = {
@@ -7,6 +7,9 @@ type IssuesPanelProps = {
   joinIssues: AggregatedJoinabilityIssue[];
   selectedIssue: AggregatedJoinabilityIssue | null;
   setSelectedIssue: (j: AggregatedJoinabilityIssue) => void;
+  temporalIssues: TemporalIssue[];
+  selectedTemporalIssue: TemporalIssue | null;
+  onSelectTemporalIssue: (issue: TemporalIssue | null) => void;
 };
 
 function formatJoinReason(reason: string) {
@@ -31,6 +34,9 @@ export function IssuesPanel({
   joinIssues,
   selectedIssue,
   setSelectedIssue,
+  temporalIssues,
+  selectedTemporalIssue,
+  onSelectTemporalIssue,
 }: IssuesPanelProps) {
   const aggregatedJoinGaps = joinIssues.filter(
     (issue) => issue.type === "JOIN_GAP" && issue.isAggregated
@@ -56,6 +62,23 @@ export function IssuesPanel({
       }}
     >
       <h3 style={{ marginBottom: 12, fontSize: 18 }}>Temporal integrity issues</h3>
+
+      {temporalIssues.length > 0 && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "10px 12px",
+            borderRadius: 8,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            fontSize: 12,
+            color: "#475569",
+          }}
+        >
+          {temporalIssues.length} normalized temporal issue
+          {temporalIssues.length === 1 ? "" : "s"} detected
+        </div>
+      )}
 
       {uniqueErrors.length > 0 ? (
         <>

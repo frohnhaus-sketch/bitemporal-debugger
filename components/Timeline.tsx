@@ -1,4 +1,4 @@
-import type { BitemporalRow, AggregatedJoinabilityIssue, OverlapIssue } from "@/lib/types";
+import type { BitemporalRow, AggregatedJoinabilityIssue, OverlapIssue, TemporalIssue } from "@/lib/types";
 
 type GapIssue = {
   entity_id: string | number;
@@ -13,35 +13,55 @@ type TimelineProps = {
   rows: BitemporalRow[];
   gaps: GapIssue[];
   overlapMarkers: OverlapIssue[];
-  joinIssues: AggregatedJoinabilityIssue[];
   getPosition: (date: string) => number;
   getWidth: (from: string, to: string) => number;
-  getSourceColor: (source: string) => string;
-  onSelectIssue: (issue: AggregatedJoinabilityIssue) => void;
   highlightedEntityId: string | null;
   selectedIssue: AggregatedJoinabilityIssue | null;
+  temporalIssues: TemporalIssue[];
+  selectedTemporalIssue: TemporalIssue | null;
+  onSelectTemporalIssue: (issue: TemporalIssue | null) => void;
 };
+
+function addOneDay(date: string) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function normalizeGapStart(from: string, rowEndDates: string[]) {
+  if (rowEndDates.includes(from)) {
+    return addOneDay(from);
+  }
+
+  return from;
+}
 
 export function Timeline({
   rows,
   gaps,
   overlapMarkers,
-  joinIssues,
   getPosition,
   getWidth,
-  getSourceColor,
-  onSelectIssue,
   highlightedEntityId,
   selectedIssue,
+  temporalIssues,
+  selectedTemporalIssue,
+  onSelectTemporalIssue,
 }: TimelineProps) {
 
   const MAX_TIMELINE_ROWS = 80;
   const visibleRows = rows.slice(0, MAX_TIMELINE_ROWS);
-  const focusedEntityId = selectedIssue
-    ? String(selectedIssue.entity_id)
-    : highlightedEntityId
-    ? String(highlightedEntityId)
-    : null;
+
+  const focusedTemporalIssueEntityId = selectedTemporalIssue
+  ? String(selectedTemporalIssue.entity_id)
+  : null;
+
+  const focusedEntityId = focusedTemporalIssueEntityId
+   ?? (selectedIssue
+     ? String(selectedIssue.entity_id)
+     : highlightedEntityId
+     ? String(highlightedEntityId)
+     : null);
 
   const groupedRows = visibleRows.reduce<Record<string, BitemporalRow[]>>((acc, row) => {
     const key = String(row.entity_id ?? "unknown");
@@ -66,8 +86,36 @@ export function Timeline({
     );
   }
 
+  function getEntityTemporalIssues(
+    entityId: string,
+    source: string,
+    row: BitemporalRow
+  ) {
+    return temporalIssues.filter((issue) => {
+      if (String(issue.entity_id) !== String(entityId)) return false;
+      if (issue.source !== source) return false;
+      if (!issue.from || !issue.to) return false;
+      if (issue.type === "JOIN_GAP" || issue.type === "JOIN_AMBIGUITY") {
+        const originalJoinIssue =
+          issue.originalIssue?.kind === "join"
+            ? issue.originalIssue.issue
+            : null;
+
+        if (!originalJoinIssue) return false;
+
+        return (
+          originalJoinIssue.valid_from === row.valid_from &&
+          originalJoinIssue.valid_to === row.valid_to
+        );
+      }
+
+      return true;
+    });
+  }
+
   return (
     <div
+      onClick={() => onSelectTemporalIssue(null)}
       style={{
         background: "#ffffff",
         color: "#0f172a",
@@ -106,6 +154,28 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
       · Dashed border = join issue
       </p>
 
+      {selectedTemporalIssue && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectTemporalIssue(null);
+          }}
+          style={{
+            marginTop: 10,
+            marginBottom: 10,
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid #cbd5e1",
+            background: "#f8fafc",
+            color: "#334155",
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          Clear focus
+        </button>
+      )}
+
       {Object.entries(groupedRows).map(([entityId, entityRows]) => {
         const sources = Array.from(
           new Set(entityRows.map((r) => r.source).filter(Boolean))
@@ -135,19 +205,33 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
             </h4>
 
             {entityRows.map((r, i) => {
+              const isSelectedTemporalIssueRow =
+                selectedTemporalIssue &&
+                String(selectedTemporalIssue.entity_id) === String(r.entity_id) &&
+                selectedTemporalIssue.source === r.source &&
+                selectedTemporalIssue.from === r.valid_from &&
+                selectedTemporalIssue.to === r.valid_to;
+
               const isSelectedIssueRow =
-                selectedIssue &&
-                String(selectedIssue.entity_id) === String(r.entity_id) &&
-                selectedIssue.source === r.source &&
-                selectedIssue.valid_from === r.valid_from &&
-                selectedIssue.valid_to === r.valid_to;
+                isSelectedTemporalIssueRow ||
+                (selectedIssue &&
+                  String(selectedIssue.entity_id) === String(r.entity_id) &&
+                  selectedIssue.source === r.source &&
+                  selectedIssue.valid_from === r.valid_from &&
+                  selectedIssue.valid_to === r.valid_to);
             
               return (
                 <div
                   key={`${r.source}-${i}`}
                   style={{
                     marginBottom: 12,
-                    opacity: selectedIssue && !isSelectedIssueRow ? 0.45 : 1,
+                    opacity:
+                      selectedTemporalIssue &&
+                      String(selectedTemporalIssue.entity_id) === String(r.entity_id)
+                        ? 1
+                        : (selectedTemporalIssue || selectedIssue) && !isSelectedIssueRow
+                        ? 0.35
+                        : 1,
                     transition: "all 0.15s ease",
                   }}
                 >
@@ -181,13 +265,61 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
                       left: `${getPosition(r.valid_from)}%`,
                       width: `${getWidth(r.valid_from, r.valid_to)}%`,
                       height: "100%",
+                      background: "#64748b",
+                      borderRadius: 999,
                       boxShadow: isSelectedIssueRow
-                        ? "0 0 0 3px rgba(59,130,246,0.35)"
+                        ? "0 0 0 3px rgba(59,130,246,0.45)"
                         : "none",
                     }}
                   />
 
-                  {joinIssues
+                  {getEntityTemporalIssues(String(r.entity_id), r.source, r).map((issue) => {
+                    const isSelected = selectedTemporalIssue?.id === issue.id;
+                  
+                    const matchingValidGap =
+                      issue.type === "JOIN_GAP"
+                        ? temporalIssues.find(
+                            (gapIssue) =>
+                              gapIssue.type === "VALID_GAP" &&
+                              String(gapIssue.entity_id) === String(issue.entity_id) &&
+                              gapIssue.source === issue.source &&
+                              gapIssue.from &&
+                              gapIssue.to
+                          )
+                        : null;
+                        
+                    const displayFrom = matchingValidGap?.from ?? issue.from!;
+                    const displayTo = matchingValidGap?.to ?? issue.to!;
+                        
+                    return (
+                      <div
+                        key={issue.id}
+                        title={`${issue.title}: ${displayFrom} → ${displayTo}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectTemporalIssue(issue);
+                        }}
+                        style={{
+                          position: "absolute",
+                          left: `${getPosition(displayFrom)}%`,
+                          width: `${getWidth(displayFrom, displayTo)}%`,
+                          height: "100%",
+                          border:
+                            issue.type === "JOIN_AMBIGUITY" || issue.type === "OVERLAP"
+                              ? "3px dashed #ef4444"
+                              : "3px dashed #f59e0b",
+                          background: isSelected
+                            ? "rgba(59, 130, 246, 0.25)"
+                            : "transparent",
+                          borderRadius: 999,
+                          cursor: "pointer",
+                          zIndex: 6,
+                        }}
+                      />
+                    );
+                  })}
+
+                  {/* {joinIssues
                     .filter(
                       (j) =>
                         String(j.entity_id) === String(r.entity_id) &&
@@ -216,7 +348,7 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
                           zIndex: 4,
                         }}
                       />
-                    ))}
+                    ))} */}
                 </div>
               </div>
                 );
@@ -245,20 +377,44 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
                     }}
                   >
                     {sourceGaps.map((g, j) => {
-                      const from = g.from ?? g.valid_from;
+                      const rawFrom = g.from ?? g.valid_from;
                       const to = g.to ?? g.valid_to;
-                      if (!from || !to) return null;
+                      if (!rawFrom || !to) return null;
 
+                      const rowEndDates = entityRows
+                        .filter((row) => row.source === source)
+                        .map((row) => row.valid_to);
+
+                      const from = normalizeGapStart(rawFrom, rowEndDates);
+                    
+                      const matchingIssue =
+                        temporalIssues.find(
+                          (issue) =>
+                            issue.type === "VALID_GAP" &&
+                            String(issue.entity_id) === String(g.entity_id) &&
+                            issue.source === source
+                        ) ?? null;
+                      
+                      const isSelected = selectedTemporalIssue?.id === matchingIssue?.id;
+                      
                       return (
                         <div
                           key={j}
                           title={`Gap: no valid record exists between ${from} and ${to}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectTemporalIssue(matchingIssue);
+                          }}
                           style={{
                             position: "absolute",
                             left: `${getPosition(from)}%`,
                             width: `${getWidth(from, to)}%`,
                             height: "100%",
                             background: "#f59e0b",
+                            cursor: "pointer",
+                            zIndex: 10,
+                            outline: isSelected ? "2px solid #2563eb" : "none",
+                            outlineOffset: 2,
                           }}
                         />
                       );
@@ -290,19 +446,39 @@ Visualizes valid-time ranges and highlights gaps, overlaps, and join issues.
                       overflow: "hidden",
                     }}
                   >
-                    {overlaps.map((o, k) => (
-                      <div
-                        key={k}
-                        title={`Overlap: multiple records are valid at the same time (${o.from} → ${o.to})`}
-                        style={{
-                          position: "absolute",
-                          left: `${getPosition(o.from)}%`,
-                          width: `${getWidth(o.from, o.to)}%`,
-                          height: "100%",
-                          background: "#ef4444",
-                        }}
-                      />
-                    ))}
+                    {overlaps.map((o, k) => {
+                      const matchingIssue =
+                        temporalIssues.find(
+                          (issue) =>
+                            issue.type === "OVERLAP" &&
+                            String(issue.entity_id) === String(o.entity_id) &&
+                            issue.source === source
+                        ) ?? null;
+                      
+                      const isSelected = selectedTemporalIssue?.id === matchingIssue?.id;
+                      
+                      return (
+                        <div
+                          key={k}
+                          title={`Overlap: multiple records are valid at the same time (${o.from} → ${o.to})`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectTemporalIssue(matchingIssue);
+                          }}
+                          style={{
+                            position: "absolute",
+                            left: `${getPosition(o.from)}%`,
+                            width: `${getWidth(o.from, o.to)}%`,
+                            height: "100%",
+                            background: "#ef4444",
+                            cursor: "pointer",
+                            zIndex: 10,
+                            outline: isSelected ? "2px solid #2563eb" : "none",
+                            outlineOffset: 2,
+                          }}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               );

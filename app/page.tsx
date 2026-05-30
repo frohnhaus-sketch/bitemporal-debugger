@@ -1,4 +1,6 @@
 "use client";
+import { buildTemporalIssues } from "../lib/temporalIssues";
+import type { TemporalIssue } from "../lib/types";
 import { track } from "@/lib/analytics";
 import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
 import { useEffect, useState } from "react";
@@ -52,6 +54,7 @@ export default function Home() {
   const [result, setResult] = useState<string[]>([]);
   const [joinIssues, setJoinIssues] = useState<AggregatedJoinabilityIssue[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<AggregatedJoinabilityIssue | null>(null);
+  const [selectedTemporalIssue, setSelectedTemporalIssue] = useState<TemporalIssue | null>(null);
   const [inputA, setInputA] = useState("");
   const [inputB, setInputB] = useState("");
   const [sourceNameA, setSourceNameA] = useState("source_a");
@@ -88,6 +91,7 @@ export default function Home() {
     setResult([]);
     setJoinIssues([]);
     setSelectedIssue(null);
+    setSelectedTemporalIssue(null);
     setGaps([]);
     setDrifts([]);
     setOverlapMarkers([]);
@@ -271,6 +275,7 @@ export default function Home() {
     setDrifts(detectDrift(combinedRows));
     setOverlapMarkers(detectOverlapMarkers(combinedRows, mode));
     setSelectedIssue(null);
+    setSelectedTemporalIssue(null);
     if (combinedRows.length > 0) {
       // beide Sources aufklappen
       setExpandedSources([sourceAName, sourceBName]);
@@ -371,6 +376,40 @@ export default function Home() {
     return validOk && visibleOk;
   });
 
+  const temporalIssues = buildTemporalIssues({
+    joinIssues,
+    gaps,
+    overlapMarkers,
+  });
+
+  function selectTemporalIssue(issue: TemporalIssue | null) {
+    setSelectedTemporalIssue(issue);
+
+    if (issue?.originalIssue?.kind === "join") {
+      setSelectedIssue(issue.originalIssue.issue);
+    } else {
+      setSelectedIssue(null);
+    }
+  }
+
+  function selectJoinIssue(issue: AggregatedJoinabilityIssue | null) {
+    setSelectedIssue(issue);
+
+    if (!issue) {
+      setSelectedTemporalIssue(null);
+      return;
+    }
+
+    const matchingTemporalIssue =
+      temporalIssues.find(
+        (temporalIssue) =>
+          temporalIssue.originalIssue?.kind === "join" &&
+          temporalIssue.originalIssue.issue === issue
+      ) ?? null;
+
+    setSelectedTemporalIssue(matchingTemporalIssue);
+  }
+
   function generateSQL() {
     track("sql_generated");
     const sqlParts: string[] = [];
@@ -393,7 +432,7 @@ export default function Home() {
     setSql(`SELECT *
 FROM your_table
 WHERE ${sqlParts.join(" AND ")};`);
-  }
+ }
 
   const joinGapCount = joinIssues.filter((i) => i.type === "JOIN_GAP").length;
   const joinAmbiguityCount = joinIssues.filter(
@@ -1001,7 +1040,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               title={`Source A: ${sourceNameA}`}
               rows={rows.filter((r) => r.source === sourceNameA)}
               joinIssues={joinIssues}
-              onSelectIssue={setSelectedIssue}
+              onSelectIssue={selectJoinIssue}
               highlightedRow={highlightedRow}
               onHighlightRow={setHighlightedRow}
               forceOpen={expandedSources.includes(sourceNameA)}
@@ -1012,7 +1051,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               title={`Source B: ${sourceNameB}`}
               rows={rows.filter((r) => r.source === sourceNameB)}
               joinIssues={joinIssues}
-              onSelectIssue={setSelectedIssue}
+              onSelectIssue={selectJoinIssue}
               highlightedRow={highlightedRow}
               onHighlightRow={setHighlightedRow}
               forceOpen={expandedSources.includes(sourceNameB)}
@@ -1026,7 +1065,10 @@ WHERE ${sqlParts.join(" AND ")};`);
                 drifts={drifts}
                 joinIssues={joinIssues}
                 selectedIssue={selectedIssue}
-                setSelectedIssue={setSelectedIssue}
+                setSelectedIssue={selectJoinIssue}
+                temporalIssues={temporalIssues}
+                selectedTemporalIssue={selectedTemporalIssue}
+                onSelectTemporalIssue={selectTemporalIssue}
               />
 
               <SqlPanel sql={sql} selectedIssue={selectedIssue} />
@@ -1036,12 +1078,12 @@ WHERE ${sqlParts.join(" AND ")};`);
               rows={filteredRows}
               gaps={gaps}
               overlapMarkers={overlapMarkers}
-              joinIssues={joinIssues}
               selectedIssue={selectedIssue}
+              temporalIssues={temporalIssues}
+              selectedTemporalIssue={selectedTemporalIssue}
+              onSelectTemporalIssue={selectTemporalIssue}
               getPosition={getPosition}
               getWidth={getWidth}
-              getSourceColor={getSourceColor}
-              onSelectIssue={setSelectedIssue}
               highlightedEntityId={highlightedRow?.entity_id ?? null}
             />
             <TimelineLegend />

@@ -7,6 +7,7 @@ import type {
   ValidationMode,
   OverlapIssue,
   DriftSummary,
+  GapIssue,
 } from "./types";
 
 function hasValidOverlap(a: BitemporalRow, b: BitemporalRow) {
@@ -145,8 +146,17 @@ export function detectFlaggedOverlapRows(
   return flagged;
 }
 
+function dateOnlyToUtcMs(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+function utcMsToDateOnly(ms: number) {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
 export function detectGaps(rows: BitemporalRow[]) {
-  const gaps: any[] = [];
+  const gaps: GapIssue[] = [];
   const groups: Record<string, BitemporalRow[]> = {};
 
   rows.forEach((row) => {
@@ -162,27 +172,28 @@ export function detectGaps(rows: BitemporalRow[]) {
   Object.values(groups).forEach((groupRows) => {
     const sorted = [...groupRows].sort(
       (a, b) =>
-        new Date(a.valid_from).getTime() - new Date(b.valid_from).getTime()
+        dateOnlyToUtcMs(a.valid_from) -
+        dateOnlyToUtcMs(b.valid_from)
     );
 
     for (let i = 0; i < sorted.length - 1; i++) {
       const current = sorted[i];
       const next = sorted[i + 1];
 
-      const currentTo = new Date(current.valid_to);
-      const nextFrom = new Date(next.valid_from);
+      const currentTo = dateOnlyToUtcMs(current.valid_to);
+      const nextFrom = dateOnlyToUtcMs(next.valid_from);
 
-      const expectedNextDay = new Date(currentTo);
-      expectedNextDay.setDate(expectedNextDay.getDate() + 1);
+      const expectedNextDay =
+        currentTo + 24 * 60 * 60 * 1000;
 
-      if (nextFrom.getTime() > expectedNextDay.getTime()) {
+      if (nextFrom > expectedNextDay) {
         gaps.push({
           source: current.source,
           entity_id: current.entity_id,
-          from: expectedNextDay.toISOString().slice(0, 10),
-          to: new Date(nextFrom.getTime() - 86400000)
-            .toISOString()
-            .slice(0, 10),
+          from: utcMsToDateOnly(expectedNextDay),
+          to: utcMsToDateOnly(
+            nextFrom - 24 * 60 * 60 * 1000
+          ),
         });
       }
     }

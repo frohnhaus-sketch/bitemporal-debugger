@@ -54,23 +54,26 @@ export function TwoSourceInputPanel({
           style={{
             padding: "10px 14px",
             borderRadius: 10,
-            border: "1px solid #334155",
-            background: "#020617",
-            color: "#cbd5e1",
-            fontWeight: 600,
+            border: "1px solid #15803d",
+            background: "#16a34a",
+            color: "#ffffff",
+            fontWeight: 700,
             fontSize: 14,
             cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(22,163,74,0.25)",
+            transition: "all 0.15s ease",
           }}
           onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#15803d";
             e.currentTarget.style.transform = "translateY(-1px)";
           }}
           onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#16a34a";
             e.currentTarget.style.transform = "translateY(0)";
           }}
         >
           Load temporal join demo
         </button>
-        
         <button
           onClick={() => {
             if (!canAnalyze) return;
