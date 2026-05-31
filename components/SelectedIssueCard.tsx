@@ -16,85 +16,19 @@ function getIssueLabel(type?: string) {
   return type ?? "ISSUE";
 }
 
-function getIssueExplanation(issue: any) {
-  switch (issue?.type) {
-    case "VALID_GAP":
-      return {
-        what: "No record exists during this valid-time interval.",
-        why: "Core layer snapshots may miss this entity for the affected period.",
-        suggestion: "Inspect adjacent rows ordered by valid_from.",
-        modeling:
-          "Decide whether this is missing source history, a valid business absence, or requires a placeholder record.",
-      };
-
-    case "OVERLAP":
-      return {
-        what: "Multiple records are valid during the same interval.",
-        why: "As-of queries may return duplicate or ambiguous results.",
-        suggestion: "Check whether one record should end before the next one starts.",
-        modeling:
-          "Define whether one record supersedes another, whether a tie-breaking rule is needed, or whether multiple business states are valid.",
-      };
-
-    case "JOIN_GAP":
-      return {
-        what: "The selected source row has no matching row in the joined source.",
-        why: "Core layer joins may drop or incomplete the entity state.",
-        suggestion: "Compare valid-time and visible-time windows across both sources.",
-        modeling:
-          "Consider delayed synchronization, snapshot-based integration, placeholder records, or optional source relationships.",
-      };
-
-    case "JOIN_AMBIGUITY":
-      return {
-        what: "Multiple joined rows match the same source row.",
-        why: "The Core layer may produce duplicated or ambiguous records.",
-        suggestion: "Inspect overlapping candidates and define a tie-breaking rule.",
-        modeling:
-          "Consider priority rules, effective-dating logic, state reduction, or business key refinement.",
-      };
-
-    case "VISIBILITY_LAG":
-      return {
-        what: "A change became visible later than its valid-time suggests.",
-        why: "Historical snapshots may differ depending on when the source update arrived.",
-        suggestion: "Compare valid_from with visible_from and check source delivery behavior.",
-        modeling:
-          "Consider source latency buffers, delayed publication windows, or visibility-aware snapshots.",
-      };
-
-    default:
-      return {
-        what: "This issue needs investigation.",
-        why: "It may affect historical correctness in the Core layer.",
-        suggestion: "Inspect the related rows in the timeline.",
-        modeling:
-          "Clarify whether this pattern should be handled in source cleanup, integration logic, or downstream modeling.",
-      };
-  }
-}
-
 export default function SelectedIssueCard({ issue }: SelectedIssueCardProps) {
   if (!issue) return null;
 
-  const explanation = getIssueExplanation(issue);
-
   const start =
-    issue.start ??
-    issue.from ??
-    issue.valid_from ??
-    issue.validFrom;
+    issue.start ?? issue.from ?? issue.valid_from ?? issue.validFrom;
 
   const end =
-    issue.end ??
-    issue.to ??
-    issue.valid_to ??
-    issue.validTo;
+    issue.end ?? issue.to ?? issue.valid_to ?? issue.validTo;
 
   return (
     <div
       style={{
-        marginBottom: 14,
+        marginBottom: 12,
         padding: 14,
         borderRadius: 12,
         background: "#0f172a",
@@ -111,18 +45,17 @@ export default function SelectedIssueCard({ issue }: SelectedIssueCardProps) {
           marginBottom: 6,
         }}
       >
-        ISSUE INVESTIGATION
+        SELECTED FINDING
       </div>
 
-      <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
-        {getIssueLabel(issue.type)}
+      <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>
+        {issue.title ?? getIssueLabel(issue.type)}
       </div>
 
       <div
         style={{
           fontSize: 13,
-          lineHeight: 1.5,
-          marginBottom: 12,
+          lineHeight: 1.45,
           color: "#dbeafe",
         }}
       >
@@ -140,41 +73,11 @@ export default function SelectedIssueCard({ issue }: SelectedIssueCardProps) {
           </div>
         )}
 
-        <div
-          style={{
-            marginTop: 6,
-            color: "#bfdbfe",
-            fontWeight: 700,
-          }}
-        >
-          View in timeline ↓
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gap: 8, fontSize: 13, lineHeight: 1.45 }}>
-        <div>
-          <strong>What happened?</strong>
-          <br />
-          {explanation.what}
-        </div>
-
-        <div>
-          <strong>Why it matters?</strong>
-          <br />
-          {explanation.why}
-        </div>
-
-        <div>
-          <strong>Suggested investigation</strong>
-          <br />
-          {explanation.suggestion}
-        </div>
-
-        <div>
-          <strong>Suggested modeling pattern</strong>
-          <br />
-          {explanation.modeling}
-        </div>
+        {issue.targetSource && (
+          <div style={{ opacity: 0.85 }}>
+            Compared with {issue.targetSource}
+          </div>
+        )}
       </div>
     </div>
   );

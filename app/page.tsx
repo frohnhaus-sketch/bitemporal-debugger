@@ -906,7 +906,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               ref={analysisRef}
               style={{
                 display: "grid",
-                gridTemplateColumns: "minmax(0, 1.15fr) minmax(560px, 0.95fr)",
+                gridTemplateColumns: "minmax(0, 1.15fr) minmax(300px, 0.95fr)",
                 gap: 20,
                 alignItems: "start",
                 marginBottom: 20,
