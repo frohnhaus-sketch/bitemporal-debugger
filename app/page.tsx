@@ -486,7 +486,7 @@ WHERE ${sqlParts.join(" AND ")};`);
           color: "#ffffff",
         }}
       >
-        Historical Data Modeling Workbench
+        Debug Historical Data Models in Minutes
       </h1>
       
       <p
@@ -498,125 +498,24 @@ WHERE ${sqlParts.join(" AND ")};`);
           color: "#cbd5e1",
         }}
       >
-        Understand and model historized source data before building your Core Layer.
+        Find gaps, overlaps and broken temporal joins before they reach production.
       </p>
-    </div>
-          
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.4fr 1fr 1fr",
-            gap: 10,
-            marginBottom: -5,
-          }}
-        >
-          <div
-            style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 12,
-            }}
-          >
-          <div
-            style={{
-              color: "#e2e8f0",
-              fontSize: 12,
-              fontWeight: 800,
-              marginBottom: 6,
-            }}
-          >
-            Expected input
-          </div>
-          
-          <pre
-            style={{
-              margin: 0,
-              color: "#93c5fd",
-              fontSize: 12,
-              lineHeight: 1.5,
-              overflowX: "auto",
-            }}
-          >{`entity_id,value,valid_from,valid_to[,visible_from,visible_to]
-1,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`}</pre>
 
-          <p style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
-            visible_from and visible_to are optional. If omitted, data is treated as valid-time only.
-          </p>
-
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: "#94a3b8",
-              fontSize: 12,
-              lineHeight: 1.4,
-            }}
-          >
-            Paste CSV or TSV. Column names are auto-detected and can be adjusted in the
-            mapping section below.
-          </p>
-          </div>
-            
-          <div
-            style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 12,
-              color: "#94a3b8",
-              fontSize: 12,
-              lineHeight: 1.5,
-            }}
-          >
-            <div
-              style={{
-                color: "#e2e8f0",
-                fontWeight: 800,
-                marginBottom: 6,
-              }}
-            >
-              How time is interpreted
-            </div>
-            Valid-time uses inclusive date ranges{" "}
-            <code>[valid_from, valid_to]</code>. Visible-time uses half-open
-            timestamp ranges <code>[visible_from, visible_to)</code>.
-          </div>
-            
-          <div
-            style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 12,
-              color: "#94a3b8",
-              fontSize: 12,
-              lineHeight: 1.5,
-            }}
-          >
-            <div
-              style={{
-                color: "#e2e8f0",
-                fontWeight: 800,
-                marginBottom: 6,
-              }}
-            >
-              Data privacy
-            </div>
-            Processing happens locally in your browser. Data is not stored. Avoid
-            pasting sensitive production data if unsure.
-          </div>
-        </div>
-      </section>
-      <div
+      <p
         style={{
+          marginTop: 12,
+          maxWidth: 760,
           fontSize: 15,
+          lineHeight: 1.5,
           color: "#cbd5e1",
-          marginBottom: 18,
-          lineHeight: 1.6,
         }}
       >
-        Paste two historized datasets below and analyze how their histories align before integrating them into a Core Layer.
-      </div>
+        Built for Data Engineers working with SCD2 dimensions, historized tables, snapshot reporting and temporal joins.
+      </p>
+    </div>
+
+      </section>
+
         <TwoSourceInputPanel
           inputA={inputA}
           inputB={inputB}
