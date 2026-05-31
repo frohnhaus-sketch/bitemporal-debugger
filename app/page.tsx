@@ -3,7 +3,7 @@ import { buildTemporalIssues } from "../lib/temporalIssues";
 import type { TemporalIssue } from "../lib/types";
 import { track } from "@/lib/analytics";
 import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseCSV } from "../lib/parser";
 import type { HeaderMapping } from "../lib/parser";
 import { Timeline } from "@/components/Timeline";
@@ -18,7 +18,6 @@ import type {
 } from "../lib/types";
 import {
   detectDrift,
-  detectOverlaps,
   detectGaps,
   detectOverlapMarkers,
 } from "../lib/analysis";
@@ -51,7 +50,6 @@ export default function Home() {
   const [columnMappingA, setColumnMappingA] = useState<Record<string, string>>({});
   const [columnMappingB, setColumnMappingB] = useState<Record<string, string>>({});
   const [rows, setRows] = useState<BitemporalRow[]>([]);
-  const [result, setResult] = useState<string[]>([]);
   const [joinIssues, setJoinIssues] = useState<AggregatedJoinabilityIssue[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<AggregatedJoinabilityIssue | null>(null);
   const [selectedTemporalIssue, setSelectedTemporalIssue] = useState<TemporalIssue | null>(null);
@@ -67,6 +65,8 @@ export default function Home() {
   const [sql, setSql] = useState("");
   const [validationMode, setValidationMode] = useState<ValidationMode>("monotemporal");
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const timelineRef = useRef<HTMLDivElement | null>(null);
+  const analysisRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     track("page_view");
@@ -88,7 +88,6 @@ export default function Home() {
 
   function resetAnalysis() {
     setRows([]);
-    setResult([]);
     setJoinIssues([]);
     setSelectedIssue(null);
     setSelectedTemporalIssue(null);
@@ -270,7 +269,6 @@ export default function Home() {
     setColumnMappingA(parsedA.mapping);
     setColumnMappingB(parsedB.mapping);
 
-    setResult(detectOverlaps(combinedRows, mode));
     setGaps(detectGaps(combinedRows));
     setDrifts(detectDrift(combinedRows));
     setOverlapMarkers(detectOverlapMarkers(combinedRows, mode));
@@ -295,11 +293,18 @@ export default function Home() {
       joinIssues: computedJoinIssues.length,
       joinGaps: computedJoinIssues.filter((i) => i.type === "JOIN_GAP").length,
       ambiguities: computedJoinIssues.filter((i) => i.type === "JOIN_AMBIGUITY").length,
-      mode: validationMode,
+      mode,
     });
 
     setJoinIssues(computedJoinIssues);
     setHasAnalyzed(true);
+
+    setTimeout(() => {
+      analysisRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
   }
 
   function analyzeTwoSources() {
@@ -380,6 +385,7 @@ export default function Home() {
     joinIssues,
     gaps,
     overlapMarkers,
+    drifts,
   });
 
   function selectTemporalIssue(issue: TemporalIssue | null) {
@@ -440,63 +446,6 @@ WHERE ${sqlParts.join(" AND ")};`);
   ).length;
 
   const validGapCount = gaps.length;
-  const overlapCount = result.length;
-
-  const hasCriticalIssues =
-    overlapCount > 0 || joinGapCount > 0 || joinAmbiguityCount > 0;
-
-  const totalIssueCount =
-    joinGapCount + joinAmbiguityCount + validGapCount + overlapCount;
-
-  const summaryStyle = hasCriticalIssues
-    ? {
-        background: "rgba(239, 68, 68, 0.15)",
-        border: "1px solid rgba(239, 68, 68, 0.4)",
-      }
-    : validGapCount > 0
-    ? {
-        background: "rgba(245, 158, 11, 0.16)",
-        border: "1px solid rgba(245, 158, 11, 0.45)",
-      }
-    : {
-        background: "rgba(34, 197, 94, 0.15)",
-        border: "1px solid rgba(34, 197, 94, 0.4)",
-      };
-
-  const summaryTitle = hasCriticalIssues
-    ? "❌ Your JOIN may return wrong or missing results"
-    : validGapCount > 0
-    ? `⚠️ ${validGapCount} valid-time gap${validGapCount === 1 ? "" : "s"} found`
-    : "✅ No temporal issues found";
-  
-  const rootCause = joinIssues.find(
-    (issue) => issue.type === "JOIN_GAP" && issue.isAggregated
-  );
-
-  const issueParts = [
-    joinGapCount > 0
-      ? `${joinGapCount} join gap${joinGapCount === 1 ? "" : "s"} = missing rows`
-      : null,
-    joinAmbiguityCount > 0
-      ? `${joinAmbiguityCount} ambiguous match${
-          joinAmbiguityCount === 1 ? "" : "es"
-        } = duplicate rows`
-      : null,
-    overlapCount > 0
-      ? `${overlapCount} overlap${overlapCount === 1 ? "" : "s"} = conflicting history`
-      : null,
-    validGapCount > 0
-      ? `${validGapCount} valid-time gap${
-          validGapCount === 1 ? "" : "s"
-        } = incomplete history`
-      : null,
-  ].filter(Boolean);
-
-  const summaryMessage = hasCriticalIssues
-    ? `Detected: ${issueParts.join(" · ")}. Open a joinability issue below to inspect the root cause and suggested fix.`
-    : validGapCount > 0
-    ? `There are ${validGapCount} missing valid-time periods. Your history is incomplete, which may affect join results.`
-    : "No gaps, overlaps, or joinability issues detected. Your temporal data looks clean.";
 
   return (
     <main
@@ -510,61 +459,48 @@ WHERE ${sqlParts.join(" AND ")};`);
     >
     <div style={{ maxWidth: 1150, margin: "0 auto" }}>
       <section style={{ marginBottom: 24 }}>
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "6px 10px",
-            borderRadius: 999,
-            background: "#020617",
-            border: "1px solid #1e293b",
-            color: "#93c5fd",
-            fontSize: 12,
-            fontWeight: 700,
-            marginBottom: 14,
-          }}
-        >
-          Temporal JOIN Debugger
-        </div>
-        
-        <h1
-          style={{
-            margin: "0 0 12px",
-            color: "#ffffff",
-            fontSize: 38,
-            lineHeight: 1.1,
-            letterSpacing: -0.8,
-          }}
-        >
-          Debug temporal SQL joins visually
-        </h1>
-        
-        <p
-          style={{
-            color: "#cbd5e1",
-            fontSize: 18,
-            lineHeight: 1.5,
-            maxWidth: 820,
-            margin: "0 0 20px",
-          }}
-        >
-          Find gaps, overlaps, ambiguous matches, and bitemporal inconsistencies before they reach production.
-        </p>
-        
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-            alignItems: "center",
-            marginBottom: 18,
-          }}
-        >        
-          <span style={{ color: "#94a3b8", fontSize: 12, opacity: 0.7 }}>
-            No signup. Runs entirely in your browser.
-          </span>
-        </div>
+    <div style={{ marginBottom: 28 }}>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "6px 10px",
+          borderRadius: 999,
+          background: "#e0f2fe",
+          color: "#075985",
+          fontSize: 12,
+          fontWeight: 700,
+          marginBottom: 12,
+        }}
+      >
+        HISTORIZED DATA MODELING
+      </div>
+      
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 42,
+          lineHeight: 1.05,
+          letterSpacing: "-0.04em",
+          color: "#ffffff",
+        }}
+      >
+        Historical Data Modeling Workbench
+      </h1>
+      
+      <p
+        style={{
+          marginTop: 12,
+          maxWidth: 760,
+          fontSize: 18,
+          lineHeight: 1.5,
+          color: "#cbd5e1",
+        }}
+      >
+        Understand and model historized source data before building your Core Layer.
+      </p>
+    </div>
           
         <div
           style={{
@@ -679,9 +615,7 @@ WHERE ${sqlParts.join(" AND ")};`);
           lineHeight: 1.6,
         }}
       >
-        Paste two temporal datasets below, adjust column mappings if needed,
-        then click <strong>Analyze JOIN</strong> to detect gaps, overlaps,
-        ambiguous matches, and bitemporal inconsistencies.
+        Paste two historized datasets below and analyze how their histories align before integrating them into a Core Layer.
       </div>
         <TwoSourceInputPanel
           inputA={inputA}
@@ -859,98 +793,108 @@ WHERE ${sqlParts.join(" AND ")};`);
                   </div>
                 </div>
               )}
+
               <div style={{ marginBottom: 18, marginTop: 18 }}>
-                <div
+                <details
                   style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: "#64748b",
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                    marginBottom: 6,
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 10,
+                    padding: 12,
                   }}
                 >
-                  As-of query & SQL generation
-                </div>
-                
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: "#94a3b8",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Generate temporal SQL queries for a specific business-effective and
-                  visible-time state.
-                </div>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 16,
-                  flexWrap: "wrap",
-                  alignItems: "flex-end",
-                }}
-              >
-              <div>
-                <label style={{ fontSize: 12 }}>Valid As-of Date</label>
-                <br />
-                <input
-                  type="date"
-                  value={asOfDate || ""}
-                  onChange={(e) => setAsOfDate(e.target.value || "")}
-                />
-              </div>
-                
-              <div>
-                <label style={{ fontSize: 12 }}>Visible As-of Timestamp</label>
-                <br />
-                <input
-                  type="datetime-local"
-                  value={visibleAsOf || ""}
-                  onChange={(e) => setVisibleAsOf(e.target.value || "")}
-                />
-              </div>
-                
-              <button
-                onClick={resetDates}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  border: "1px solid #475569",
-                  background: "#1e293b",
-                  color: "#e2e8f0",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                Reset Dates
-              </button>
-              
-              <button
-                onClick={generateSQL}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  border: "1px solid #475569",
-                  background: "#1e293b",
-                  color: "#e2e8f0",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                Generate SQL
-              </button>
+                  <summary
+                    style={{
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      color: "#475569",
+                    }}
+                  >
+                    Advanced: Generate as-of query
+                  </summary>
+
+                  <div style={{ marginTop: 12 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        color: "#64748b",
+                        lineHeight: 1.5,
+                        marginBottom: 12,
+                      }}
+                    >
+                      Generate as-of queries for a specific valid-time and visibility state.
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 16,
+                        flexWrap: "wrap",
+                        alignItems: "flex-end",
+                      }}
+                    >
+                      <div>
+                        <label style={{ fontSize: 12 }}>Valid As-of Date</label>
+                        <br />
+                        <input
+                          type="date"
+                          value={asOfDate || ""}
+                          onChange={(e) => setAsOfDate(e.target.value || "")}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: 12 }}>Visible As-of Timestamp</label>
+                        <br />
+                        <input
+                          type="datetime-local"
+                          value={visibleAsOf || ""}
+                          onChange={(e) => setVisibleAsOf(e.target.value || "")}
+                        />
+                      </div>
+
+                      <button
+                        onClick={resetDates}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          border: "1px solid #475569",
+                          background: "#1e293b",
+                          color: "#e2e8f0",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }}
+                      >
+                        Reset Dates
+                      </button>
+
+                      <button
+                        onClick={generateSQL}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          border: "1px solid #475569",
+                          background: "#1e293b",
+                          color: "#e2e8f0",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }}
+                      >
+                        Generate Query
+                      </button>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
           }
@@ -959,72 +903,69 @@ WHERE ${sqlParts.join(" AND ")};`);
         {hasAnalyzed && (
           <>
             <div
+              ref={analysisRef}
               style={{
-                ...summaryStyle,
-                color: "#ffffff",
-                borderRadius: 12,
-                padding: 18,
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1.15fr) minmax(560px, 0.95fr)",
+                gap: 20,
+                alignItems: "start",
                 marginBottom: 20,
               }}
             >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 8px",
-                borderRadius: 999,
-                background: "rgba(15, 23, 42, 0.45)",
-                border: "1px solid rgba(255,255,255,0.18)",
-                color: "#ffffff",
-                fontSize: 12,
-                fontWeight: 700,
-                marginBottom: 10,
-              }}
-            >
-              {validationMode === "bitemporal"
-                ? "Valid + visible time analysis"
-                : "Valid-time only analysis"}
-            </div>
-              <h2 style={{ margin: "0 0 8px", fontSize: 22 }}>
-                {summaryTitle}
-              </h2>
-              <p
-                style={{
-                  margin: "0 0 12px",
-                  fontSize: 14,
-                  color: "#ffffff",
-                  opacity: 0.9,
-                }}
-              >
-                {summaryMessage}
-              </p>
+              <div>
+                <IssuesPanel
+                  joinIssues={joinIssues}
+                  selectedIssue={selectedIssue}
+                  setSelectedIssue={selectJoinIssue}
+                  temporalIssues={temporalIssues}
+                  selectedTemporalIssue={selectedTemporalIssue}
+                  onSelectTemporalIssue={selectTemporalIssue}
+                />
 
+                <div ref={timelineRef} style={{ marginTop: 20 }}>
+                  <Timeline
+                    rows={filteredRows}
+                    gaps={gaps}
+                    overlapMarkers={overlapMarkers}
+                    selectedIssue={selectedIssue}
+                    temporalIssues={temporalIssues}
+                    selectedTemporalIssue={selectedTemporalIssue}
+                    onSelectTemporalIssue={selectTemporalIssue}
+                    getPosition={getPosition}
+                    getWidth={getWidth}
+                    highlightedEntityId={highlightedRow?.entity_id ?? null}
+                  />
+                  <TimelineLegend />
+                </div>
+              </div>
+            
               <div
                 style={{
-                  display: "flex",
-                  gap: 16,
-                  flexWrap: "wrap",
-                  fontSize: 14,
+                  position: "sticky",
+                  top: 20,
                 }}
               >
-                <span>valid-time gaps: {validGapCount}</span>
-                <span>join gaps: {joinGapCount}</span>
-                <span>ambiguous matches: {joinAmbiguityCount}</span>
-                <span>overlaps: {overlapCount}</span>
+                <SqlPanel
+                  sql={sql}
+                  selectedIssue={selectedIssue}
+                  selectedTemporalIssue={selectedTemporalIssue}
+                />
               </div>
+            </div>
+
+            <div style={{ margin: "24px 0 12px" }}>
+              <h3 style={{ margin: 0, color: "#ffffff", fontSize: 20 }}>
+                Source Record Details
+              </h3>
               <p
                 style={{
-                  margin: "12px 0 0",
+                  margin: "6px 0 0",
+                  color: "#94a3b8",
                   fontSize: 13,
-                  color: "#ffffff",
-                  opacity: 0.82,
                   lineHeight: 1.5,
                 }}
               >
-                {validationMode === "bitemporal"
-                  ? "True bitemporal mode: records are only flagged when they conflict in both valid-time and visible-time."
-                  : "Valid-time only mode: stricter check. Records are flagged when they overlap in valid-time, even if they would be valid bitemporal history."}
+                Inspect the underlying rows behind the selected finding.
               </p>
             </div>
 
@@ -1037,7 +978,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               }}
             >
             <DataPreview
-              title={`Source A: ${sourceNameA}`}
+              title={`Raw source records: ${sourceNameA}`}
               rows={rows.filter((r) => r.source === sourceNameA)}
               joinIssues={joinIssues}
               onSelectIssue={selectJoinIssue}
@@ -1048,7 +989,7 @@ WHERE ${sqlParts.join(" AND ")};`);
             />
                         
             <DataPreview
-              title={`Source B: ${sourceNameB}`}
+              title={`Raw source records: ${sourceNameB}`}
               rows={rows.filter((r) => r.source === sourceNameB)}
               joinIssues={joinIssues}
               onSelectIssue={selectJoinIssue}
@@ -1058,35 +999,6 @@ WHERE ${sqlParts.join(" AND ")};`);
               overlapMarkers={overlapMarkers}
             />
             </div>
-
-            <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
-              <IssuesPanel
-                result={result}
-                drifts={drifts}
-                joinIssues={joinIssues}
-                selectedIssue={selectedIssue}
-                setSelectedIssue={selectJoinIssue}
-                temporalIssues={temporalIssues}
-                selectedTemporalIssue={selectedTemporalIssue}
-                onSelectTemporalIssue={selectTemporalIssue}
-              />
-
-              <SqlPanel sql={sql} selectedIssue={selectedIssue} />
-            </div>
-
-            <Timeline
-              rows={filteredRows}
-              gaps={gaps}
-              overlapMarkers={overlapMarkers}
-              selectedIssue={selectedIssue}
-              temporalIssues={temporalIssues}
-              selectedTemporalIssue={selectedTemporalIssue}
-              onSelectTemporalIssue={selectTemporalIssue}
-              getPosition={getPosition}
-              getWidth={getWidth}
-              highlightedEntityId={highlightedRow?.entity_id ?? null}
-            />
-            <TimelineLegend />
           </>
         )}
 

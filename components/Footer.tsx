@@ -8,7 +8,8 @@ export function Footer() {
         color: "#94a3b8",
       }}
     >
-      Built for debugging historized and bitemporal datasets. By{" "}
+      Built for historical source integration, temporal analysis, and
+      historized data modeling. By{""}
       <a
         href="https://www.linkedin.com/in/jakob-frohnhaus/"
         target="_blank"
@@ -24,7 +25,7 @@ export function Footer() {
       </a>
 
       <div style={{ marginTop: 6 }}>
-        Want this for your team? →{" "}
+        Feedback, ideas, or collaboration? →{" "}
         <a
           href="https://www.linkedin.com/in/jakob-frohnhaus/"
           target="_blank"
@@ -34,11 +35,21 @@ export function Footer() {
             textDecoration: "none",
           }}
         >
-          Contact me
+          Get in touch
         </a>
       </div>
+
       <div style={{ marginTop: 6 }}>
-        <a href="/events" target="_blank">Analytics</a>
+        <a
+          href="/events"
+          target="_blank"
+          style={{
+            color: "#64748b",
+            textDecoration: "none",
+          }}
+        >
+          Analytics
+        </a>
       </div>
     </div>
   );

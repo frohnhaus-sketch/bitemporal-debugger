@@ -1,5 +1,6 @@
 import type {
   AggregatedJoinabilityIssue,
+  DriftSummary,
   GapIssue,
   OverlapIssue,
   SelectedDebugIssue,
@@ -10,8 +11,9 @@ export function buildTemporalIssues(params: {
   joinIssues: AggregatedJoinabilityIssue[];
   gaps: GapIssue[];
   overlapMarkers: OverlapIssue[];
+  drifts?: DriftSummary[];
 }): TemporalIssue[] {
-  const { joinIssues, gaps, overlapMarkers } = params;
+  const { joinIssues, gaps, overlapMarkers, drifts = [] } = params;
 
   const normalizedJoinIssues: TemporalIssue[] = joinIssues.map(
     (issue, index) => ({
@@ -98,9 +100,41 @@ export function buildTemporalIssues(params: {
     })
   );
 
+  const normalizedVisibilityLagIssues: TemporalIssue[] = drifts.map(
+  (drift, index) => {
+    const laggingSource = drift.lagMs > 0 ? drift.sourceB : drift.sourceA;
+    const leadingSource = drift.lagMs > 0 ? drift.sourceA : drift.sourceB;
+
+    const minutes = Math.round(Math.abs(drift.lagMs) / 60000);
+
+    return {
+      id: `visibility-lag-${index}`,
+
+      type: "VISIBILITY_LAG",
+
+      entity_id: drift.entityIds[0] ?? "multiple",
+
+      source: laggingSource,
+      targetSource: leadingSource,
+
+      severity: drift.severity === "warning" ? "medium" : "low",
+
+      title: "Visibility lag",
+
+      explanation: `${laggingSource} appears ${minutes} min after ${leadingSource} across ${drift.entityCount} entities. This may indicate source latency rather than incorrect historization.`,
+
+      originalIssue: {
+        kind: "drift",
+        issue: drift,
+      } satisfies SelectedDebugIssue,
+    };
+  }
+);
+
   return [
     ...normalizedJoinIssues,
     ...normalizedGaps,
     ...normalizedOverlaps,
+    ...normalizedVisibilityLagIssues,
   ];
 }

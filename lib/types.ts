@@ -86,23 +86,16 @@ export type GapIssue = {
 };
 
 export type SelectedDebugIssue =
-  | {
-      kind: "join";
-      issue: AggregatedJoinabilityIssue;
-    }
-  | {
-      kind: "overlap";
-      issue: OverlapIssue;
-    }
-  | {
-      kind: "gap";
-      issue: GapIssue;
-    };
+  | { kind: "join"; issue: AggregatedJoinabilityIssue }
+  | { kind: "gap"; issue: GapIssue }
+  | { kind: "overlap"; issue: OverlapIssue }
+  | { kind: "drift"; issue: DriftSummary };
 
 export type TemporalIssueType =
   | "OVERLAP"
   | "VALID_GAP"
   | "JOIN_GAP"
-  | "JOIN_AMBIGUITY";
+  | "JOIN_AMBIGUITY"
+  | "VISIBILITY_LAG";
 
 export type TemporalIssueSeverity = "low" | "medium" | "high";

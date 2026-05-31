@@ -107,7 +107,7 @@ export function TwoSourceInputPanel({
             e.currentTarget.style.transform = "translateY(0)";
           }}
         >
-          Analyze JOIN
+          Analyze Sources
         </button>
         {analysisModeControl}
       </div>
@@ -120,7 +120,7 @@ export function TwoSourceInputPanel({
           fontWeight: 500,
         }}
       >
-        Paste → Analyze → understand why the JOIN fails
+        Paste → Analyze → understand historical source behavior
       </p>
     </div>
       <div
