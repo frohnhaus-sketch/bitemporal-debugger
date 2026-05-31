@@ -126,6 +126,7 @@ export function DataPreview({
 }: DataPreviewProps) {
   const [open, setOpen] = useState(true);
   const [limit, setLimit] = useState(10);
+  const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (forceOpen) setOpen(true);
@@ -257,20 +258,30 @@ export function DataPreview({
                   const exactHighlighted = isExactHighlightedRow(row, highlightedRow);
                   const sameEntityHighlighted = isSameEntity(row, highlightedRow);
                   const hasIssue = Boolean(joinIssue || overlapIssue);
+                  const rowKey = `${row.source}-${row.entity_id}-${row.valid_from}-${row.valid_to}-${originalIndex}`;
+                  const isHovered = hoveredRowKey === rowKey;
 
                   return (
-                    <tr
-                      key={`${row.source}-${row.entity_id}-${row.valid_from}-${row.valid_to}-${originalIndex}`}
-                      onClick={() => joinIssue && onSelectIssue?.(joinIssue)}
-                      onMouseEnter={() =>
-                        onHighlightRow?.({
-                          entity_id: String(row.entity_id),
-                          source: row.source,
-                          valid_from: row.valid_from,
-                          valid_to: row.valid_to,
-                        })
+                  <tr
+                    key={rowKey}
+                    onMouseEnter={() => {
+                      setHoveredRowKey(rowKey);
+                    
+                      onHighlightRow?.({
+                        entity_id: String(row.entity_id),
+                        source: row.source,
+                        valid_from: row.valid_from,
+                        valid_to: row.valid_to,
+                      });
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredRowKey(null);
+                    }}
+                    onClick={() => {
+                      if (joinIssue) {
+                        onSelectIssue?.(joinIssue);
                       }
-                      onMouseLeave={() => onHighlightRow?.(null)}
+                    }}
                       title={
                         joinIssue
                           ? "Click to debug this join issue"
@@ -281,7 +292,9 @@ export function DataPreview({
                       style={{
                         color: "#e2e8f0",
                         cursor: joinIssue ? "pointer" : "default",
-                        background: exactHighlighted
+                        background: isHovered
+                          ? "rgba(56, 189, 248, 0.14)"
+                          : exactHighlighted
                           ? "rgba(56, 189, 248, 0.22)"
                           : getRowBackground({
                               joinIssue,
