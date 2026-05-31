@@ -9,6 +9,7 @@ type EventRow = {
   data?: Record<string, unknown> | null;
   created_at: string;
   referer?: string | null;
+  referrer?: string | null;
   user_agent?: string | null;
   ip_hash?: string | null;
 };
@@ -94,7 +95,7 @@ export default async function EventsPage() {
     .from("events")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(250);
 
   if (error) {
     return (
@@ -120,21 +121,45 @@ export default async function EventsPage() {
   }, {});
 
   const pageViews = counts["page_view"] ?? 0;
-  const analyzeClicks = counts["analyze_clicked"] ?? 0;
-  const reportsCopied = counts["Debug Report Copied"] ?? 0;
+
+  const analyzeClicks =
+    (counts["analysis_completed"] ?? 0) +
+    (counts["analyze_clicked"] ?? 0);
+
+  const examplesLoaded =
+    (counts["example_loaded"] ?? 0) +
+    (counts["temporal_join_demo_loaded"] ?? 0);
+
+  const sqlGenerated =
+    (counts["sql_generated"] ?? 0) +
+    (counts["query_generated"] ?? 0);
+
+  const reportsCopied =
+    (counts["modeling_report_copied"] ?? 0) +
+    (counts["debug_report_copied"] ?? 0) +
+    (counts["Debug Report Copied"] ?? 0);
+
+  const interactions = events.filter((e) => e.event !== "page_view").length;
+
+  const uniqueVisitors = new Set(
+    events.map((e) => e.ip_hash).filter(Boolean)
+  ).size;
+
   const copyRate = analyzeClicks
     ? Math.round((reportsCopied / analyzeClicks) * 100)
     : 0;
 
   const sourceCounts = events.reduce<Record<string, number>>((acc, event) => {
-    const source = getTrafficSource(event.referer);
+    const source = getTrafficSource(event.referer ?? event.referrer);
     acc[source] = (acc[source] ?? 0) + 1;
     return acc;
   }, {});
-  
+
   const topSources = Object.entries(sourceCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
+
+  const eventTypeRows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
   return (
     <main
@@ -146,7 +171,7 @@ export default async function EventsPage() {
         fontFamily: "Inter, Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ marginBottom: 28 }}>
           <div
             style={{
@@ -169,25 +194,26 @@ export default async function EventsPage() {
           </h1>
 
           <p style={{ marginTop: 8, color: "#94a3b8", fontSize: 14 }}>
-            Track page views, example loads, analysis runs, SQL generation, and copied debug reports.
+            Track page views, interactions, demo loads, analysis runs, SQL
+            generation, and copied reports.
           </p>
         </div>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: 4,
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: 8,
             marginBottom: 28,
           }}
         >
-          <MetricCard label="Total events" value={events.length} />
+          <MetricCard label="All events" value={events.length} />
+          <MetricCard label="Unique visitors" value={uniqueVisitors} />
           <MetricCard label="Page views" value={pageViews} />
-          <MetricCard label="Analyze clicks" value={analyzeClicks} />
-          <MetricCard
-            label="Examples loaded"
-            value={counts["example_loaded"] ?? 0}
-          />
+          <MetricCard label="Interactions" value={interactions} />
+          <MetricCard label="Analysis runs" value={analyzeClicks} />
+          <MetricCard label="Examples loaded" value={examplesLoaded} />
+          <MetricCard label="SQL generated" value={sqlGenerated} />
           <MetricCard label="Reports copied" value={reportsCopied} />
           <MetricCard label="Copy rate" value={`${copyRate}%`} />
         </div>
@@ -202,9 +228,81 @@ export default async function EventsPage() {
           }}
         >
           <h2 style={{ margin: "0 0 14px", fontSize: 18, color: "#ffffff" }}>
+            Event types
+          </h2>
+
+          {eventTypeRows.length === 0 ? (
+            <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>
+              No events yet.
+            </p>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {eventTypeRows.map(([eventName, count]) => (
+                <div
+                  key={eventName}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "220px 1fr 48px",
+                    gap: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ color: "#cbd5e1", fontSize: 13 }}>
+                    {formatEventName(eventName)}
+                  </div>
+
+                  <div
+                    style={{
+                      height: 8,
+                      borderRadius: 999,
+                      background: "#1e293b",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.max(
+                          8,
+                          (count /
+                            Math.max(...eventTypeRows.map(([, c]) => c))) *
+                            100
+                        )}%`,
+                        height: "100%",
+                        borderRadius: 999,
+                        background: "#3b82f6",
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      textAlign: "right",
+                    }}
+                  >
+                    {count}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section
+          style={{
+            background: "#020617",
+            border: "1px solid #1e293b",
+            borderRadius: 14,
+            padding: 18,
+            marginBottom: 28,
+          }}
+        >
+          <h2 style={{ margin: "0 0 14px", fontSize: 18, color: "#ffffff" }}>
             Top sources
           </h2>
-      
+
           {topSources.length === 0 ? (
             <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>
               No source data yet.
@@ -222,7 +320,7 @@ export default async function EventsPage() {
                   }}
                 >
                   <div style={{ color: "#cbd5e1", fontSize: 13 }}>{source}</div>
-              
+
                   <div
                     style={{
                       height: 8,
@@ -235,7 +333,8 @@ export default async function EventsPage() {
                       style={{
                         width: `${Math.max(
                           8,
-                          (count / Math.max(...topSources.map(([, c]) => c))) * 100
+                          (count / Math.max(...topSources.map(([, c]) => c))) *
+                            100
                         )}%`,
                         height: "100%",
                         borderRadius: 999,
@@ -243,7 +342,7 @@ export default async function EventsPage() {
                       }}
                     />
                   </div>
-                  
+
                   <div
                     style={{
                       color: "#ffffff",
@@ -291,12 +390,13 @@ export default async function EventsPage() {
                 <tr style={{ background: "#0f172a", color: "#94a3b8" }}>
                   <th style={thStyle}>Time</th>
                   <th style={thStyle}>Event</th>
+                  <th style={thStyle}>Source</th>
                   <th style={thStyle}>Data</th>
                 </tr>
               </thead>
 
               <tbody>
-                {events.slice(0, 50).map((event, index) => (
+                {events.slice(0, 80).map((event, index) => (
                   <tr
                     key={event.id ?? index}
                     style={{
@@ -321,6 +421,10 @@ export default async function EventsPage() {
                       >
                         {formatEventName(event.event)}
                       </span>
+                    </td>
+
+                    <td style={tdStyle}>
+                      {getTrafficSource(event.referer ?? event.referrer)}
                     </td>
 
                     <td style={tdStyle}>
