@@ -4,6 +4,7 @@ import type {
   OverlapIssue,
   TemporalIssue,
 } from "@/lib/types";
+import { track } from "@/lib/analytics";
 
 type GapIssue = {
   entity_id: string | number;
@@ -420,6 +421,13 @@ export function Timeline({
                           title={`${issue.title}: ${displayFrom} → ${displayTo}`}
                           onClick={(event) => {
                             event.stopPropagation();
+                          
+                            track("timeline_issue_selected", {
+                              type: issue.type,
+                              entityId: issue.entity_id,
+                              source: issue.source,
+                            });
+                          
                             onSelectTemporalIssue(issue);
                           }}
                           style={{
@@ -496,6 +504,12 @@ export function Timeline({
                           title={`Gap: no valid record exists between ${from} and ${to}`}
                           onClick={(event) => {
                             event.stopPropagation();
+                          
+                            track("timeline_gap_selected", {
+                              entityId: gap.entity_id,
+                              source,
+                            });
+                          
                             onSelectTemporalIssue(matchingIssue);
                           }}
                           style={{
@@ -562,6 +576,12 @@ export function Timeline({
                           title={`Overlap: multiple records are valid at the same time (${overlap.from} → ${overlap.to})`}
                           onClick={(event) => {
                             event.stopPropagation();
+                          
+                            track("timeline_overlap_selected", {
+                              entityId: overlap.entity_id,
+                              source,
+                            });
+                          
                             onSelectTemporalIssue(matchingIssue);
                           }}
                           style={{
