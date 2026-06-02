@@ -1,6 +1,5 @@
 import type React from "react";
 import { createClient } from "@supabase/supabase-js";
-
 export const dynamic = "force-dynamic";
 
 type EventRow = {
@@ -132,10 +131,27 @@ export default async function EventsPage() {
   const examplesLoaded =
     (counts["example_loaded"] ?? 0) +
     (counts["temporal_join_demo_loaded"] ?? 0);
+  const csvUploads = events.filter(
+    (e) => e.event === "csv_uploaded"
+  ).length;
+
+  const uploadRate = pageViews
+    ? Math.round((csvUploads / pageViews) * 100)
+    : 0;
 
   const sqlGenerated =
     (counts["sql_generated"] ?? 0) +
     (counts["query_generated"] ?? 0);
+
+  const analyzeRate = pageViews
+    ? Math.round((analysisRuns / pageViews) * 100)
+    : 0;
+
+  const issueSelections = events.filter(
+    (e) =>
+      e.event === "issue_selected" ||
+      e.event === "join_issue_selected"
+  ).length;
 
   const reportsCopied =
     (counts["modeling_report_copied"] ?? 0) +
@@ -215,6 +231,10 @@ export default async function EventsPage() {
           <MetricCard label="Page views" value={pageViews} />
           <MetricCard label="Interactions" value={interactions} />
           <MetricCard label="Analysis runs" value={analysisRuns} />
+          <MetricCard label="Analyze rate" value={`${analyzeRate}%`} />
+          <MetricCard label="CSV uploads" value={csvUploads} />
+          <MetricCard label="Upload rate" value={`${uploadRate}%`} />
+          <MetricCard label="Issues opened" value={issueSelections} />
           <MetricCard label="Examples loaded" value={examplesLoaded} />
           <MetricCard label="SQL generated" value={sqlGenerated} />
           <MetricCard label="Reports copied" value={reportsCopied} />

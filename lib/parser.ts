@@ -8,6 +8,10 @@ export type ParseResult = {
   headerMappings: HeaderMapping[];
 };
 
+export type ParseOptions = {
+  maxColumns?: number | "all";
+};
+
 const COLUMN_ALIASES: Record<string, string> = {
   id: "entity_id",
   entity: "entity_id",
@@ -180,7 +184,7 @@ export function detectDelimiter(text: string) {
   return ",";
 }
 
-export function parseCSV(text: string): ParseResult {
+export function parseCSV(text: string, options: ParseOptions = {}): ParseResult {
   const lines = text
     .split("\n")
     .map((line) => line.trim())
@@ -195,7 +199,14 @@ export function parseCSV(text: string): ParseResult {
   }
 
   const delimiter = detectDelimiter(text);
-  const firstValues = lines[0].split(delimiter).map(normalizeValue);
+  const maxColumns = options.maxColumns ?? "all";
+
+  const scopeValues = (values: string[]) =>
+    maxColumns === "all" ? values : values.slice(0, maxColumns);
+
+  const firstValues = scopeValues(
+    lines[0].split(delimiter).map(normalizeValue)
+  );
 
   const useHeaderRow = hasUsableHeaders(firstValues);
 
@@ -207,7 +218,7 @@ export function parseCSV(text: string): ParseResult {
   const dataLines = useHeaderRow ? lines.slice(1) : lines;
 
   const rows = dataLines.map((line) => {
-    const values = line.split(delimiter);
+    const values = scopeValues(line.split(delimiter));
     const obj: any = {};
 
     headers.forEach((h, i) => {

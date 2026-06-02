@@ -45,6 +45,7 @@ const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 5,object_v2,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
+  const [maxColumns, setMaxColumns] = useState<number | "all">(8);
   const [fileNameA, setFileNameA] = useState("");
   const [fileNameB, setFileNameB] = useState("");
   const [expandedSources, setExpandedSources] = useState<string[]>([]);
@@ -99,8 +100,9 @@ export default function Home() {
 
       track("csv_uploaded", {
         target,
-        fileName: file.name,
         size: file.size,
+        hasSourceA: target === "A" ? true : !!inputA.trim(),
+        hasSourceB: target === "B" ? true : !!inputB.trim(),
       });
 
       event.target.value = "";
@@ -159,7 +161,7 @@ export default function Home() {
       return;
     }
 
-    const parsedA = parseCSV(nextInputA);
+    const parsedA = parseCSV(nextInputA, { maxColumns });
     setHeaderMappingsA(parsedA.headerMappings);
     setColumnMappingA(buildColumnMapping(parsedA.headerMappings, columnMappingA));
   }
@@ -171,14 +173,14 @@ export default function Home() {
       return;
     }
 
-    const parsedB = parseCSV(nextInputB);
+    const parsedB = parseCSV(nextInputB, { maxColumns });
     setHeaderMappingsB(parsedB.headerMappings);
     setColumnMappingB(buildColumnMapping(parsedB.headerMappings, columnMappingB));
   }
 
   function updateMappingsFromInputs(nextInputA = inputA, nextInputB = inputB) {
     if (nextInputA.trim()) {
-      const parsedA = parseCSV(nextInputA);
+      const parsedA = parseCSV(nextInputA, { maxColumns });
       setHeaderMappingsA(parsedA.headerMappings);
       setColumnMappingA(buildColumnMapping(parsedA.headerMappings, columnMappingA));
     } else {
@@ -187,7 +189,7 @@ export default function Home() {
     }
 
     if (nextInputB.trim()) {
-      const parsedB = parseCSV(nextInputB);
+      const parsedB = parseCSV(nextInputB, { maxColumns });
       setHeaderMappingsB(parsedB.headerMappings);
       setColumnMappingB(buildColumnMapping(parsedB.headerMappings, columnMappingB));
     } else {
@@ -203,6 +205,8 @@ export default function Home() {
 
     setInputA(EXAMPLE_A);
     setInputB(EXAMPLE_B);
+    setFileNameA("");
+    setFileNameB("");
     setSourceNameA("Source_A");
     setSourceNameB("Source_B");
     updateMappingsFromInputs(EXAMPLE_A, EXAMPLE_B);
@@ -252,7 +256,7 @@ export default function Home() {
     sourceName: string,
     activeMapping: Record<string, string>
   ) {
-    const parsed = parseCSV(rawInput);
+    const parsed = parseCSV(rawInput, { maxColumns });
 
     const initialMapping: Record<string, string> = {};
     parsed.headerMappings.forEach((m) => {
@@ -331,9 +335,14 @@ export default function Home() {
       rowCount: combinedRows.length,
       sourceA: sourceAName,
       sourceB: sourceBName,
+      hasUploadedA: !!fileNameA,
+      hasUploadedB: !!fileNameB,
+      ownData: !!fileNameA || !!fileNameB,
       joinIssues: computedJoinIssues.length,
       joinGaps: computedJoinIssues.filter((i) => i.type === "JOIN_GAP").length,
       ambiguities: computedJoinIssues.filter((i) => i.type === "JOIN_AMBIGUITY").length,
+      validGaps: detectGaps(combinedRows).length,
+      overlaps: detectOverlapMarkers(combinedRows, mode).length,
       mode,
     });
 
@@ -351,6 +360,9 @@ export default function Home() {
   function analyzeTwoSources() {
     track("analyze_clicked", {
       hasBothSources: !!inputA.trim() && !!inputB.trim(),
+      hasUploadedA: !!fileNameA,
+      hasUploadedB: !!fileNameB,
+      mode: validationMode,
     });
 
     if (!inputA.trim() || !inputB.trim()) {
@@ -432,6 +444,17 @@ export default function Home() {
   function selectTemporalIssue(issue: TemporalIssue | null) {
     setSelectedTemporalIssue(issue);
 
+    if (issue) {
+      track("issue_selected", {
+        type: issue.type,
+        severity: issue.severity,
+        hasUploadedA: !!fileNameA,
+        hasUploadedB: !!fileNameB,
+        hasOwnData: !!fileNameA || !!fileNameB,
+        mode: validationMode,
+      });
+    }
+
     if (issue?.originalIssue?.kind === "join") {
       setSelectedIssue(issue.originalIssue.issue);
     } else {
@@ -441,6 +464,16 @@ export default function Home() {
 
   function selectJoinIssue(issue: AggregatedJoinabilityIssue | null) {
     setSelectedIssue(issue);
+
+    if (issue) {
+      track("join_issue_selected", {
+        type: issue.type,
+        hasUploadedA: !!fileNameA,
+        hasUploadedB: !!fileNameB,
+        hasOwnData: !!fileNameA || !!fileNameB,
+        mode: validationMode,
+      });
+    }
 
     if (!issue) {
       setSelectedTemporalIssue(null);
@@ -458,7 +491,12 @@ export default function Home() {
   }
 
   function generateSQL() {
-    track("sql_generated");
+    track("sql_generated", {
+      hasValidAsOf: !!asOfDate,
+      hasVisibleAsOf: !!visibleAsOf,
+      hasOwnData: !!fileNameA || !!fileNameB,
+      mode: validationMode,
+    });
     const sqlParts: string[] = [];
 
     if (asOfDate) {
@@ -615,6 +653,35 @@ WHERE ${sqlParts.join(" AND ")};`);
                 marginBottom: 24,
               }}
             >
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "#94a3b8" }}>
+                  Column scope
+                </label>
+                <br />
+                <select
+                  value={maxColumns}
+                  onChange={(e) => {
+                    const value = e.target.value === "all" ? "all" : Number(e.target.value);
+                    setMaxColumns(value);
+                    updateMappingsFromInputs(inputA, inputB);
+                    resetAnalysis();
+                  }}
+                  style={{
+                    marginTop: 4,
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    border: "1px solid #334155",
+                    background: "#020617",
+                    color: "#e2e8f0",
+                    fontSize: 12,
+                  }}
+                >
+                  <option value={6}>Use first 6 columns</option>
+                  <option value={8}>Use first 8 columns</option>
+                  <option value={12}>Use first 12 columns</option>
+                  <option value="all">Use all columns</option>
+                </select>
+              </div>              
               {(headerMappingsA.length > 0 || headerMappingsB.length > 0) && (
                 <div
                   style={{
@@ -945,23 +1012,6 @@ WHERE ${sqlParts.join(" AND ")};`);
             </div>
           </>
         )}
-
-        <div
-          style={{
-            marginTop: 20,
-            padding: "12px 16px",
-            borderRadius: 10,
-            border: "1px solid #1e293b",
-            background: "#020617",
-            color: "#94a3b8",
-            fontSize: 13,
-            lineHeight: 1.5,
-          }}
-        >
-          <strong style={{ color: "#cbd5e1" }}>Privacy:</strong> Uploaded datasets
-          remain in your browser session and are not persisted by the application.
-        </div>
-
         <Footer />
       </div>
 

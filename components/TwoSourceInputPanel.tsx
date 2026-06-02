@@ -1,5 +1,5 @@
 import type React from "react";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useState } from "react";
 
 type TwoSourceInputPanelProps = {
   fileNameA: string;
@@ -41,6 +41,7 @@ export function TwoSourceInputPanel({
   analysisModeControl,
 }: TwoSourceInputPanelProps) {
   const canAnalyze = Boolean(inputA.trim() && inputB.trim());
+  const [dragTarget, setDragTarget] = useState<string | null>(null);
 
   const featureCards = [
     {
@@ -77,7 +78,7 @@ export function TwoSourceInputPanel({
       setInput: setInputA,
       upload: onUploadA,
       color: "#22c55e",
-      placeholder: "Or paste CSV / TSV data for Source A...",
+      placeholder: "Paste query results, Databricks display() output, Excel data or CSV/TSV... for Source A",
     },
     {
       fileName: fileNameB,
@@ -89,7 +90,7 @@ export function TwoSourceInputPanel({
       setInput: setInputB,
       upload: onUploadB,
       color: "#3b82f6",
-      placeholder: "Or paste CSV / TSV data for Source B...",
+      placeholder: "Paste query results, Databricks display() output, Excel data or CSV/TSV... for Source B",
     },
   ];
 
@@ -255,7 +256,7 @@ export function TwoSourceInputPanel({
 
         <p
           style={{
-            margin: "0",
+            marginBottom: "-10px",
             fontSize: 16,
             color: "#cbd5f5",
             fontWeight: 600,
@@ -265,8 +266,25 @@ export function TwoSourceInputPanel({
         </p>
       </div>
 
+        <div
+          style={{
+            marginTop: 10,
+            padding: "12px 16px",
+            borderRadius: 10,
+            border: "1px solid #1e293b",
+            background: "#020617",
+            color: "#94a3b8",
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          <strong style={{ color: "#cbd5e1" }}>🔒 Your data never leaves the browser.
+Uploaded datasets remain in your session and are not stored.</strong>
+        </div>
+
       <div
         style={{
+          marginTop: 5,
           display: "grid",
           gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           gap: 20,
@@ -347,15 +365,47 @@ export function TwoSourceInputPanel({
             />
 
             <div
-              style={{
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragTarget(source.label);
+              }}
+
+              onDragLeave={() => {
+                setDragTarget(null);
+              }}
+
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragTarget(null);
+              
+                const file = e.dataTransfer.files?.[0];
+              
+                if (!file) return;
+              
+                const syntheticEvent = {
+                  target: {
+                    files: [file],
+                  },
+                } as unknown as ChangeEvent<HTMLInputElement>;
+              
+                source.upload(syntheticEvent);
+              }}
+                style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 14,
                 padding: 14,
                 borderRadius: 12,
-                border: "1px solid #334155",
-                background: "#020617",
+                border:
+                  dragTarget === source.label
+                    ? "2px solid #3b82f6"
+                    : "1px solid #334155",
+                background:
+                  dragTarget === source.label
+                    ? "#0f172a"
+                    : "#020617",
                 marginBottom: 12,
+                transition: "all 0.15s ease",
               }}
             >
               <div
@@ -384,21 +434,31 @@ export function TwoSourceInputPanel({
                     marginBottom: 4,
                   }}
                 >
-                  Upload CSV
+                  {dragTarget === source.label
+                    ? "Drop file here"
+                    : "Upload CSV"}
                 </div>
 
-                <div
-                  style={{
-                    color: "#94a3b8",
-                    fontSize: 12,
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {source.fileName ? `✓ ${source.fileName}` : "Upload CSV"}
-                  {source.fileName
-                    ? "Loaded successfully"
-                    : "Choose a CSV, TSV or TXT file from your computer."}
-                </div>
+                {source.fileName ? (
+                  <>
+                    <div style={{ color: "#22c55e", fontSize: 12, lineHeight: 1.4 }}>
+                      ✓ {source.fileName}
+                    </div>
+                    <div style={{ color: "#94a3b8", fontSize: 11, lineHeight: 1.4 }}>
+                      Loaded successfully
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      color: "#94a3b8",
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    Drag & drop CSV, TSV or TXT files or click Browse.
+                  </div>
+                )}
               </div>
 
               <label
@@ -450,7 +510,7 @@ export function TwoSourceInputPanel({
                 fontSize: 12,
               }}
             >
-              Expected columns: entity_id, value, valid_from, valid_to,
+              Supported columns (auto-mapped): entity_id, value, valid_from, valid_to,
               [visible_from, visible_to]
             </div>
 
@@ -487,6 +547,60 @@ export function TwoSourceInputPanel({
             )}
           </div>
         ))}
+      </div>
+      <div
+        style={{
+          marginTop: 24,
+          marginBottom: 12,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <div>{analysisModeControl}</div>
+
+        <button
+          onClick={() => {
+            if (!canAnalyze) return;
+            onAnalyze();
+          }}
+          disabled={!canAnalyze}
+          style={{
+            height: 52,
+            minWidth: 260,
+            padding: "0 24px",
+            borderRadius: 12,
+            background: canAnalyze ? "#1d4ed8" : "#1e293b",
+            color: "#ffffff",
+            border: "1px solid rgba(255,255,255,0.08)",
+            fontWeight: 800,
+            fontSize: 15,
+            cursor: canAnalyze ? "pointer" : "not-allowed",
+            opacity: canAnalyze ? 1 : 0.58,
+            boxShadow: canAnalyze
+              ? "0 8px 24px rgba(37,99,235,0.24)"
+              : "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <span style={{ fontSize: 20 }}>▷</span>
+          Analyze Sources
+        </button>
+
+        <div
+          style={{
+            fontSize: 12,
+            color: "#64748b",
+            textAlign: "center",
+            maxWidth: 500,
+          }}
+        >
+          Analyze temporal alignment, gaps, overlaps and join behavior across both sources.
+        </div>
       </div>
 
       {controls}
