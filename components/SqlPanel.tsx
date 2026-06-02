@@ -327,7 +327,6 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
           </button>
         </>
       )}
-      
       {selectedIssue && explanation && (
         <>
           <div
@@ -511,7 +510,7 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
             marginBottom: 8,
           }}
         >
-          Optional as-of query
+          SNAPSHOT SQL FILTER
         </div>
 
         <pre
@@ -527,7 +526,7 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
             lineHeight: 1.5,
           }}
         >
-          {sql || "Generate an optional as-of query for manual inspection."}
+          {sql || "SQL filter for the active historical snapshot."}
         </pre>
 
         <button

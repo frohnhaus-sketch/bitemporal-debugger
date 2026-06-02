@@ -301,42 +301,71 @@ Uploaded datasets remain in your session and are not stored.</strong>
               boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                marginBottom: 16,
-              }}
-            >
               <div
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 7,
-                  border: `1px solid ${source.color}`,
-                  color: source.color,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 900,
-                  fontSize: 14,
+                  justifyContent: "space-between",
+                  gap: 10,
+                  marginBottom: 16,
                 }}
               >
-                {source.label}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 7,
+                      border: `1px solid ${source.color}`,
+                      color: source.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 900,
+                      fontSize: 14,
+                    }}
+                  >
+                    {source.label}
+                  </div>
+                  
+                  <div
+                    style={{
+                      color: source.color,
+                      fontWeight: 900,
+                      fontSize: 17,
+                    }}
+                  >
+                    {source.title}
+                  </div>
+                </div>
+                  
+                {source.label === "B" && (
+                  <button
+                    title="Useful for self-join debugging"
+                    onClick={onCopyAtoB}
+                    style={{
+                      padding: "6px 9px",
+                      borderRadius: 8,
+                      border: "1px solid #334155",
+                      background: "#1e293b",
+                      color: "#e2e8f0",
+                      cursor: "pointer",
+                      fontWeight: 800,
+                      fontSize: 11,
+                      whiteSpace: "nowrap",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }}
+                  >
+                    Copy A → B
+                  </button>
+                )}
               </div>
-
-              <div
-                style={{
-                  color: source.color,
-                  fontWeight: 900,
-                  fontSize: 17,
-                }}
-              >
-                {source.title}
-              </div>
-            </div>
-
             <label
               style={{
                 display: "block",
@@ -513,41 +542,10 @@ Uploaded datasets remain in your session and are not stored.</strong>
               Supported columns (auto-mapped): entity_id, value, valid_from, valid_to,
               [visible_from, visible_to]
             </div>
-
-            {source.label === "B" && (
-              <>
-                <p
-                  style={{
-                    margin: "12px 0 0",
-                    fontSize: 13,
-                    color: "#93c5fd",
-                  }}
-                >
-                  Debugging a self-join? Paste the same table into Source A and
-                  Source B.
-                </p>
-
-                <button
-                  onClick={onCopyAtoB}
-                  style={{
-                    marginTop: 8,
-                    padding: "7px 10px",
-                    borderRadius: 8,
-                    border: "1px solid #334155",
-                    background: "#1e293b",
-                    color: "#e2e8f0",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    fontSize: 12,
-                  }}
-                >
-                  Copy Source A → B
-                </button>
-              </>
-            )}
           </div>
         ))}
       </div>
+      {controls}
       <div
         style={{
           marginTop: 24,
@@ -558,8 +556,6 @@ Uploaded datasets remain in your session and are not stored.</strong>
           gap: 12,
         }}
       >
-        <div>{analysisModeControl}</div>
-
         <button
           onClick={() => {
             if (!canAnalyze) return;
@@ -590,20 +586,7 @@ Uploaded datasets remain in your session and are not stored.</strong>
           <span style={{ fontSize: 20 }}>▷</span>
           Analyze Sources
         </button>
-
-        <div
-          style={{
-            fontSize: 12,
-            color: "#64748b",
-            textAlign: "center",
-            maxWidth: 500,
-          }}
-        >
-          Analyze temporal alignment, gaps, overlaps and join behavior across both sources.
-        </div>
       </div>
-
-      {controls}
     </div>
   );
 }

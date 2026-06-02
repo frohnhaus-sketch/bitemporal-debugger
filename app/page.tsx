@@ -73,6 +73,17 @@ export default function Home() {
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function scheduleHighlightRow(row: HighlightTarget | null) {
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedRow(row);
+    }, 400);
+  }
 
   function loadCsvFile(
     event: ChangeEvent<HTMLInputElement>,
@@ -728,55 +739,57 @@ WHERE ${sqlParts.join(" AND ")};`);
           controls={
             <div
               style={{
+                marginTop: 8,
                 background: "#111827",
                 border: "1px solid #334155",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-                borderRadius: 14,
-                padding: 24,
-                marginTop: 24,
-                marginBottom: 24,
+                borderRadius: 10,
+                padding: "10px 16px",
+                marginBottom: 0,
               }}
             >
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>
-                  Column scope
-                </label>
-                <br />
-                <select
-                  value={maxColumns}
-                  onChange={(e) => {
-                    const value = e.target.value === "all" ? "all" : Number(e.target.value);
-                    setMaxColumns(value);
-                    updateMappingsFromInputs(inputA, inputB);
-                    resetAnalysis();
-                  }}
-                  style={{
-                    marginTop: 4,
-                    padding: "6px 8px",
-                    borderRadius: 8,
-                    border: "1px solid #334155",
-                    background: "#020617",
-                    color: "#e2e8f0",
-                    fontSize: 12,
-                  }}
-                >
-                  <option value={6}>Use first 6 columns</option>
-                  <option value={8}>Use first 8 columns</option>
-                  <option value={12}>Use first 12 columns</option>
-                  <option value="all">Use all columns</option>
-                </select>
-              </div>              
-              {(headerMappingsA.length > 0 || headerMappingsB.length > 0) && (
-                <div
-                  style={{
-                    width: "100%",
-                    marginBottom: 0,
-                    background: "#0f172a",
-                    border: "1px solid #1e293b",
-                    borderRadius: 10,
-                    padding: 12,
-                  }}
-                >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  gap: 24,
+                  flexWrap: "wrap",
+                  marginBottom: showMapping ? 12 : 0,
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: 12, color: "#94a3b8" }}>
+                    Column scope
+                  </label>
+                  <br />
+                  <select
+                    value={maxColumns}
+                    onChange={(e) => {
+                      const value =
+                        e.target.value === "all" ? "all" : Number(e.target.value);
+                      setMaxColumns(value);
+                      updateMappingsFromInputs(inputA, inputB);
+                      resetAnalysis();
+                    }}
+                    style={{
+                      marginTop: 4,
+                      padding: "6px 8px",
+                      borderRadius: 8,
+                      border: "1px solid #334155",
+                      background: "#020617",
+                      color: "#e2e8f0",
+                      fontSize: 12,
+                    }}
+                  >
+                    <option value={6}>Use first 6 columns</option>
+                    <option value={8}>Use first 8 columns</option>
+                    <option value={12}>Use first 12 columns</option>
+                    <option value="all">Use all columns</option>
+                  </select>
+                </div>
+                  
+                {(headerMappingsA.length > 0 || headerMappingsB.length > 0) && (
                   <button
                     onClick={() => setShowMapping(!showMapping)}
                     style={{
@@ -784,30 +797,41 @@ WHERE ${sqlParts.join(" AND ")};`);
                       border: "none",
                       padding: 0,
                       color: "#94a3b8",
-                      fontSize: 12,
+                      fontSize: 13,
                       cursor: "pointer",
-                      marginBottom: 4,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {showMapping ? (
-                      "▼ Review column mapping"
+                      <>
+                        ▼{" "}
+                        <span style={{ color: "#2563eb", fontWeight: 700 }}>
+                          Hide column mapping
+                        </span>
+                      </>
                     ) : (
                       <>
                         ✓ Auto-mapped columns{" "}
-                        <span
-                          style={{
-                            color: "#2563eb",
-                            fontWeight: 700,
-                          }}
-                        >
+                        <span style={{ color: "#2563eb", fontWeight: 700 }}>
                           · Click to review
                         </span>
                       </>
                     )}
                   </button>
-                  
-                  {showMapping && (
-                  
+                )}
+              </div>
+              
+              {showMapping && (
+                <div
+                  style={{
+                    width: "100%",
+                    background: "#0f172a",
+                    border: "1px solid #1e293b",
+                    borderRadius: 10,
+                    padding: 12,
+                    marginTop: 12,
+                  }}
+                >
                   <div
                     style={{
                       display: "grid",
@@ -913,7 +937,6 @@ WHERE ${sqlParts.join(" AND ")};`);
                       </div>
                     </div>
                   </div>
-                  )}
                 </div>
               )}
             </div>
@@ -1146,7 +1169,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               joinIssues={activeJoinIssues}
               onSelectIssue={selectJoinIssue}
               highlightedRow={highlightedRow}
-              onHighlightRow={setHighlightedRow}
+              onHighlightRow={scheduleHighlightRow}
               forceOpen={expandedSources.includes(sourceNameA)}
               overlapMarkers={overlapMarkers}
             />
@@ -1157,7 +1180,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               joinIssues={activeJoinIssues}
               onSelectIssue={selectJoinIssue}
               highlightedRow={highlightedRow}
-              onHighlightRow={setHighlightedRow}
+              onHighlightRow={scheduleHighlightRow}
               forceOpen={expandedSources.includes(sourceNameB)}
               overlapMarkers={overlapMarkers}
             />

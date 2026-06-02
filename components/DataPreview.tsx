@@ -34,17 +34,11 @@ function getRowJoinIssue(
   return joinIssues?.find((issue) => {
     const sameSource = issue.source === row.source;
     const sameEntity = String(issue.entity_id) === String(row.entity_id);
-
-    // ⚠️ WICHTIG: IMMER valid window matchen
     const sameValidWindow =
       issue.valid_from === row.valid_from &&
       issue.valid_to === row.valid_to;
 
     if (!sameSource || !sameEntity) return false;
-
-    // 🔥 CRITICAL FIX:
-    // Aggregated Issues dürfen NICHT alle Rows der Entity matchen
-    // sondern nur die mit exakt gleichem valid window
 
     if (issue.isAggregated) {
       const entityMatch = issue.entityIds?.some(
@@ -280,6 +274,7 @@ export function DataPreview({
                     onClick={() => {
                       if (joinIssue) {
                         onSelectIssue?.(joinIssue);
+                        return;
                       }
                     }}
                       title={
