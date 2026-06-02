@@ -327,7 +327,7 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
           </button>
         </>
       )}
-
+      
       {selectedIssue && explanation && (
         <>
           <div
@@ -340,31 +340,28 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
                   ? "1px solid #ef4444"
                   : "1px solid #f59e0b",
               borderRadius: 12,
-              padding: 20,
+              padding: 18,
               fontSize: 13,
-              lineHeight: 1.6,
+              lineHeight: 1.5,
             }}
           >
             <div
               style={{
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 800,
                 textTransform: "uppercase",
                 letterSpacing: 0.6,
-                color: "#64748b",
-                marginBottom: 6,
+                color: explanation.severity === "error" ? "#991b1b" : "#92400e",
+                marginBottom: 8,
               }}
             >
-              Historical Modeling Guidance
+              {selectedIssue.type === "JOIN_AMBIGUITY"
+                ? "Ambiguous Temporal Join"
+                : "Missing Temporal Match"}
             </div>
-
-            <h3 style={{ marginTop: 0, marginBottom: 10 }}>
-              What does this finding mean?
-            </h3>
-
+              
             <div
               style={{
-                marginBottom: 12,
                 padding: 12,
                 borderRadius: 10,
                 background: "#ffffff",
@@ -372,106 +369,33 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
                 fontSize: 15,
                 fontWeight: 800,
                 color: "#0f172a",
+                marginBottom: 14,
               }}
             >
               {explanation.headline}
             </div>
-
-            <h4 style={{ margin: "0 0 10px 0", fontSize: 15 }}>
-              {explanation.title}
-            </h4>
-
+            
             <div style={{ marginBottom: 12 }}>
-              <strong>What happened</strong>
+              <strong>Problem</strong>
               <br />
               {explanation.summary}
             </div>
-
+            
             <div style={{ marginBottom: 12 }}>
-              <strong>Likely cause</strong>
-              <br />
-              {explanation.cause}
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <strong>Modeling impact</strong>
+              <strong>Impact</strong>
               <br />
               {explanation.interpretation}
             </div>
-
-            <div
-              style={{
-                marginBottom: 12,
-                padding: 12,
-                borderRadius: 10,
-                background: "#ffffff",
-                border: "1px solid rgba(15, 23, 42, 0.12)",
-              }}
-            >
-              <strong>
-                {selectedIssue.isAggregated
-                  ? "Affected pattern"
-                  : "Affected source row"}
-              </strong>
-
-              <div style={{ marginTop: 8 }}>
-                <div>
-                  <strong>Source relationship:</strong> {selectedIssue.source} →{" "}
-                  {selectedIssue.targetSource}
-                </div>
-
-                <div>
-                  <strong>Entity:</strong>{" "}
-                  {selectedIssue.isAggregated
-                    ? `${selectedIssue.count} entities affected`
-                    : selectedIssue.entity_id}
-                </div>
-
-                <div>
-                  <strong>Valid-time:</strong> {selectedIssue.valid_from} →{" "}
-                  {selectedIssue.valid_to}{" "}
-                  <span style={{ color: "#64748b" }}>[inclusive]</span>
-                </div>
-
-                {selectedIssue.visible_from && (
-                  <div>
-                    <strong>Visible-time:</strong>{" "}
-                    {selectedIssue.visible_from} →{" "}
-                    {selectedIssue.visible_to || "∞"}{" "}
-                    <span style={{ color: "#64748b" }}>[half-open)</span>
-                  </div>
-                )}
-
-                <div>
-                  <strong>Reason:</strong> {selectedIssue.reason}
-                </div>
-
-                {typeof selectedIssue.matchingRows !== "undefined" && (
-                  <div>
-                    <strong>Matching rows:</strong>{" "}
-                    {selectedIssue.matchingRows}
-                  </div>
-                )}
-
-                {selectedIssue.isAggregated && selectedIssue.entityIds && (
-                  <div style={{ marginTop: 8 }}>
-                    <strong>Example entities:</strong>{" "}
-                    {selectedIssue.entityIds.slice(0, 10).join(", ")}
-                    {selectedIssue.entityIds.length > 10 ? " …" : ""}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <strong>Suggested investigation</strong>
+            
+            <div style={{ marginBottom: 12 }}>
+              <strong>Investigate</strong>
               <ul style={{ margin: "6px 0 0 0", paddingLeft: 18 }}>
                 {explanation.hints.map((hint) => (
                   <li key={hint}>{hint}</li>
                 ))}
               </ul>
             </div>
-
+              
             {explanation.fixes && explanation.fixes.length > 0 && (
               <div
                 style={{
@@ -482,7 +406,7 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
                   border: "1px solid #86efac",
                 }}
               >
-                <strong>Suggested modeling action</strong>
+                <strong>Suggested action</strong>
                 <ul style={{ margin: "6px 0 0 0", paddingLeft: 18 }}>
                   {explanation.fixes.map((fix) => (
                     <li key={fix}>{fix}</li>
@@ -490,45 +414,55 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
                 </ul>
               </div>
             )}
-
-            {explanation.sqlSuggestion && (
-              <div
-                style={{
-                  marginTop: 14,
-                  padding: 12,
-                  borderRadius: 10,
-                  background: "#f8fafc",
-                  border: "1px solid #cbd5e1",
-                }}
-              >
-                <strong>Suggested query pattern</strong>
-                <pre
-                  style={{
-                    marginTop: 8,
-                    padding: 10,
-                    borderRadius: 8,
-                    background: "#111827",
-                    color: "#e5e7eb",
-                    whiteSpace: "pre-wrap",
-                    fontSize: 12,
-                  }}
-                >
-                  {explanation.sqlSuggestion}
-                </pre>
+      
+            <div
+              style={{
+                marginTop: 14,
+                padding: 12,
+                borderRadius: 10,
+                background: "#ffffff",
+                border: "1px solid rgba(15, 23, 42, 0.12)",
+                color: "#334155",
+              }}
+            >
+              <strong style={{ color: "#0f172a" }}>
+                {selectedIssue.isAggregated ? "Affected pattern" : "Context"}
+              </strong>
+            
+              <div style={{ marginTop: 8 }}>
+                {selectedIssue.source} → {selectedIssue.targetSource}
               </div>
-            )}
+            
+              <div>
+                Entity:{" "}
+                {selectedIssue.isAggregated
+                  ? `${selectedIssue.count} entities affected`
+                  : selectedIssue.entity_id}
+              </div>
+                
+              <div>
+                Valid-time: {selectedIssue.valid_from} → {selectedIssue.valid_to}
+              </div>
+                
+              {selectedIssue.isAggregated && selectedIssue.entityIds && (
+                <div style={{ marginTop: 6 }}>
+                  Examples: {selectedIssue.entityIds.slice(0, 8).join(", ")}
+                  {selectedIssue.entityIds.length > 8 ? " …" : ""}
+                </div>
+              )}
+            </div>
           </div>
-
+            
           <IssueWhyPanel
             selectedIssue={selectedIssue}
             selectedTemporalIssue={selectedTemporalIssue}
           />
-
+      
           <button
             onClick={() => {
               const report = buildModelingReport();
               if (!report) return;
-
+            
               track("Modeling Report Copied");
               navigator.clipboard.writeText(report);
             }}
@@ -542,6 +476,15 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
               border: "none",
               cursor: "pointer",
               fontWeight: 700,
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px)";
+              e.currentTarget.style.background = "#020617";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.background = "#0f172a";
             }}
           >
             Copy modeling report
@@ -603,9 +546,17 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
             border: "none",
             cursor: sql ? "pointer" : "not-allowed",
             fontWeight: 700,
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            if (!sql) return;
+            e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
           }}
         >
-          Copy query
+          Copy Snapshot Filter
         </button>
       </div>
     </div>

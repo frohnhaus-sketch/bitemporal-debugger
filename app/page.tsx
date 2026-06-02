@@ -3,7 +3,7 @@ import { buildTemporalIssues } from "../lib/temporalIssues";
 import type { TemporalIssue } from "../lib/types";
 import { track } from "@/lib/analytics";
 import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { parseCSV } from "../lib/parser";
 import type { HeaderMapping } from "../lib/parser";
 import { Timeline } from "@/components/Timeline";
@@ -45,6 +45,7 @@ const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 5,object_v2,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
+  const [showMapping, setShowMapping] = useState(false);
   const [maxColumns, setMaxColumns] = useState<number | "all">(8);
   const [fileNameA, setFileNameA] = useState("");
   const [fileNameB, setFileNameB] = useState("");
@@ -67,7 +68,7 @@ export default function Home() {
   const [overlapMarkers, setOverlapMarkers] = useState<OverlapIssue[]>([]);
   const [asOfDate, setAsOfDate] = useState("");
   const [visibleAsOf, setVisibleAsOf] = useState("");
-  const [sql, setSql] = useState("");
+  const [sql, setSql] = useState("")
   const [validationMode, setValidationMode] = useState<ValidationMode>("monotemporal");
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
@@ -344,6 +345,9 @@ export default function Home() {
       validGaps: detectGaps(combinedRows).length,
       overlaps: detectOverlapMarkers(combinedRows, mode).length,
       mode,
+      snapshotActive: !!(asOfDate || visibleAsOf),
+      hasValidAsOf: !!asOfDate,
+      hasVisibleAsOf: !!visibleAsOf,
     });
 
     setJoinIssues(computedJoinIssues);
@@ -363,6 +367,7 @@ export default function Home() {
       hasUploadedA: !!fileNameA,
       hasUploadedB: !!fileNameB,
       mode: validationMode,
+      snapshotActive: !!(asOfDate || visibleAsOf),
     });
 
     if (!inputA.trim() || !inputB.trim()) {
@@ -396,6 +401,7 @@ export default function Home() {
   function resetDates() {
     setAsOfDate("");
     setVisibleAsOf("");
+    track("snapshot_cleared");
   }
 
   function getPosition(date: string) {
@@ -419,7 +425,7 @@ export default function Home() {
     return source === sourceNameA ? "#475569" : "#64748b";
   }
 
-  const filteredRows = rows.filter((r) => {
+  const snapshotRows = rows.filter((r) => {
     const validOk = asOfDate
       ? new Date(asOfDate) >= new Date(r.valid_from) &&
         new Date(asOfDate) <= new Date(r.valid_to)
@@ -427,12 +433,86 @@ export default function Home() {
 
     const visibleOk = visibleAsOf
       ? new Date(visibleAsOf) >= new Date(r.visible_from) &&
-        new Date(visibleAsOf) <
-          new Date(r.visible_to || "9999-12-31T00:00:00")
+        new Date(visibleAsOf) < new Date(r.visible_to || "9999-12-31T00:00:00")
       : true;
 
     return validOk && visibleOk;
   });
+
+  // const activeRows = asOfDate || visibleAsOf ? snapshotRows : rows;
+  // const activeJoinIssues = analyzeJoinability(
+  //   activeRows,
+  //   sourceNameA,
+  //   sourceNameB,
+  //   validationMode
+  // );
+  // const activeGaps = detectGaps(activeRows);
+  // const activeDrifts = detectDrift(activeRows);
+  // const activeOverlapMarkers = detectOverlapMarkers(activeRows, validationMode);
+  // const activeTemporalIssues = buildTemporalIssues({
+  //   joinIssues: activeJoinIssues,
+  //   gaps: activeGaps,
+  //   overlapMarkers: activeOverlapMarkers,
+  //   drifts: activeDrifts,
+  // });
+
+  const snapshotActive = Boolean(asOfDate || visibleAsOf);
+
+  const activeRows = useMemo(() => {
+    if (!snapshotActive) return rows;
+
+    return rows.filter((r) => {
+      const validOk = asOfDate
+        ? new Date(asOfDate) >= new Date(r.valid_from) &&
+          new Date(asOfDate) <= new Date(r.valid_to)
+        : true;
+
+      const visibleOk = visibleAsOf
+        ? new Date(visibleAsOf) >= new Date(r.visible_from) &&
+          new Date(visibleAsOf) <
+            new Date(r.visible_to || "9999-12-31T00:00:00")
+        : true;
+
+      return validOk && visibleOk;
+    });
+  }, [rows, asOfDate, visibleAsOf, snapshotActive]);
+
+  const activeJoinIssues = useMemo(
+    () =>
+      analyzeJoinability(
+        activeRows,
+        sourceNameA,
+        sourceNameB,
+        validationMode
+      ),
+    [activeRows, sourceNameA, sourceNameB, validationMode]
+  );
+
+  const activeGaps = useMemo(
+    () => detectGaps(activeRows),
+    [activeRows]
+  );
+
+  const activeDrifts = useMemo(
+    () => detectDrift(activeRows),
+    [activeRows]
+  );
+
+  const activeOverlapMarkers = useMemo(
+    () => detectOverlapMarkers(activeRows, validationMode),
+    [activeRows, validationMode]
+  );
+
+  const activeTemporalIssues = useMemo(
+    () =>
+      buildTemporalIssues({
+        joinIssues: activeJoinIssues,
+        gaps: activeGaps,
+        overlapMarkers: activeOverlapMarkers,
+        drifts: activeDrifts,
+      }),
+    [activeJoinIssues, activeGaps, activeOverlapMarkers, activeDrifts]
+  );
 
   const temporalIssues = buildTemporalIssues({
     joinIssues,
@@ -518,6 +598,10 @@ export default function Home() {
 FROM your_table
 WHERE ${sqlParts.join(" AND ")};`);
  }
+
+  useEffect(() => {
+    generateSQL();
+  }, [asOfDate, visibleAsOf]);
 
   const joinGapCount = joinIssues.filter((i) => i.type === "JOIN_GAP").length;
   const joinAmbiguityCount = joinIssues.filter(
@@ -693,10 +777,37 @@ WHERE ${sqlParts.join(" AND ")};`);
                     padding: 12,
                   }}
                 >
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 5 }}>
-                    Column mapping
-                  </div>
-                
+                  <button
+                    onClick={() => setShowMapping(!showMapping)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                      color: "#94a3b8",
+                      fontSize: 12,
+                      cursor: "pointer",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {showMapping ? (
+                      "▼ Review column mapping"
+                    ) : (
+                      <>
+                        ✓ Auto-mapped columns{" "}
+                        <span
+                          style={{
+                            color: "#2563eb",
+                            fontWeight: 700,
+                          }}
+                        >
+                          · Click to review
+                        </span>
+                      </>
+                    )}
+                  </button>
+                  
+                  {showMapping && (
+                  
                   <div
                     style={{
                       display: "grid",
@@ -802,122 +913,162 @@ WHERE ${sqlParts.join(" AND ")};`);
                       </div>
                     </div>
                   </div>
+                  )}
                 </div>
               )}
-
-              <div style={{ marginBottom: 18, marginTop: 18 }}>
-                <details
-                  style={{
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 10,
-                    padding: 12,
-                  }}
-                >
-                  <summary
-                    style={{
-                      cursor: "pointer",
-                      fontWeight: 700,
-                      color: "#475569",
-                    }}
-                  >
-                    Advanced: Generate as-of query
-                  </summary>
-
-                  <div style={{ marginTop: 12 }}>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        color: "#64748b",
-                        lineHeight: 1.5,
-                        marginBottom: 12,
-                      }}
-                    >
-                      Generate as-of queries for a specific valid-time and visibility state.
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 16,
-                        flexWrap: "wrap",
-                        alignItems: "flex-end",
-                      }}
-                    >
-                      <div>
-                        <label style={{ fontSize: 12 }}>Valid As-of Date</label>
-                        <br />
-                        <input
-                          type="date"
-                          value={asOfDate || ""}
-                          onChange={(e) => setAsOfDate(e.target.value || "")}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: 12 }}>Visible As-of Timestamp</label>
-                        <br />
-                        <input
-                          type="datetime-local"
-                          value={visibleAsOf || ""}
-                          onChange={(e) => setVisibleAsOf(e.target.value || "")}
-                        />
-                      </div>
-
-                      <button
-                        onClick={resetDates}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: 8,
-                          border: "1px solid #475569",
-                          background: "#1e293b",
-                          color: "#e2e8f0",
-                          cursor: "pointer",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }}
-                      >
-                        Reset Dates
-                      </button>
-
-                      <button
-                        onClick={generateSQL}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: 8,
-                          border: "1px solid #475569",
-                          background: "#1e293b",
-                          color: "#e2e8f0",
-                          cursor: "pointer",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }}
-                      >
-                        Generate Query
-                      </button>
-                    </div>
-                  </div>
-                </details>
-              </div>
             </div>
           }
         />
-
         {hasAnalyzed && (
           <>
+            <div style={{ marginBottom: 18, marginTop: 18 }}>
+              <details
+                style={{
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 10,
+                  padding: 12,
+                }}
+              >
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    color: "#475569",
+                  }}
+                >
+                  Historical Snapshot
+                </summary>
+                
+                <div style={{ marginTop: 12 }}>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      color: "#64748b",
+                      lineHeight: 1.5,
+                      marginBottom: 12,
+                    }}
+                  >
+                    Analyze the model at a specific point in time.
+                    The timeline, findings and SQL predicate are updated automatically.
+                  </div>
+                  
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 16,
+                      flexWrap: "wrap",
+                      alignItems: "flex-end",
+                    }}
+                  >
+                    <div>
+                      <label style={{ fontSize: 12 }}>Valid As-of Date</label>
+                      <br />
+                      <input
+                        type="date"
+                        value={asOfDate || ""}
+                        onChange={(e) => setAsOfDate(e.target.value || "")}
+                      />
+                    </div>
+                  
+                    <div>
+                      <label style={{ fontSize: 12 }}>Visible As-of Timestamp</label>
+                      <br />
+                      <input
+                        type="datetime-local"
+                        value={visibleAsOf || ""}
+                        onChange={(e) => setVisibleAsOf(e.target.value || "")}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={resetDates}
+                      style={{
+                        padding: "9px 13px",
+                        borderRadius: 8,
+                        border: "1px solid #475569",
+                        background: "#1e293b",
+                        color: "#e2e8f0",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      Reset Dates
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+                  
+            {(asOfDate || visibleAsOf) && (
+              <div
+                style={{
+                  marginBottom: 16,
+                  padding: 16,
+                  borderRadius: 10,
+                  background: "#1e3a8a",
+                  border: "1px solid #3b82f6",
+                  color: "#dbeafe",
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 700,
+                    marginBottom: 10,
+                  }}
+                >
+                  Historical Snapshot Active
+                </div>
+                
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 24,
+                    flexWrap: "wrap",
+                    marginBottom: 10,
+                    fontSize: 13,
+                  }}
+                >
+                  {asOfDate && (
+                    <div>
+                      <strong>Valid Time:</strong> {asOfDate}
+                    </div>
+                  )}
+
+                  {visibleAsOf && (
+                    <div>
+                      <strong>Visible Time:</strong> {visibleAsOf}
+                    </div>
+                  )}
+                </div>
+                
+                <div
+                  style={{
+                    fontSize: 13,
+                    opacity: 0.95,
+                  }}
+                >
+                  Showing {activeTemporalIssues.length} findings
+                  {temporalIssues.length !== activeTemporalIssues.length &&
+                    ` (filtered from ${temporalIssues.length} historical findings)`}
+                </div>
+              </div>
+            )}
+
             <div
               ref={analysisRef}
               style={{
                 display: "grid",
-                gridTemplateColumns: "minmax(0, 1.15fr) minmax(300px, 0.95fr)",
+                gridTemplateColumns: "minmax(0, 1.05fr) minmax(340px, 1.1fr)",
                 gap: 20,
                 alignItems: "start",
                 marginBottom: 20,
@@ -925,21 +1076,22 @@ WHERE ${sqlParts.join(" AND ")};`);
             >
               <div>
                 <IssuesPanel
-                  joinIssues={joinIssues}
+                  joinIssues={activeJoinIssues}
                   selectedIssue={selectedIssue}
                   setSelectedIssue={selectJoinIssue}
-                  temporalIssues={temporalIssues}
+                  temporalIssues={activeTemporalIssues}
                   selectedTemporalIssue={selectedTemporalIssue}
                   onSelectTemporalIssue={selectTemporalIssue}
+                  hasAnalyzed={hasAnalyzed}
                 />
 
                 <div ref={timelineRef} style={{ marginTop: 20 }}>
                   <Timeline
-                    rows={filteredRows}
-                    gaps={gaps}
-                    overlapMarkers={overlapMarkers}
+                    rows={activeRows}
+                    gaps={activeGaps}
+                    overlapMarkers={activeOverlapMarkers}
                     selectedIssue={selectedIssue}
-                    temporalIssues={temporalIssues}
+                    temporalIssues={activeTemporalIssues}
                     selectedTemporalIssue={selectedTemporalIssue}
                     onSelectTemporalIssue={selectTemporalIssue}
                     getPosition={getPosition}
@@ -990,19 +1142,19 @@ WHERE ${sqlParts.join(" AND ")};`);
             >
             <DataPreview
               title={`Raw source records: ${sourceNameA}`}
-              rows={rows.filter((r) => r.source === sourceNameA)}
-              joinIssues={joinIssues}
+              rows={activeRows.filter((r) => r.source === sourceNameA)}
+              joinIssues={activeJoinIssues}
               onSelectIssue={selectJoinIssue}
               highlightedRow={highlightedRow}
               onHighlightRow={setHighlightedRow}
               forceOpen={expandedSources.includes(sourceNameA)}
               overlapMarkers={overlapMarkers}
             />
-                        
+
             <DataPreview
               title={`Raw source records: ${sourceNameB}`}
-              rows={rows.filter((r) => r.source === sourceNameB)}
-              joinIssues={joinIssues}
+              rows={activeRows.filter((r) => r.source === sourceNameB)}
+              joinIssues={activeJoinIssues}
               onSelectIssue={selectJoinIssue}
               highlightedRow={highlightedRow}
               onHighlightRow={setHighlightedRow}
@@ -1014,7 +1166,6 @@ WHERE ${sqlParts.join(" AND ")};`);
         )}
         <Footer />
       </div>
-
       <Analytics />
     </main>
   );

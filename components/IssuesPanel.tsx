@@ -10,6 +10,7 @@ type IssuesPanelProps = {
   temporalIssues: TemporalIssue[];
   selectedTemporalIssue: TemporalIssue | null;
   onSelectTemporalIssue: (issue: TemporalIssue | null) => void;
+  hasAnalyzed: boolean;
 };
 
 function formatJoinReason(reason: string) {
@@ -26,6 +27,7 @@ export function IssuesPanel({
   temporalIssues,
   selectedTemporalIssue,
   onSelectTemporalIssue,
+  hasAnalyzed,
 }: IssuesPanelProps) {
   const [activeIssueFilter, setActiveIssueFilter] = useState<
     "ALL" | "JOIN" | "VALID_GAP" | "OVERLAP" | "VISIBILITY_LAG"
@@ -65,11 +67,13 @@ export function IssuesPanel({
       : [];
 
   const kpis = [
-    { label: "Join", value: joinIssues.length, filter: "JOIN" },
-    { label: "Gaps", value: gapIssues.length, filter: "VALID_GAP" },
-    { label: "Overlaps", value: overlapIssues.length, filter: "OVERLAP" },
-    { label: "Lag", value: visibilityLagIssues.length, filter: "VISIBILITY_LAG" },
+    { label: "Broken Joins", value: joinIssues.length, filter: "JOIN" },
+    { label: "Missing Coverage", value: gapIssues.length, filter: "VALID_GAP" },
+    { label: "Overlapping History", value: overlapIssues.length, filter: "OVERLAP" },
+    { label: "Visibility Lag", value: visibilityLagIssues.length, filter: "VISIBILITY_LAG" },
   ] as const;
+
+  const hasFindings = kpis.some((kpi) => kpi.value > 0);
 
   const rootCause = aggregatedJoinGaps[0] ?? null;
 
@@ -145,61 +149,114 @@ export function IssuesPanel({
         Historical Source Analysis
       </h3>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: 6,
-          marginBottom: 12,
-        }}
-      >
-        {kpis.map((kpi) => {
-          const isActive = activeIssueFilter === kpi.filter;
+      {!hasAnalyzed && (
+        <div
+          style={{
+            padding: 16,
+            borderRadius: 10,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            color: "#475569",
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          <strong style={{ color: "#0f172a" }}>No analysis yet.</strong>
+          <br />
+          Load or paste two datasets and click Analyze Sources to detect temporal
+          alignment issues.
+        </div>
+      )}
 
-          return (
-            <button
-              key={kpi.label}
-              onClick={() =>
-                setActiveIssueFilter(isActive ? "ALL" : kpi.filter)
-              }
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-                background: isActive ? "#0f172a" : "#f8fafc",
-                border: isActive ? "1px solid #0f172a" : "1px solid #e2e8f0",
-                borderRadius: 8,
-                padding: "8px 10px",
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              <span
+      {hasAnalyzed && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 10,
+            marginBottom: 12,
+          }}
+        >
+          {kpis.map((kpi) => {
+            const isActive = activeIssueFilter === kpi.filter;
+
+            return (
+              <button
+                key={kpi.label}
+                onClick={() =>
+                  setActiveIssueFilter(isActive ? "ALL" : kpi.filter)
+                }
                 style={{
-                  fontSize: 11,
-                  color: isActive ? "#cbd5e1" : "#64748b",
-                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  background: isActive ? "#eff6ff" : "#f8fafc",
+                  border: isActive ? "1px solid #3b82f6" : "1px solid #e2e8f0",
+                  boxShadow: isActive
+                    ? "0 0 0 2px rgba(59,130,246,0.18)"
+                    : "none",
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s ease",
+                  minHeight: 54,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
-                {kpi.label}
-              </span>
-
-              <span
-                style={{
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: isActive ? "#ffffff" : "#0f172a",
-                  lineHeight: 1,
-                }}
-              >
-                {kpi.value}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
+                <div
+                  style={{
+                    textAlign: "left",
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: isActive ? "#1d4ed8" : "#475569",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {kpi.label}
+                  </div>
+                  
+                  <div
+                    style={{
+                      marginTop: 2,
+                      fontSize: 11,
+                      color: "#94a3b8",
+                    }}
+                  >
+                    {kpi.value === 1 ? "1 finding" : `${kpi.value} findings`}
+                  </div>
+                </div>
+                  
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 900,
+                    color: "#0f172a",
+                    lineHeight: 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  {kpi.value}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      
+      {hasAnalyzed && (
+        <>
       <SelectedIssueCard issue={selectedTemporalIssue} />
 
       {(activeIssueFilter === "ALL" || activeIssueFilter === "JOIN") &&
@@ -233,6 +290,8 @@ export function IssuesPanel({
             </span>
           </div>
         )}
+        </>
+      )}
 
       {(activeIssueFilter === "ALL" || activeIssueFilter === "JOIN") && (
         <div style={{ marginTop: 12 }}>
