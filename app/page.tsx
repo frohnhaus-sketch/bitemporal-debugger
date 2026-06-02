@@ -3,7 +3,7 @@ import { buildTemporalIssues } from "../lib/temporalIssues";
 import type { TemporalIssue } from "../lib/types";
 import { track } from "@/lib/analytics";
 import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
-import { useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { parseCSV } from "../lib/parser";
 import type { HeaderMapping } from "../lib/parser";
 import { Timeline } from "@/components/Timeline";
@@ -33,16 +33,20 @@ const EXAMPLE_A = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 2,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
 3,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
 4,contract_active,2024-01-01,2024-03-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-4,contract_active,2024-05-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
+4,contract_active,2024-05-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+5,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
 
 const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 1,object_active,2024-01-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00
 2,object_active,2024-04-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
 3,object_v1,2024-01-01,2024-12-31,2024-01-01T00:00:00,2024-12-31T00:00:00
 3,object_v2,2024-01-01,2024-12-31,2025-01-01T00:00:00,9999-12-31T00:00:00
-5,object_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
+5,object_v1,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+5,object_v2,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
+  const [fileNameA, setFileNameA] = useState("");
+  const [fileNameB, setFileNameB] = useState("");
   const [expandedSources, setExpandedSources] = useState<string[]>([]);
   const [highlightedRow, setHighlightedRow] = useState<HighlightTarget | null>(null);
   const [headerMappingsA, setHeaderMappingsA] = useState<HeaderMapping[]>([]);
@@ -67,6 +71,43 @@ export default function Home() {
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
+
+  function loadCsvFile(
+    event: ChangeEvent<HTMLInputElement>,
+    target: "A" | "B"
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (readerEvent) => {
+      const text = String(readerEvent.target?.result ?? "");
+
+      if (target === "A") {
+        setInputA(text);
+        setFileNameA(file.name);
+        updateMappingForSourceA(text);
+      } else {
+        setInputB(text);
+        setFileNameB(file.name);
+        updateMappingForSourceB(text);
+      }
+
+      resetAnalysis();
+
+      track("csv_uploaded", {
+        target,
+        fileName: file.name,
+        size: file.size,
+      });
+
+      event.target.value = "";
+    };
+
+    reader.readAsText(file);
+  }
 
   useEffect(() => {
     track("page_view");
@@ -162,8 +203,8 @@ export default function Home() {
 
     setInputA(EXAMPLE_A);
     setInputB(EXAMPLE_B);
-    setSourceNameA("contract");
-    setSourceNameB("object");
+    setSourceNameA("Source_A");
+    setSourceNameB("Source_B");
     updateMappingsFromInputs(EXAMPLE_A, EXAMPLE_B);
 
     resetAnalysis();
@@ -457,66 +498,68 @@ WHERE ${sqlParts.join(" AND ")};`);
         color: "#0f172a",
       }}
     >
-    <div style={{ maxWidth: 1150, margin: "0 auto" }}>
-      <section style={{ marginBottom: 24 }}>
-    <div style={{ marginBottom: 28 }}>
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "6px 10px",
-          borderRadius: 999,
-          background: "#e0f2fe",
-          color: "#075985",
-          fontSize: 12,
-          fontWeight: 700,
-          marginBottom: 12,
-        }}
-      >
-        HISTORIZED DATA MODELING
-      </div>
-      
-      <h1
-        style={{
-          margin: 0,
-          fontSize: 42,
-          lineHeight: 1.05,
-          letterSpacing: "-0.04em",
-          color: "#ffffff",
-        }}
-      >
-        Debug Historical Data Models in Minutes
-      </h1>
-      
-      <p
-        style={{
-          marginTop: 12,
-          maxWidth: 760,
-          fontSize: 18,
-          lineHeight: 1.5,
-          color: "#cbd5e1",
-        }}
-      >
-        Find gaps, overlaps and broken temporal joins before they reach production.
-      </p>
-
-      <p
-        style={{
-          marginTop: 12,
-          maxWidth: 760,
-          fontSize: 15,
-          lineHeight: 1.5,
-          color: "#cbd5e1",
-        }}
-      >
-        Built for Data Engineers working with SCD2 dimensions, historized tables, snapshot reporting and temporal joins.
-      </p>
-    </div>
-
+    <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+      <section style={{ marginBottom: -12 }}>
+        <div style={{ marginBottom: 28 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 10px",
+              borderRadius: 999,
+              background: "#e0f2fe",
+              color: "#075985",
+              fontSize: 12,
+              fontWeight: 700,
+              marginBottom: 12,
+            }}
+          >
+            HISTORIZED DATA MODELING
+          </div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 42,
+              lineHeight: 1.05,
+              letterSpacing: "-0.04em",
+              color: "#ffffff",
+            }}
+          >
+            Debug Historical Data Models in Minutes
+          </h1>
+          
+          <p
+            style={{
+              margin: "12px 0 0",
+              maxWidth: 760,
+              fontSize: 18,
+              lineHeight: 1.45,
+              color: "#cbd5e1",
+            }}
+          >
+            Find gaps, overlaps and broken temporal joins before they reach production.
+          </p>
+          
+          <p
+            style={{
+              margin: "8px 0 18px",
+              maxWidth: 820,
+              fontSize: 15,
+              lineHeight: 1.45,
+              color: "#cbd5e1",
+            }}
+          >
+            Built for Data Engineers working with SCD2 dimensions, historized tables,
+            snapshot reporting and temporal joins.
+          </p>
+        </div>
       </section>
-
         <TwoSourceInputPanel
+          fileNameA={fileNameA}
+          fileNameB={fileNameB}
+          onUploadA={(event) => loadCsvFile(event, "A")}
+          onUploadB={(event) => loadCsvFile(event, "B")}
           inputA={inputA}
           inputB={inputB}
           setInputA={(value) => {
@@ -563,11 +606,13 @@ WHERE ${sqlParts.join(" AND ")};`);
           controls={
             <div
               style={{
-                background: "#ffffff",
-                padding: 16,
-                borderRadius: 10,
-                marginTop: 12,
-                marginBottom: 12,
+                background: "#111827",
+                border: "1px solid #334155",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                borderRadius: 14,
+                padding: 24,
+                marginTop: 24,
+                marginBottom: 24,
               }}
             >
               {(headerMappingsA.length > 0 || headerMappingsB.length > 0) && (
@@ -900,6 +945,22 @@ WHERE ${sqlParts.join(" AND ")};`);
             </div>
           </>
         )}
+
+        <div
+          style={{
+            marginTop: 20,
+            padding: "12px 16px",
+            borderRadius: 10,
+            border: "1px solid #1e293b",
+            background: "#020617",
+            color: "#94a3b8",
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          <strong style={{ color: "#cbd5e1" }}>Privacy:</strong> Uploaded datasets
+          remain in your browser session and are not persisted by the application.
+        </div>
 
         <Footer />
       </div>

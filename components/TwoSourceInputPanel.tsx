@@ -1,4 +1,9 @@
+import type React from "react";
+import { ChangeEvent } from "react";
+
 type TwoSourceInputPanelProps = {
+  fileNameA: string;
+  fileNameB: string;
   inputA: string;
   inputB: string;
   setInputA: (v: string) => void;
@@ -12,9 +17,15 @@ type TwoSourceInputPanelProps = {
   onCopyAtoB: () => void;
   controls?: React.ReactNode;
   analysisModeControl?: React.ReactNode;
+  onUploadA: (event: ChangeEvent<HTMLInputElement>) => void;
+  onUploadB: (event: ChangeEvent<HTMLInputElement>) => void;
 };
 
 export function TwoSourceInputPanel({
+  fileNameA,
+  fileNameB,
+  onUploadA,
+  onUploadB,
   inputA,
   inputB,
   setInputA,
@@ -29,396 +40,455 @@ export function TwoSourceInputPanel({
   controls,
   analysisModeControl,
 }: TwoSourceInputPanelProps) {
-  const canAnalyze = inputA.trim() && inputB.trim();
+  const canAnalyze = Boolean(inputA.trim() && inputB.trim());
+
+  const featureCards = [
+    {
+      icon: "⌕",
+      title: "Detect Gaps",
+      text: "Find missing history periods before they cause incomplete snapshots, broken reports or unexpected null values.",
+      bg: "#14532d",
+      color: "#86efac",
+    },
+    {
+      icon: "∞",
+      title: "Detect Ambiguous Joins",
+      text: "Identify overlapping history and multiple temporal matches before duplicate records reach production.",
+      bg: "#3b0764",
+      color: "#d8b4fe",
+    },
+    {
+      icon: "◷",
+      title: "Explain Temporal Alignment",
+      text: "Visualize how two historized datasets align across time and understand exactly why joins succeed or fail.",
+      bg: "#1e3a8a",
+      color: "#bfdbfe",
+    },
+  ];
+
+  const sources = [
+    {
+      fileName: fileNameA,
+      label: "A",
+      title: "Source A",
+      name: sourceNameA,
+      setName: setSourceNameA,
+      input: inputA,
+      setInput: setInputA,
+      upload: onUploadA,
+      color: "#22c55e",
+      placeholder: "Or paste CSV / TSV data for Source A...",
+    },
+    {
+      fileName: fileNameB,
+      label: "B",
+      title: "Source B",
+      name: sourceNameB,
+      setName: setSourceNameB,
+      input: inputB,
+      setInput: setInputB,
+      upload: onUploadB,
+      color: "#3b82f6",
+      placeholder: "Or paste CSV / TSV data for Source B...",
+    },
+  ];
 
   return (
     <div style={{ marginBottom: 16 }}>
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        marginBottom: 18,
-      }}
-    >
       <div
         style={{
           display: "flex",
-          gap: 12,
-          alignItems: "center",
-          flexWrap: "wrap",
+          flexDirection: "column",
+          gap: 18,
+          marginBottom: 22,
         }}
       >
-        <button
-          onClick={onLoadExample}
+        <div
           style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid #15803d",
-            background: "#16a34a",
-            color: "#ffffff",
-            fontWeight: 700,
-            fontSize: 14,
-            cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(22,163,74,0.25)",
-            transition: "all 0.15s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#15803d";
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#16a34a";
-            e.currentTarget.style.transform = "translateY(0)";
+            display: "flex",
+            gap: 16,
+            alignItems: "flex-end",
+            flexWrap: "wrap",
           }}
         >
-          Load temporal join demo
-        </button>
-        <button
-          onClick={() => {
-            if (!canAnalyze) return;
-            onAnalyze();
-          }}
-          disabled={!canAnalyze}
-          style={{
-            padding: "16px 22px",
-            borderRadius: 10,
-            background: canAnalyze ? "#1d4ed8" : "#1e293b",
-            color: "white",
-            border: "1px solid rgba(255,255,255,0.08)",
-            fontWeight: 700,
-            fontSize: 15,
-            cursor: canAnalyze ? "pointer" : "not-allowed",
-            opacity: canAnalyze ? 1 : 0.55,
-            boxShadow: canAnalyze
-              ? "0 4px 14px rgba(37,99,235,0.18)"
-              : "none",
-            transition: "all 0.15s ease",
-          }}
-          onMouseEnter={(e) => {
-            if (!canAnalyze) return;
-            e.currentTarget.style.background = "#2563eb";
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }}
-
-          onMouseLeave={(e) => {
-            if (!canAnalyze) return;
-            e.currentTarget.style.background = "#1d4ed8";
-            e.currentTarget.style.transform = "translateY(0)";
-          }}
-        >
-          Analyze Sources
-        </button>
-        {analysisModeControl}
-      </div>
-
-      <div
-        style={{
-          fontSize: 15,
-          color: "#cbd5e1",
-          marginTop: 10,
-          marginBottom: 10,
-          lineHeight: 1.6,
-        }}
-      >
-        Upload two historized datasets and instantly detect gaps, overlaps and broken temporal joins.
-      </div>
-
-        {/* <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.4fr 1fr 1fr",
-            gap: 10,
-            marginBottom: -5,
-          }}
-        >
-          <div
+          <button
+            onClick={onLoadExample}
             style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 12,
-            }}
-          >
-          <div
-            style={{
-              color: "#e2e8f0",
-              fontSize: 12,
+              height: 56,
+              minWidth: 230,
+              padding: "0 24px",
+              borderRadius: 12,
+              border: "1px solid #15803d",
+              background: "#16a34a",
+              color: "#ffffff",
               fontWeight: 800,
-              marginBottom: 6,
+              fontSize: 15,
+              cursor: "pointer",
+              boxShadow: "0 8px 24px rgba(22,163,74,0.24)",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
             }}
           >
-            Expected input
-          </div>
-          
-          <pre
-            style={{
-              margin: 0,
-              color: "#93c5fd",
-              fontSize: 12,
-              lineHeight: 1.5,
-              overflowX: "auto",
+            <span style={{ fontSize: 22, lineHeight: 1 }}>◎</span>
+            Load demo dataset
+          </button>
+
+          <button
+            onClick={() => {
+              if (!canAnalyze) return;
+              onAnalyze();
             }}
-          >{`entity_id,value,valid_from,valid_to[,visible_from,visible_to]
-1,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`}</pre>
-
-          <p style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
-            visible_from and visible_to are optional. If omitted, data is treated as valid-time only.
-          </p>
-
-          <p
+            disabled={!canAnalyze}
             style={{
-              margin: "8px 0 0",
-              color: "#94a3b8",
-              fontSize: 12,
-              lineHeight: 1.4,
+              height: 56,
+              minWidth: 230,
+              padding: "0 24px",
+              borderRadius: 12,
+              background: canAnalyze ? "#1d4ed8" : "#1e293b",
+              color: "#ffffff",
+              border: "1px solid rgba(255,255,255,0.08)",
+              fontWeight: 800,
+              fontSize: 15,
+              cursor: canAnalyze ? "pointer" : "not-allowed",
+              opacity: canAnalyze ? 1 : 0.58,
+              boxShadow: canAnalyze
+                ? "0 8px 24px rgba(37,99,235,0.24)"
+                : "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
             }}
           >
-            Paste CSV or TSV. Column names are auto-detected and can be adjusted in the
-            mapping section below.
-          </p>
-          </div>
-            
+            <span style={{ fontSize: 22 }}>▷</span>
+            Analyze Sources
+          </button>
+
           <div
             style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 12,
-              color: "#94a3b8",
-              fontSize: 12,
-              lineHeight: 1.5,
+              minWidth: 330,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
             }}
           >
-            <div
-              style={{
-                color: "#e2e8f0",
-                fontWeight: 800,
-                marginBottom: 6,
-              }}
-            >
-              How time is interpreted
-            </div>
-            Valid-time uses inclusive date ranges{" "}
-            <code>[valid_from, valid_to]</code>. Visible-time uses half-open
-            timestamp ranges <code>[visible_from, visible_to)</code>.
+            {analysisModeControl}
           </div>
-  
-          <div
-            style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 12,
-              color: "#94a3b8",
-              fontSize: 12,
-              lineHeight: 1.5,
-            }}
-          >
-            <div
-              style={{
-                color: "#e2e8f0",
-                fontWeight: 800,
-                marginBottom: 6,
-              }}
-            >
-              Data privacy
-            </div>
-            Processing happens locally in your browser. Data is not stored. Avoid
-            pasting sensitive production data if unsure.
-          </div>
-        </div> */}
+        </div>
+
+        <div
+          style={{
+            fontSize: 15,
+            color: "#cbd5e1",
+            lineHeight: 1.5,
+          }}
+        >
+          Upload two historized datasets and instantly{" "}
+          <strong style={{ color: "#ffffff" }}>detect</strong> gaps, overlaps
+          and broken temporal joins.
+        </div>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 10,
-            marginBottom: -5,
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: 12,
           }}
         >
-          <div
-            style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 16,
-            }}
-          >
+          {featureCards.map((card) => (
             <div
+              key={card.title}
               style={{
-                color: "#e2e8f0",
-                fontSize: 14,
-                fontWeight: 800,
-                marginBottom: 8,
+                display: "flex",
+                gap: 14,
+                alignItems: "flex-start",
+                background: "#020617",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.16)",
+                border: "1px solid #1e293b",
+                borderRadius: 12,
+                padding: 20,
+                minHeight: 112,
               }}
             >
-              Detect Gaps
+              <div
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 12,
+                  background: card.bg,
+                  color: card.color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 26,
+                  flexShrink: 0,
+                }}
+              >
+                {card.icon}
+              </div>
+
+              <div>
+                <div
+                  style={{
+                    color: "#e2e8f0",
+                    fontSize: 15,
+                    fontWeight: 800,
+                    marginBottom: 8,
+                  }}
+                >
+                  {card.title}
+                </div>
+
+                <div
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {card.text}
+                </div>
+              </div>
             </div>
-            
-            <div
-              style={{
-                color: "#94a3b8",
-                fontSize: 13,
-                lineHeight: 1.5,
-              }}
-            >
-              Find missing history periods before they cause incomplete
-              snapshots, broken reports or unexpected null values.
-            </div>
-          </div>
-            
-          <div
-            style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 16,
-            }}
-          >
-            <div
-              style={{
-                color: "#e2e8f0",
-                fontSize: 14,
-                fontWeight: 800,
-                marginBottom: 8,
-              }}
-            >
-              Detect Ambiguous Joins
-            </div>
-            
-            <div
-              style={{
-                color: "#94a3b8",
-                fontSize: 13,
-                lineHeight: 1.5,
-              }}
-            >
-              Identify overlapping history and multiple temporal matches
-              before duplicate records reach production.
-            </div>
-          </div>
-            
-          <div
-            style={{
-              background: "#020617",
-              border: "1px solid #1e293b",
-              borderRadius: 10,
-              padding: 16,
-            }}
-          >
-            <div
-              style={{
-                color: "#e2e8f0",
-                fontSize: 14,
-                fontWeight: 800,
-                marginBottom: 8,
-              }}
-            >
-              Explain Temporal Alignment
-            </div>
-            
-            <div
-              style={{
-                color: "#94a3b8",
-                fontSize: 13,
-                lineHeight: 1.5,
-              }}
-            >
-              Visualize how two historized datasets align across time
-              and understand exactly why joins succeed or fail.
-            </div>
-          </div>
+          ))}
         </div>
 
-      <p
-        style={{
-          margin: "12px 0 0px",
-          fontSize: 16,
-          color: "#cbd5f5",
-          fontWeight: 500,
-        }}
-      >
-        Paste → Analyze → understand historical source behavior
-      </p>
+        <p
+          style={{
+            margin: "0",
+            fontSize: 16,
+            color: "#cbd5f5",
+            fontWeight: 600,
+          }}
+        >
+          Upload or paste → Analyze → understand historical source behavior
+        </p>
+      </div>
 
-    </div>
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           gap: 20,
         }}
       >
-        <div style={{ background: "#fff", padding: 16, borderRadius: 12 }}>
-          <label style={{ fontSize: 12 }}>Source A name</label>
-          <input
-            value={sourceNameA}
-            onChange={(e) => setSourceNameA(e.target.value)}
-            style={{ width: "100%", marginBottom: 10 }}
-          />
-
-          <textarea
-            value={inputA}
-            onChange={(e) => setInputA(e.target.value)}
-            placeholder="Paste Source A query result"
+        {sources.map((source) => (
+          <div
+            key={source.label}
             style={{
-              width: "100%",
-              height: 140,
-              fontFamily: "monospace",
-              padding: 10,
-            }}
-          />
-        </div>
-
-        <div style={{ background: "#fff", padding: 16, borderRadius: 12 }}>
-          <label style={{ fontSize: 12 }}>Source B name</label>
-          <input
-            value={sourceNameB}
-            onChange={(e) => setSourceNameB(e.target.value)}
-            style={{ width: "100%", marginBottom: 10 }}
-          />
-
-          <textarea
-            value={inputB}
-            onChange={(e) => setInputB(e.target.value)}
-            placeholder="Paste Source B query result"
-            style={{
-              width: "100%",
-              height: 140,
-              fontFamily: "monospace",
-              padding: 10,
-            }}
-          />
-          <p
-            style={{
-              margin: "10px 0 0",
-              fontSize: 13,
-              color: "#93c5fd",
-            }}          
-          >
-            Debugging a self-join? Paste the same table into Source A and Source B.
-          </p>
-          <button
-            onClick={onCopyAtoB}
-            style={{
-              marginTop: 8,
-              padding: "6px 10px",
-              borderRadius: 6,
-              border: "1px solid #cbd5e1",
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
+              background: "#020617",
+              border: "1px solid #334155",
+              borderRadius: 16,
+              padding: 18,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
             }}
           >
-            Copy Source A → B
-          </button>
-        </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 16,
+              }}
+            >
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 7,
+                  border: `1px solid ${source.color}`,
+                  color: source.color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 900,
+                  fontSize: 14,
+                }}
+              >
+                {source.label}
+              </div>
+
+              <div
+                style={{
+                  color: source.color,
+                  fontWeight: 900,
+                  fontSize: 17,
+                }}
+              >
+                {source.title}
+              </div>
+            </div>
+
+            <label
+              style={{
+                display: "block",
+                color: "#e2e8f0",
+                fontSize: 13,
+                marginBottom: 6,
+              }}
+            >
+              {source.title} name
+            </label>
+
+            <input
+              value={source.name}
+              onChange={(e) => source.setName(e.target.value)}
+              style={{
+                width: "100%",
+                marginBottom: 12,
+                padding: "11px 12px",
+                borderRadius: 9,
+                border: "1px solid #334155",
+                background: "#020617",
+                color: "#e2e8f0",
+                fontSize: 14,
+                boxSizing: "border-box",
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: 14,
+                borderRadius: 12,
+                border: "1px solid #334155",
+                background: "#020617",
+                marginBottom: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
+                  border: `1px solid ${source.color}`,
+                  color: source.color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 24,
+                  flexShrink: 0,
+                }}
+              >
+                ⇧
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    color: "#ffffff",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    marginBottom: 4,
+                  }}
+                >
+                  Upload CSV
+                </div>
+
+                <div
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {source.fileName ? `✓ ${source.fileName}` : "Upload CSV"}
+                  {source.fileName
+                    ? "Loaded successfully"
+                    : "Choose a CSV, TSV or TXT file from your computer."}
+                </div>
+              </div>
+
+              <label
+                style={{
+                  padding: "8px 13px",
+                  borderRadius: 8,
+                  background: "#111827",
+                  color: "#e2e8f0",
+                  border: "1px solid #475569",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Browse
+                <input
+                  type="file"
+                  accept=".csv,.tsv,.txt"
+                  onChange={source.upload}
+                  style={{ display: "none" }}
+                />
+              </label>
+            </div>
+
+            <textarea
+              value={source.input}
+              onChange={(e) => source.setInput(e.target.value)}
+              placeholder={source.placeholder}
+              style={{
+                width: "100%",
+                height: 116,
+                fontFamily: "monospace",
+                padding: 12,
+                borderRadius: 10,
+                border: "1px solid #334155",
+                background: "#020617",
+                color: "#e2e8f0",
+                resize: "vertical",
+                boxSizing: "border-box",
+                lineHeight: 1.5,
+              }}
+            />
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#94a3b8",
+                fontSize: 12,
+              }}
+            >
+              Expected columns: entity_id, value, valid_from, valid_to,
+              [visible_from, visible_to]
+            </div>
+
+            {source.label === "B" && (
+              <>
+                <p
+                  style={{
+                    margin: "12px 0 0",
+                    fontSize: 13,
+                    color: "#93c5fd",
+                  }}
+                >
+                  Debugging a self-join? Paste the same table into Source A and
+                  Source B.
+                </p>
+
+                <button
+                  onClick={onCopyAtoB}
+                  style={{
+                    marginTop: 8,
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "1px solid #334155",
+                    background: "#1e293b",
+                    color: "#e2e8f0",
+                    cursor: "pointer",
+                    fontWeight: 800,
+                    fontSize: 12,
+                  }}
+                >
+                  Copy Source A → B
+                </button>
+              </>
+            )}
+          </div>
+        ))}
       </div>
+
       {controls}
     </div>
   );

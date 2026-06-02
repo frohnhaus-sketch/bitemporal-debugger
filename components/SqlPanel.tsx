@@ -4,6 +4,7 @@ import type {
 } from "@/lib/types";
 import { track } from "@/lib/analytics";
 import { explainJoinIssue } from "@/lib/explainJoinIssue";
+import { IssueWhyPanel } from "./IssueWhyPanel";
 
 type SqlPanelProps = {
   sql: string;
@@ -517,6 +518,11 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
               </div>
             )}
           </div>
+
+          <IssueWhyPanel
+            selectedIssue={selectedIssue}
+            selectedTemporalIssue={selectedTemporalIssue}
+          />
 
           <button
             onClick={() => {

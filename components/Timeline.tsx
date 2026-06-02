@@ -426,6 +426,7 @@ export function Timeline({
                               type: issue.type,
                               entityId: issue.entity_id,
                               source: issue.source,
+                              title: issue.title,
                             });
                           
                             onSelectTemporalIssue(issue);

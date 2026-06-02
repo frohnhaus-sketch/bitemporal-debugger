@@ -120,11 +120,14 @@ export default async function EventsPage() {
     return acc;
   }, {});
 
+  const timelineIssueClicks = counts["timeline_issue_selected"] ?? 0;
+  const timelineGapClicks = counts["timeline_gap_selected"] ?? 0;
+  const timelineOverlapClicks = counts["timeline_overlap_selected"] ?? 0;
+  const timelineInteractions = timelineIssueClicks + timelineGapClicks + timelineOverlapClicks;
+
   const pageViews = counts["page_view"] ?? 0;
 
-  const analyzeClicks =
-    (counts["analysis_completed"] ?? 0) +
-    (counts["analyze_clicked"] ?? 0);
+  const analysisRuns = counts["analysis_completed"] ?? 0;
 
   const examplesLoaded =
     (counts["example_loaded"] ?? 0) +
@@ -145,8 +148,8 @@ export default async function EventsPage() {
     events.map((e) => e.ip_hash).filter(Boolean)
   ).size;
 
-  const copyRate = analyzeClicks
-    ? Math.round((reportsCopied / analyzeClicks) * 100)
+  const copyRate = analysisRuns
+    ? Math.round((reportsCopied / analysisRuns) * 100)
     : 0;
 
   const sourceCounts = events.reduce<Record<string, number>>((acc, event) => {
@@ -211,11 +214,15 @@ export default async function EventsPage() {
           <MetricCard label="Unique visitors" value={uniqueVisitors} />
           <MetricCard label="Page views" value={pageViews} />
           <MetricCard label="Interactions" value={interactions} />
-          <MetricCard label="Analysis runs" value={analyzeClicks} />
+          <MetricCard label="Analysis runs" value={analysisRuns} />
           <MetricCard label="Examples loaded" value={examplesLoaded} />
           <MetricCard label="SQL generated" value={sqlGenerated} />
           <MetricCard label="Reports copied" value={reportsCopied} />
           <MetricCard label="Copy rate" value={`${copyRate}%`} />
+          <MetricCard label="Timeline clicks" value={timelineInteractions} />
+          <MetricCard label="Timeline issues" value={timelineIssueClicks} />
+          <MetricCard label="Timeline gaps" value={timelineGapClicks} />
+          <MetricCard label="Timeline overlaps" value={timelineOverlapClicks} />
         </div>
 
         <section
