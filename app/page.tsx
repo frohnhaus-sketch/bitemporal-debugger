@@ -73,6 +73,7 @@ export default function Home() {
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
+  const sourceSummaryRef = useRef<HTMLDivElement>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function scheduleHighlightRow(row: HighlightTarget | null) {
@@ -365,7 +366,7 @@ export default function Home() {
     setHasAnalyzed(true);
 
     setTimeout(() => {
-      analysisRef.current?.scrollIntoView({
+      sourceSummaryRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
@@ -975,7 +976,9 @@ WHERE ${sqlParts.join(" AND ")};`);
             </div>
           }
         />
+      {hasAnalyzed && (
         <div
+          ref={sourceSummaryRef}
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -1115,6 +1118,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               </div>
           )}
         </div>
+        )}
         {hasAnalyzed && (
           <>
             <div style={{ marginBottom: 18, marginTop: 18 }}>
