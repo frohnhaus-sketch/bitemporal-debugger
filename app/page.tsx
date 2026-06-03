@@ -1,4 +1,7 @@
 "use client";
+import {
+  analyzeSourceRelationship,
+} from "@/lib/sourceRelationships";
 import { buildTemporalIssues } from "../lib/temporalIssues";
 import type { TemporalIssue } from "../lib/types";
 import { track } from "@/lib/analytics";
@@ -704,6 +707,14 @@ export default function Home() {
 
   const validGapCount = gaps.length;
 
+  const relationshipAnalysis =
+    sourcePatterns.sourceA && sourcePatterns.sourceB
+      ? analyzeSourceRelationship(
+          sourcePatterns.sourceA,
+          sourcePatterns.sourceB
+        )
+      : null;
+
   return (
     <main
       style={{
@@ -1327,7 +1338,7 @@ export default function Home() {
                     >
                       Detected Source Relationship
                     </div>
-                    
+
                     <div
                       style={{
                         fontSize: 22,
@@ -1335,11 +1346,9 @@ export default function Home() {
                         marginBottom: 16,
                       }}
                     >
-                      {sourcePatterns.sourceA.label.replace("Likely ", "")}
-                      {" ↔ "}
-                      {sourcePatterns.sourceB.label.replace("Likely ", "")}
+                      {relationshipAnalysis?.relationship}
                     </div>
-                    
+
                     <div
                       style={{
                         fontSize: 11,
@@ -1352,17 +1361,30 @@ export default function Home() {
                     >
                       Recommended Modeling Focus
                     </div>
-                    
                     <div
                       style={{
                         display: "flex",
                         flexDirection: "column",
                         gap: 8,
+                        marginBottom: 16,
                       }}
                     >
-                      <div>✓ Validate temporal join stability</div>
-                      <div>✓ Test historical snapshots</div>
-                      <div>✓ Verify visibility-time assumptions</div>
+                      {relationshipAnalysis?.challenges.map((challenge) => (
+                        <div key={challenge}>
+                          ✓ {challenge}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 10,
+                        padding: 14,
+                      }}
+                    >
+                      {relationshipAnalysis?.recommendation}
                     </div>
                   </div>
                 </section>
