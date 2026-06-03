@@ -27,6 +27,10 @@ import { Footer } from "@/components/Footer";
 import { SqlPanel } from "@/components/SqlPanel";
 import { IssuesPanel } from "@/components/IssuesPanel";
 import { DataPreview } from "@/components/DataPreview";
+import {
+  detectSourcePattern,
+  type SourcePatternResult,
+} from "@/lib/sourcePatterns";
 
 const EXAMPLE_A = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 1,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,2024-06-01T00:00:00
@@ -71,6 +75,13 @@ export default function Home() {
   const [sql, setSql] = useState("")
   const [validationMode, setValidationMode] = useState<ValidationMode>("monotemporal");
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [sourcePatterns, setSourcePatterns] = useState<{
+    sourceA: SourcePatternResult | null;
+    sourceB: SourcePatternResult | null;
+  }>({
+    sourceA: null,
+    sourceB: null,
+  });
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
   const sourceSummaryRef = useRef<HTMLDivElement>(null);
@@ -316,19 +327,22 @@ export default function Home() {
       resetAnalysis();
       return;
     }
-  
+
     const parsedA = parseOneSource(
       rawA,
       sourceAName || "source_a",
       columnMappingA
     );
-  
+
     const parsedB = parseOneSource(
       rawB,
       sourceBName || "source_b",
       columnMappingB
     );
-  
+
+    const patternA = detectSourcePattern(parsedA.rows);
+    const patternB = detectSourcePattern(parsedB.rows);
+
     if (
       !hasRequiredColumns(parsedA.rows) ||
       !hasRequiredColumns(parsedB.rows)
@@ -339,15 +353,15 @@ export default function Home() {
         sourceB: sourceBName,
         mode,
       });
-    
+
       alert(
         "Could not analyze the input. Please provide tabular data with at least entity_id, valid_from and valid_to columns."
       );
-    
+
       resetAnalysis();
       return;
     }
-  
+
     const combinedRows = [...parsedA.rows, ...parsedB.rows] as BitemporalRow[];
 
     setRows(combinedRows);
@@ -389,6 +403,11 @@ export default function Home() {
       snapshotActive: !!(asOfDate || visibleAsOf),
       hasValidAsOf: !!asOfDate,
       hasVisibleAsOf: !!visibleAsOf,
+    });
+
+    setSourcePatterns({
+      sourceA: patternA,
+      sourceB: patternB,
     });
 
     setJoinIssues(computedJoinIssues);
@@ -1006,148 +1025,231 @@ export default function Home() {
             </div>
           }
         />
-      {hasAnalyzed && (
-        <div
-          ref={sourceSummaryRef}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 14,
-            marginTop: 18,
-            marginBottom: 18,
-          }}
-        >
-          {[sourceSummaryA, sourceSummaryB].map((summary) => (
+        {hasAnalyzed && (
+          <div ref={sourceSummaryRef}>
             <div
-              key={summary.sourceName}
               style={{
-                background: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: 12,
-                padding: 16,
-                color: "#0f172a",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 14,
+                marginTop: 18,
+                marginBottom: 18,
               }}
             >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  letterSpacing: 0.7,
-                  textTransform: "uppercase",
-                  color: "#64748b",
-                  marginBottom: 8,
-                }}
-              >
-                Historical source summary
-              </div>
-              
-              <div
-                style={{
-                  fontSize: 17,
-                  fontWeight: 900,
-                  marginBottom: 12,
-                }}
-              >
-                {summary.sourceName}
-              </div>
-              
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
-                  gap: 8,
-                }}
-              >
-                {[
-                  { label: "Entities", value: summary.entities, tone: "neutral" },
-                  { label: "Records", value: summary.records, tone: "neutral" },
-                  {
-                    label: "Avg. Records / Entity",
-                    value: summary.recordsPerEntity.toFixed(1),
-                    tone: "neutral"
-                  },
-                  { label: "Gaps", value: summary.gaps, tone: "neutral" },
-                  {
-                    label: "Valid overlaps",
-                    value: summary.validTimeOverlaps,
-                    tone: "red",
-                  },
-                  {
-                    label: "Bitemp. overlaps",
-                    value: summary.bitemporalOverlaps,
-                    tone: "purple",
-                  },
-                ].map((metric) => {
-                  const hasFinding = Number(metric.value) > 0;
-                
-                  const metricColor =
-                    !hasFinding
-                      ? "#64748b"
-                      : metric.tone === "orange"
-                      ? "#d97706"
-                      : metric.tone === "red"
-                      ? "#dc2626"
-                      : metric.tone === "purple"
-                      ? "#7c3aed"
-                      : "#0f172a";
-                  return (
-                    <div
-                      key={metric.label}
-                      style={{
-                        background: "#f8fafc",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: 8,
-                        padding: "8px 10px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 18,
-                          fontWeight: 900,
-                          lineHeight: 1,
-                          color: metricColor,
-                        }}
-                      >
-                        {metric.value}
-                      </div>
-                      
-                      <div
-                        style={{
-                          marginTop: 5,
-                          fontSize: 11,
-                          color: "#64748b",
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {metric.label}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {[sourceSummaryA, sourceSummaryB].map((summary) => (
+                <div
+                  key={summary.sourceName}
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 12,
+                    padding: 16,
+                    color: "#0f172a",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      letterSpacing: 0.7,
+                      textTransform: "uppercase",
+                      color: "#64748b",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Historical source summary
+                  </div>
+                  
+                  <div
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 900,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {summary.sourceName}
+                  </div>
+                  
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {[
+                      { label: "Entities", value: summary.entities, tone: "neutral" },
+                      { label: "Records", value: summary.records, tone: "neutral" },
+                      {
+                        label: "Avg. Records / Entity",
+                        value: summary.recordsPerEntity.toFixed(1),
+                        tone: "neutral",
+                      },
+                      { label: "Gaps", value: summary.gaps, tone: "neutral" },
+                      {
+                        label: "Valid overlaps",
+                        value: summary.validTimeOverlaps,
+                        tone: "red",
+                      },
+                      {
+                        label: "Bitemp. overlaps",
+                        value: summary.bitemporalOverlaps,
+                        tone: "purple",
+                      },
+                    ].map((metric) => {
+                      const hasFinding = Number(metric.value) > 0;
+                    
+                      const metricColor =
+                        !hasFinding
+                          ? "#64748b"
+                          : metric.tone === "orange"
+                          ? "#d97706"
+                          : metric.tone === "red"
+                          ? "#dc2626"
+                          : metric.tone === "purple"
+                          ? "#7c3aed"
+                          : "#0f172a";
+                    
+                      return (
+                        <div
+                          key={metric.label}
+                          style={{
+                            background: "#f8fafc",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: 8,
+                            padding: "8px 10px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 18,
+                              fontWeight: 900,
+                              lineHeight: 1,
+                              color: metricColor,
+                            }}
+                          >
+                            {metric.value}
+                          </div>
+                          
+                          <div
+                            style={{
+                              marginTop: 5,
+                              fontSize: 11,
+                              color: "#64748b",
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {metric.label}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          {sourceSummaryA.entities > 0 &&
-            sourceSummaryB.entities > 0 &&
-            densityRatio >= 1.5 && (
-              <div
+            
+            {sourcePatterns.sourceA && sourcePatterns.sourceB && (
+              <section
                 style={{
-                  marginTop: -6,
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 16,
+                  padding: 20,
                   marginBottom: 18,
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  background: "#eff6ff",
-                  border: "1px solid #bfdbfe",
-                  color: "#1e3a8a",
-                  fontSize: 13,
-                  fontWeight: 700,
                 }}
               >
-                {denserSource.sourceName} has {densityRatio.toFixed(1)}× more records per entity.
-              </div>
-          )}
-        </div>
+                <h2 style={{ marginTop: 0 }}>Historical Source Patterns</h2>
+              
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                  }}
+                >
+                  {[sourcePatterns.sourceA, sourcePatterns.sourceB].map(
+                    (pattern, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 12,
+                          padding: 16,
+                          background: "#f8fafc",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: "#64748b",
+                            marginBottom: 4,
+                          }}
+                        >
+                          {index === 0 ? "Source A" : "Source B"}
+                        </div>
+                        
+                        <div
+                          style={{
+                            fontSize: 20,
+                            fontWeight: 700,
+                            marginBottom: 8,
+                          }}
+                        >
+                          {pattern.label}
+                        </div>
+                        
+                        <div style={{ fontSize: 14, marginBottom: 12 }}>
+                          Confidence: <strong>{pattern.confidence}%</strong>
+                        </div>
+                        
+                        <ul style={{ marginTop: 0, paddingLeft: 20 }}>
+                          {pattern.indicators.map((indicator) => (
+                            <li key={indicator}>{indicator}</li>
+                          ))}
+                        </ul>
+                        
+                        <div
+                          style={{
+                            marginTop: 12,
+                            padding: 12,
+                            borderRadius: 10,
+                            background: "#ffffff",
+                            color: "#334155",
+                            fontSize: 14,
+                          }}
+                        >
+                          {pattern.modelingInsight}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              </section>
+            )}
+
+            {sourceSummaryA.entities > 0 &&
+              sourceSummaryB.entities > 0 &&
+              densityRatio >= 1.5 && (
+                <div
+                  style={{
+                    marginTop: -6,
+                    marginBottom: 18,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    color: "#1e3a8a",
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  {denserSource.sourceName} has {densityRatio.toFixed(1)}× more records
+                  per entity.
+                </div>
+              )}
+          </div>
         )}
         {hasAnalyzed && (
           <>
