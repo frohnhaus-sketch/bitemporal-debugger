@@ -522,8 +522,10 @@ Uploaded datasets remain in your session and are not stored.</strong>
               autoCapitalize="off"
               autoComplete="off"
               style={{
+                fontSize: 12,
+                whiteSpace: "pre",
                 width: "100%",
-                height: 116,
+                height: 140,
                 fontFamily: "monospace",
                 padding: 12,
                 borderRadius: 10,
@@ -552,7 +554,7 @@ Uploaded datasets remain in your session and are not stored.</strong>
       {controls}
       <div
         style={{
-          marginTop: 24,
+          marginTop: 12,
           marginBottom: 12,
           display: "flex",
           flexDirection: "column",

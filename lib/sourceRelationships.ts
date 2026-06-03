@@ -1,7 +1,11 @@
 import type { SourcePatternResult } from "./sourcePatterns";
 
+export type RelationshipComplexity = "Low" | "Medium" | "High";
+
 export type RelationshipAnalysis = {
   relationship: string;
+  complexity: RelationshipComplexity;
+  recommendedPattern: string;
   challenges: string[];
   recommendation: string;
 };
@@ -15,6 +19,8 @@ export function analyzeSourceRelationship(
   switch (pair) {
     case "STATE_SOURCE|STATE_SOURCE":
       return {
+        recommendedPattern: "State-Based Temporal Join",
+        complexity: "Low",
         relationship: "State Source ↔ State Source",
         challenges: [
           "Temporal join stability",
@@ -28,6 +34,8 @@ export function analyzeSourceRelationship(
     case "STATE_SOURCE|EVENT_SOURCE":
     case "EVENT_SOURCE|STATE_SOURCE":
       return {
+        recommendedPattern: "Event Prioritization",
+        complexity: "Medium",
         relationship: "State Source ↔ Event Source",
         challenges: [
           "Join ambiguity risk",
@@ -40,6 +48,8 @@ export function analyzeSourceRelationship(
 
     case "EVENT_SOURCE|EVENT_SOURCE":
       return {
+        recommendedPattern: "Event Correlation",
+        complexity: "Medium",
         relationship: "Event Source ↔ Event Source",
         challenges: [
           "Event correlation",
@@ -53,6 +63,8 @@ export function analyzeSourceRelationship(
     case "RETROACTIVE_SOURCE|STATE_SOURCE":
     case "STATE_SOURCE|RETROACTIVE_SOURCE":
       return {
+        recommendedPattern: "Visible-Time Snapshotting",
+        complexity: "High",
         relationship: "Retroactive Source ↔ State Source",
         challenges: [
           "Late-arriving corrections",
@@ -66,6 +78,8 @@ export function analyzeSourceRelationship(
     case "RETROACTIVE_SOURCE|EVENT_SOURCE":
     case "EVENT_SOURCE|RETROACTIVE_SOURCE":
       return {
+        recommendedPattern: "Late-Arriving Event Handling",
+        complexity: "High",
         relationship: "Retroactive Source ↔ Event Source",
         challenges: [
           "Late-arriving business events",
@@ -78,6 +92,8 @@ export function analyzeSourceRelationship(
 
     default:
       return {
+        recommendedPattern: "Custom Temporal Modeling",
+        complexity: "Medium",
         relationship: "Mixed Historical Sources",
         challenges: ["Source behavior mismatch", "Temporal complexity"],
         recommendation:

@@ -715,6 +715,37 @@ export default function Home() {
         )
       : null;
 
+  function getComplexityStyle(complexity: "Low" | "Medium" | "High") {
+    if (complexity === "Low") {
+      return {
+        label: "Low Modeling Effort",
+        background: "#dcfce7",
+        border: "#86efac",
+        color: "#166534",
+      };
+    }
+
+    if (complexity === "Medium") {
+      return {
+        label: "Medium Modeling Effort",
+        background: "#fef3c7",
+        border: "#fcd34d",
+        color: "#92400e",
+      };
+    }
+
+    return {
+      label: "High Modeling Effort",
+      background: "#fee2e2",
+      border: "#fca5a5",
+      color: "#991b1b",
+    };
+  }
+
+  const relationshipComplexityStyle = relationshipAnalysis
+    ? getComplexityStyle(relationshipAnalysis.complexity)
+    : null;
+
   return (
     <main
       style={{
@@ -1038,18 +1069,154 @@ export default function Home() {
         />
         {hasAnalyzed && (
           <div ref={sourceSummaryRef}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: 14,
-                marginTop: 18,
-                marginBottom: 18,
-              }}
-            >
-              {[sourceSummaryA, sourceSummaryB].map((summary) => (
+            {sourcePatterns.sourceA && sourcePatterns.sourceB && (
+              <>
+              <section
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 16,
+                  padding: 20,
+                  marginTop: 18,
+                  marginBottom: 18,
+                }}
+              >
+                <h2 style={{ marginTop: 0 }}>Historical Modeling Assessment</h2>
+
                 <div
-                  key={summary.sourceName}
+                  style={{
+                    padding: 16,
+                    borderRadius: 12,
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.7,
+                      color: "#64748b",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Detected Source Relationship
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 800,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {relationshipAnalysis?.relationship}
+                  </div>
+
+                  {relationshipComplexityStyle && (
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "6px 10px",
+                        borderRadius: 999,
+                        background: relationshipComplexityStyle.background,
+                        border: `1px solid ${relationshipComplexityStyle.border}`,
+                        color: relationshipComplexityStyle.color,
+                        fontSize: 12,
+                        fontWeight: 800,
+                        marginBottom: 0,
+                      }}
+                    >
+                      {relationshipComplexityStyle.label}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 16, marginBottom: 16 }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.7,
+                        color: "#64748b",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Recommended Historical Modeling Pattern
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 24,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {relationshipAnalysis?.recommendedPattern}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.7,
+                      color: "#64748b",
+                      marginTop: 12,
+                      marginBottom: 8,
+                    }}
+                  >
+                    Expected Modeling Challenges
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 8,
+                      marginBottom: 16,
+                    }}
+                  >
+                    {relationshipAnalysis?.challenges.map((challenge) => (
+                      <div
+                        key={challenge}
+                        style={{
+                          background: "#f1f5f9",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: 999,
+                          padding: "6px 10px",
+                          fontSize: 13,
+                        }}
+                      >
+                        {challenge}
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.7,
+                      color: "#64748b",
+                      marginBottom: 8,
+                      marginTop: 16,
+                    }}
+                  >
+                    Why this pattern?
+                  </div>
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#334155",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {relationshipAnalysis?.recommendation}
+                </p>
+                </div>
+                <details
                   style={{
                     background: "#ffffff",
                     border: "1px solid #e2e8f0",
@@ -1057,128 +1224,27 @@ export default function Home() {
                     padding: 16,
                     color: "#0f172a",
                     boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      letterSpacing: 0.7,
-                      textTransform: "uppercase",
-                      color: "#64748b",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Historical source summary
-                  </div>
-                  
-                  <div
-                    style={{
-                      fontSize: 17,
-                      fontWeight: 900,
-                      marginBottom: 12,
-                    }}
-                  >
-                    {summary.sourceName}
-                  </div>
-                  
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
-                      gap: 8,
-                    }}
-                  >
-                    {[
-                      { label: "Entities", value: summary.entities, tone: "neutral" },
-                      { label: "Records", value: summary.records, tone: "neutral" },
-                      {
-                        label: "Avg. Records / Entity",
-                        value: summary.recordsPerEntity.toFixed(1),
-                        tone: "neutral",
-                      },
-                      { label: "Gaps", value: summary.gaps, tone: "neutral" },
-                      {
-                        label: "Valid overlaps",
-                        value: summary.validTimeOverlaps,
-                        tone: "red",
-                      },
-                      {
-                        label: "Bitemp. overlaps",
-                        value: summary.bitemporalOverlaps,
-                        tone: "purple",
-                      },
-                    ].map((metric) => {
-                      const hasFinding = Number(metric.value) > 0;
-                    
-                      const metricColor =
-                        !hasFinding
-                          ? "#64748b"
-                          : metric.tone === "orange"
-                          ? "#d97706"
-                          : metric.tone === "red"
-                          ? "#dc2626"
-                          : metric.tone === "purple"
-                          ? "#7c3aed"
-                          : "#0f172a";
-                    
-                      return (
-                        <div
-                          key={metric.label}
-                          style={{
-                            background: "#f8fafc",
-                            border: "1px solid #e2e8f0",
-                            borderRadius: 8,
-                            padding: "8px 10px",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: 18,
-                              fontWeight: 900,
-                              lineHeight: 1,
-                              color: metricColor,
-                            }}
-                          >
-                            {metric.value}
-                          </div>
-                          
-                          <div
-                            style={{
-                              marginTop: 5,
-                              fontSize: 11,
-                              color: "#64748b",
-                              lineHeight: 1.2,
-                            }}
-                          >
-                            {metric.label}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {sourcePatterns.sourceA && sourcePatterns.sourceB && (
-              <>
-                <section
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 16,
-                    padding: 20,
+                    marginTop: 18,
                     marginBottom: 18,
                   }}
                 >
-                  <h2 style={{ marginTop: 0 }}>Historical Source Patterns</h2>
-                
+                  <summary
+                  style={{
+                    cursor: "pointer",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "#475569",
+                  }}
+                  >
+                    Source Patterns
+                  </summary>
+
                   <div
                     style={{
                       display: "grid",
                       gridTemplateColumns: "1fr 1fr",
                       gap: 16,
+                      marginTop: 16,
                     }}
                   >
                     {[sourcePatterns.sourceA, sourcePatterns.sourceB].map(
@@ -1201,7 +1267,7 @@ export default function Home() {
                           >
                             {index === 0 ? "Source A" : "Source B"}
                           </div>
-                          
+
                           <div
                             style={{
                               fontSize: 11,
@@ -1214,7 +1280,7 @@ export default function Home() {
                           >
                             Detected Pattern
                           </div>
-                          
+
                           <div
                             style={{
                               fontSize: 24,
@@ -1224,7 +1290,7 @@ export default function Home() {
                           >
                             {pattern.label.replace("Likely ", "")}
                           </div>
-                          
+
                           <div
                             style={{
                               fontSize: 11,
@@ -1237,7 +1303,7 @@ export default function Home() {
                           >
                             Indicators
                           </div>
-                          
+
                           <div
                             style={{
                               display: "flex",
@@ -1255,20 +1321,14 @@ export default function Home() {
                                   alignItems: "center",
                                 }}
                               >
-                                <span
-                                  style={{
-                                    color: "#16a34a",
-                                    fontWeight: 700,
-                                  }}
-                                >
+                                <span style={{ color: "#16a34a", fontWeight: 700 }}>
                                   ✓
                                 </span>
-                                
                                 <span>{indicator}</span>
                               </div>
                             ))}
                           </div>
-                          
+
                           <div
                             style={{
                               background: "#ffffff",
@@ -1289,7 +1349,7 @@ export default function Home() {
                             >
                               Modeling Implication
                             </div>
-                            
+
                             <div
                               style={{
                                 color: "#334155",
@@ -1303,132 +1363,26 @@ export default function Home() {
                       )
                     )}
                   </div>
-                </section>
-                  
-                <section
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 16,
-                    padding: 20,
-                    marginBottom: 18,
-                  }}
-                >
-                  <h2 style={{ marginTop: 0 }}>
-                    Historical Modeling Recommendations
-                  </h2>
-                
-                  <div
-                    style={{
-                      padding: 16,
-                      borderRadius: 12,
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.7,
-                        color: "#64748b",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Detected Source Relationship
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 22,
-                        fontWeight: 800,
-                        marginBottom: 16,
-                      }}
-                    >
-                      {relationshipAnalysis?.relationship}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.7,
-                        color: "#64748b",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Recommended Modeling Focus
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                        marginBottom: 16,
-                      }}
-                    >
-                      {relationshipAnalysis?.challenges.map((challenge) => (
-                        <div key={challenge}>
-                          ✓ {challenge}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div
-                      style={{
-                        background: "#ffffff",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: 10,
-                        padding: 14,
-                      }}
-                    >
-                      {relationshipAnalysis?.recommendation}
-                    </div>
-                  </div>
-                </section>
-              </>
-            )}
-            {sourceSummaryA.entities > 0 &&
-              sourceSummaryB.entities > 0 &&
-              densityRatio >= 1.5 && (
-                <div
-                  style={{
-                    marginTop: -6,
-                    marginBottom: 18,
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
-                    color: "#1e3a8a",
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  {denserSource.sourceName} has {densityRatio.toFixed(1)}× more records
-                  per entity.
-                </div>
-              )}
-          </div>
-        )}
-        {hasAnalyzed && (
-          <>
+                </details>
+              </section>
             <div style={{ marginBottom: 18, marginTop: 18 }}>
               <details
                 style={{
-                  background: "#f8fafc",
+                  background: "#ffffff",
                   border: "1px solid #e2e8f0",
-                  borderRadius: 10,
-                  padding: 12,
+                  borderRadius: 12,
+                  padding: 16,
+                  color: "#0f172a",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
                 }}
               >
                 <summary
-                  style={{
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    color: "#475569",
-                  }}
+                style={{
+                  cursor: "pointer",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#475569",
+                }}
                 >
                   Historical Snapshot
                 </summary>
@@ -1501,7 +1455,12 @@ export default function Home() {
                 </div>
               </details>
             </div>
-                  
+              </>
+            )}
+          </div>
+        )}
+        {hasAnalyzed && (
+          <>                  
             {(asOfDate || visibleAsOf) && (
               <div
                 style={{
@@ -1654,6 +1613,172 @@ export default function Home() {
               forceOpen={expandedSources.includes(sourceNameB)}
               overlapMarkers={overlapMarkers}
             />
+            </div>
+            <div style={{ marginTop: 24 }}>
+            <details
+              style={{
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: 12,
+                padding: 16,
+                color: "#0f172a",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                marginBottom: 18,
+              }}
+            >
+              <summary
+              style={{
+                cursor: "pointer",
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#475569",
+              }}
+              >
+                Source Summary
+              </summary>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 14,
+                  marginTop: 16,
+                }}
+              >
+                {[sourceSummaryA, sourceSummaryB].map((summary) => (
+                  <div
+                    key={summary.sourceName}
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 12,
+                      padding: 16,
+                      color: "#0f172a",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: 0.7,
+                        textTransform: "uppercase",
+                        color: "#64748b",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Historical source summary
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 17,
+                        fontWeight: 900,
+                        marginBottom: 12,
+                      }}
+                    >
+                      {summary.sourceName}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      {[
+                        { label: "Entities", value: summary.entities, tone: "neutral" },
+                        { label: "Records", value: summary.records, tone: "neutral" },
+                        {
+                          label: "Avg. Records / Entity",
+                          value: summary.recordsPerEntity.toFixed(1),
+                          tone: "neutral",
+                        },
+                        { label: "Gaps", value: summary.gaps, tone: "neutral" },
+                        {
+                          label: "Valid overlaps",
+                          value: summary.validTimeOverlaps,
+                          tone: "red",
+                        },
+                        {
+                          label: "Bitemp. overlaps",
+                          value: summary.bitemporalOverlaps,
+                          tone: "purple",
+                        },
+                      ].map((metric) => {
+                        const hasFinding = Number(metric.value) > 0;
+
+                        const metricColor =
+                          !hasFinding
+                            ? "#64748b"
+                            : metric.tone === "orange"
+                            ? "#d97706"
+                            : metric.tone === "red"
+                            ? "#dc2626"
+                            : metric.tone === "purple"
+                            ? "#7c3aed"
+                            : "#0f172a";
+
+                        return (
+                          <div
+                            key={metric.label}
+                            style={{
+                              background: "#f8fafc",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: 8,
+                              padding: "8px 10px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 18,
+                                fontWeight: 900,
+                                lineHeight: 1,
+                                color: metricColor,
+                              }}
+                            >
+                              {metric.value}
+                            </div>
+
+                            <div
+                              style={{
+                                marginTop: 5,
+                                fontSize: 11,
+                                color: "#64748b",
+                                lineHeight: 1.2,
+                              }}
+                            >
+                              {metric.label}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {sourceSummaryA.entities > 0 &&
+                sourceSummaryB.entities > 0 &&
+                densityRatio >= 1.5 && (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      background: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      color: "#1e3a8a",
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {denserSource.sourceName} has {densityRatio.toFixed(1)}× more
+                    records per entity.
+                  </div>
+                )}
+            </details>
             </div>
           </>
         )}
