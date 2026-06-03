@@ -295,6 +295,16 @@ export default function Home() {
     };
   }
 
+  const REQUIRED_COLUMNS = ["entity_id", "valid_from", "valid_to"];
+
+  function hasRequiredColumns(parsedRows: any[]) {
+    if (parsedRows.length === 0) return false;
+
+    return REQUIRED_COLUMNS.every((column) =>
+      Object.prototype.hasOwnProperty.call(parsedRows[0], column)
+    );
+  }
+
   function analyzeTwoSourcesFromValues(
     rawA: string,
     rawB: string,
@@ -306,19 +316,38 @@ export default function Home() {
       resetAnalysis();
       return;
     }
-
+  
     const parsedA = parseOneSource(
       rawA,
       sourceAName || "source_a",
       columnMappingA
     );
-
+  
     const parsedB = parseOneSource(
       rawB,
       sourceBName || "source_b",
       columnMappingB
     );
-
+  
+    if (
+      !hasRequiredColumns(parsedA.rows) ||
+      !hasRequiredColumns(parsedB.rows)
+    ) {
+      track("analysis_failed", {
+        reason: "missing_required_columns",
+        sourceA: sourceAName,
+        sourceB: sourceBName,
+        mode,
+      });
+    
+      alert(
+        "Could not analyze the input. Please provide tabular data with at least entity_id, valid_from and valid_to columns."
+      );
+    
+      resetAnalysis();
+      return;
+    }
+  
     const combinedRows = [...parsedA.rows, ...parsedB.rows] as BitemporalRow[];
 
     setRows(combinedRows);
@@ -616,12 +645,6 @@ export default function Home() {
   }
 
   function generateSQL() {
-    track("sql_generated", {
-      hasValidAsOf: !!asOfDate,
-      hasVisibleAsOf: !!visibleAsOf,
-      hasOwnData: !!fileNameA || !!fileNameB,
-      mode: validationMode,
-    });
     const sqlParts: string[] = [];
 
     if (asOfDate) {
@@ -635,14 +658,21 @@ export default function Home() {
     }
 
     if (sqlParts.length === 0) {
-      setSql("-- Please select at least one As-of filter");
+      setSql("");
       return;
     }
 
+    track("sql_generated", {
+      hasValidAsOf: !!asOfDate,
+      hasVisibleAsOf: !!visibleAsOf,
+      hasOwnData: !!fileNameA || !!fileNameB,
+      mode: validationMode,
+    });
+
     setSql(`SELECT *
-FROM your_table
-WHERE ${sqlParts.join(" AND ")};`);
- }
+  FROM your_table
+  WHERE ${sqlParts.join(" AND ")};`);
+  }
 
   useEffect(() => {
     generateSQL();
