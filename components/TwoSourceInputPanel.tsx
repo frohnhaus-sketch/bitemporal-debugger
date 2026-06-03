@@ -517,6 +517,10 @@ Uploaded datasets remain in your session and are not stored.</strong>
               value={source.input}
               onChange={(e) => source.setInput(e.target.value)}
               placeholder={source.placeholder}
+              spellCheck={false}
+              autoCorrect="off"
+              autoCapitalize="off"
+              autoComplete="off"
               style={{
                 width: "100%",
                 height: 116,

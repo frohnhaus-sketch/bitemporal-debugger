@@ -450,23 +450,6 @@ export default function Home() {
     return validOk && visibleOk;
   });
 
-  // const activeRows = asOfDate || visibleAsOf ? snapshotRows : rows;
-  // const activeJoinIssues = analyzeJoinability(
-  //   activeRows,
-  //   sourceNameA,
-  //   sourceNameB,
-  //   validationMode
-  // );
-  // const activeGaps = detectGaps(activeRows);
-  // const activeDrifts = detectDrift(activeRows);
-  // const activeOverlapMarkers = detectOverlapMarkers(activeRows, validationMode);
-  // const activeTemporalIssues = buildTemporalIssues({
-  //   joinIssues: activeJoinIssues,
-  //   gaps: activeGaps,
-  //   overlapMarkers: activeOverlapMarkers,
-  //   drifts: activeDrifts,
-  // });
-
   const snapshotActive = Boolean(asOfDate || visibleAsOf);
 
   const activeRows = useMemo(() => {
@@ -524,6 +507,56 @@ export default function Home() {
       }),
     [activeJoinIssues, activeGaps, activeOverlapMarkers, activeDrifts]
   );
+
+  function buildSourceSummary(sourceName: string) {
+    const sourceRows = activeRows.filter((r) => r.source === sourceName);
+
+    const entityIds = new Set(sourceRows.map((r) => String(r.entity_id)));
+
+    const sourceGaps = activeGaps.filter((gap: any) => gap.source === sourceName);
+
+    const sourceOverlaps = activeOverlapMarkers.filter(
+      (overlap) => overlap.source === sourceName
+    );
+
+    const validTimeOverlaps = detectOverlapMarkers(sourceRows, "monotemporal").length;
+    const bitemporalOverlaps = detectOverlapMarkers(sourceRows, "bitemporal").length;
+
+    const recordsPerEntity =
+      entityIds.size > 0 ? sourceRows.length / entityIds.size : 0;
+
+    return {
+      sourceName,
+      entities: entityIds.size,
+      records: sourceRows.length,
+      recordsPerEntity,
+      gaps: sourceGaps.length,
+      overlaps: sourceOverlaps.length,
+      validTimeOverlaps,
+      bitemporalOverlaps,
+    };
+  }
+
+  const sourceSummaryA = buildSourceSummary(sourceNameA);
+  const sourceSummaryB = buildSourceSummary(sourceNameB);
+
+  const densityRatio =
+    Math.max(
+      sourceSummaryA.recordsPerEntity,
+      sourceSummaryB.recordsPerEntity
+    ) /
+    Math.max(
+      1,
+      Math.min(
+        sourceSummaryA.recordsPerEntity,
+        sourceSummaryB.recordsPerEntity
+      )
+    );
+
+  const denserSource =
+    sourceSummaryA.recordsPerEntity >= sourceSummaryB.recordsPerEntity
+      ? sourceSummaryA
+      : sourceSummaryB;
 
   const temporalIssues = buildTemporalIssues({
     joinIssues,
@@ -942,6 +975,146 @@ WHERE ${sqlParts.join(" AND ")};`);
             </div>
           }
         />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 14,
+            marginTop: 18,
+            marginBottom: 18,
+          }}
+        >
+          {[sourceSummaryA, sourceSummaryB].map((summary) => (
+            <div
+              key={summary.sourceName}
+              style={{
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: 12,
+                padding: 16,
+                color: "#0f172a",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: 0.7,
+                  textTransform: "uppercase",
+                  color: "#64748b",
+                  marginBottom: 8,
+                }}
+              >
+                Historical source summary
+              </div>
+              
+              <div
+                style={{
+                  fontSize: 17,
+                  fontWeight: 900,
+                  marginBottom: 12,
+                }}
+              >
+                {summary.sourceName}
+              </div>
+              
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {[
+                  { label: "Entities", value: summary.entities, tone: "neutral" },
+                  { label: "Records", value: summary.records, tone: "neutral" },
+                  {
+                    label: "Avg. Records / Entity",
+                    value: summary.recordsPerEntity.toFixed(1),
+                    tone: "neutral"
+                  },
+                  { label: "Gaps", value: summary.gaps, tone: "neutral" },
+                  {
+                    label: "Valid overlaps",
+                    value: summary.validTimeOverlaps,
+                    tone: "red",
+                  },
+                  {
+                    label: "Bitemp. overlaps",
+                    value: summary.bitemporalOverlaps,
+                    tone: "purple",
+                  },
+                ].map((metric) => {
+                  const hasFinding = Number(metric.value) > 0;
+                
+                  const metricColor =
+                    !hasFinding
+                      ? "#64748b"
+                      : metric.tone === "orange"
+                      ? "#d97706"
+                      : metric.tone === "red"
+                      ? "#dc2626"
+                      : metric.tone === "purple"
+                      ? "#7c3aed"
+                      : "#0f172a";
+                  return (
+                    <div
+                      key={metric.label}
+                      style={{
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 8,
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 900,
+                          lineHeight: 1,
+                          color: metricColor,
+                        }}
+                      >
+                        {metric.value}
+                      </div>
+                      
+                      <div
+                        style={{
+                          marginTop: 5,
+                          fontSize: 11,
+                          color: "#64748b",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {metric.label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {sourceSummaryA.entities > 0 &&
+            sourceSummaryB.entities > 0 &&
+            densityRatio >= 1.5 && (
+              <div
+                style={{
+                  marginTop: -6,
+                  marginBottom: 18,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  color: "#1e3a8a",
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                {denserSource.sourceName} has {densityRatio.toFixed(1)}× more records per entity.
+              </div>
+          )}
+        </div>
         {hasAnalyzed && (
           <>
             <div style={{ marginBottom: 18, marginTop: 18 }}>

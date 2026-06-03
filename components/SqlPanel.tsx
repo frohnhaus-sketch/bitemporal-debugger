@@ -189,7 +189,7 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
           </div>
 
           <h2 style={{ marginTop: 0, marginBottom: 16 }}>
-            Select a source alignment finding
+            Choose a finding to investigate
           </h2>
 
           <p
@@ -202,9 +202,7 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
               fontSize: 15,
             }}
           >
-            Select a finding from the source analysis panel to understand how
-            this historical relationship behaves and what it means for Core
-            Layer modeling.
+            Select any finding from Historical Source Analysis to understand what is wrong, why it matters, and what to check next.
           </p>
 
           <div
@@ -216,10 +214,9 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
               color: "#0f172a",
             }}
           >
-            <div>→ affected source relationship</div>
-            <div>→ historical alignment pattern</div>
-            <div>→ modeling impact</div>
-            <div>→ suggested investigation steps</div>
+            <div>→ problem</div>
+            <div>→ impact</div>
+            <div>→ investigation steps</div>
           </div>
         </div>
       )}

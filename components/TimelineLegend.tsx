@@ -13,7 +13,7 @@ const legendItems: LegendItem[] = [
       "Background timeline without rows for this entity.",
   },
   {
-    label: "Valid interval",
+    label: "Valid",
     color: "#64748b",
     description:
       "A stored valid-time interval.",
