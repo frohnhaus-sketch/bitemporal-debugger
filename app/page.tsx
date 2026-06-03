@@ -1151,84 +1151,223 @@ export default function Home() {
             </div>
             
             {sourcePatterns.sourceA && sourcePatterns.sourceB && (
-              <section
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 16,
-                  padding: 20,
-                  marginBottom: 18,
-                }}
-              >
-                <h2 style={{ marginTop: 0 }}>Historical Source Patterns</h2>
-              
-                <div
+              <>
+                <section
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 16,
+                    background: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 16,
+                    padding: 20,
+                    marginBottom: 18,
                   }}
                 >
-                  {[sourcePatterns.sourceA, sourcePatterns.sourceB].map(
-                    (pattern, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          border: "1px solid #e5e7eb",
-                          borderRadius: 12,
-                          padding: 16,
-                          background: "#f8fafc",
-                        }}
-                      >
+                  <h2 style={{ marginTop: 0 }}>Historical Source Patterns</h2>
+                
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 16,
+                    }}
+                  >
+                    {[sourcePatterns.sourceA, sourcePatterns.sourceB].map(
+                      (pattern, index) => (
                         <div
+                          key={index}
                           style={{
-                            fontSize: 13,
-                            color: "#64748b",
-                            marginBottom: 4,
+                            border: "1px solid #e5e7eb",
+                            borderRadius: 12,
+                            padding: 16,
+                            background: "#f8fafc",
                           }}
                         >
-                          {index === 0 ? "Source A" : "Source B"}
+                          <div
+                            style={{
+                              fontSize: 13,
+                              color: "#64748b",
+                              marginBottom: 4,
+                            }}
+                          >
+                            {index === 0 ? "Source A" : "Source B"}
+                          </div>
+                          
+                          <div
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 800,
+                              textTransform: "uppercase",
+                              letterSpacing: 0.7,
+                              color: "#64748b",
+                              marginBottom: 6,
+                            }}
+                          >
+                            Detected Pattern
+                          </div>
+                          
+                          <div
+                            style={{
+                              fontSize: 24,
+                              fontWeight: 800,
+                              marginBottom: 14,
+                            }}
+                          >
+                            {pattern.label.replace("Likely ", "")}
+                          </div>
+                          
+                          <div
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 800,
+                              textTransform: "uppercase",
+                              letterSpacing: 0.7,
+                              color: "#64748b",
+                              marginBottom: 8,
+                            }}
+                          >
+                            Indicators
+                          </div>
+                          
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 8,
+                              marginBottom: 16,
+                            }}
+                          >
+                            {pattern.indicators.map((indicator) => (
+                              <div
+                                key={indicator}
+                                style={{
+                                  display: "flex",
+                                  gap: 8,
+                                  alignItems: "center",
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    color: "#16a34a",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  ✓
+                                </span>
+                                
+                                <span>{indicator}</span>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div
+                            style={{
+                              background: "#ffffff",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: 10,
+                              padding: 14,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 800,
+                                textTransform: "uppercase",
+                                letterSpacing: 0.7,
+                                color: "#64748b",
+                                marginBottom: 8,
+                              }}
+                            >
+                              Modeling Implication
+                            </div>
+                            
+                            <div
+                              style={{
+                                color: "#334155",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {pattern.modelingInsight}
+                            </div>
+                          </div>
                         </div>
-                        
-                        <div
-                          style={{
-                            fontSize: 20,
-                            fontWeight: 700,
-                            marginBottom: 8,
-                          }}
-                        >
-                          {pattern.label}
-                        </div>
-                        
-                        <div style={{ fontSize: 14, marginBottom: 12 }}>
-                          Confidence: <strong>{pattern.confidence}%</strong>
-                        </div>
-                        
-                        <ul style={{ marginTop: 0, paddingLeft: 20 }}>
-                          {pattern.indicators.map((indicator) => (
-                            <li key={indicator}>{indicator}</li>
-                          ))}
-                        </ul>
-                        
-                        <div
-                          style={{
-                            marginTop: 12,
-                            padding: 12,
-                            borderRadius: 10,
-                            background: "#ffffff",
-                            color: "#334155",
-                            fontSize: 14,
-                          }}
-                        >
-                          {pattern.modelingInsight}
-                        </div>
-                      </div>
-                    )
-                  )}
-                </div>
-              </section>
+                      )
+                    )}
+                  </div>
+                </section>
+                  
+                <section
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 16,
+                    padding: 20,
+                    marginBottom: 18,
+                  }}
+                >
+                  <h2 style={{ marginTop: 0 }}>
+                    Historical Modeling Recommendations
+                  </h2>
+                
+                  <div
+                    style={{
+                      padding: 16,
+                      borderRadius: 12,
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.7,
+                        color: "#64748b",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Detected Source Relationship
+                    </div>
+                    
+                    <div
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 800,
+                        marginBottom: 16,
+                      }}
+                    >
+                      {sourcePatterns.sourceA.label.replace("Likely ", "")}
+                      {" ↔ "}
+                      {sourcePatterns.sourceB.label.replace("Likely ", "")}
+                    </div>
+                    
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.7,
+                        color: "#64748b",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Recommended Modeling Focus
+                    </div>
+                    
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                      }}
+                    >
+                      <div>✓ Validate temporal join stability</div>
+                      <div>✓ Test historical snapshots</div>
+                      <div>✓ Verify visibility-time assumptions</div>
+                    </div>
+                  </div>
+                </section>
+              </>
             )}
-
             {sourceSummaryA.entities > 0 &&
               sourceSummaryB.entities > 0 &&
               densityRatio >= 1.5 && (

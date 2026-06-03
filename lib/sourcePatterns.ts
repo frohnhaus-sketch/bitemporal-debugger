@@ -81,10 +81,8 @@ export function detectSourcePattern(rows: Row[]): SourcePatternResult {
 
   if (recordsPerEntity >= 5) {
     eventScore += 35;
-    indicators.push("High number of records per entity");
   } else {
     stateScore += 25;
-    indicators.push("Low number of records per entity");
   }
 
   if (avgDurationDays !== null && avgDurationDays <= 7) {
@@ -122,24 +120,29 @@ export function detectSourcePattern(rows: Row[]): SourcePatternResult {
         "This source appears to contain retroactive corrections. Historical reporting should consider both valid time and visible time.",
     };
   }
-
+  
   if (eventScore > stateScore) {
     return {
       pattern: "EVENT_SOURCE",
       label: "Likely Event Source",
       confidence: Math.min(95, eventScore),
-      indicators,
+      indicators: indicators.filter(
+        (indicator) => indicator !== "Low number of records per entity"
+      ),
       modelingInsight:
         "This source behaves like an event-based history. Joining it to state sources may require event-to-state modeling patterns.",
     };
   }
-
+  
   return {
     pattern: "STATE_SOURCE",
     label: "Likely State Source",
     confidence: Math.min(95, stateScore || 50),
-    indicators,
+    indicators: indicators.filter(
+      (indicator) =>
+        indicator !== "Short validity intervals" &&
+        indicator !== "Many point-like or very short intervals"
+    ),
     modelingInsight:
       "This source behaves like a state-based history. It is usually suitable for SCD2-style joins and snapshot reporting.",
-  };
-}
+}}
