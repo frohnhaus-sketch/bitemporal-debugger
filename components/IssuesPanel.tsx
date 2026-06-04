@@ -257,7 +257,7 @@ export function IssuesPanel({
       
       {hasAnalyzed && (
         <>
-      <SelectedIssueCard issue={selectedTemporalIssue} />
+      {/* <SelectedIssueCard issue={selectedTemporalIssue} /> */}
 
       {(activeIssueFilter === "ALL" || activeIssueFilter === "JOIN") &&
         rootCause && (

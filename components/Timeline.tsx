@@ -357,7 +357,18 @@ export function Timeline({
                     <strong>
                       {row.source || "default"} / {row.entity_id}
                     </strong>
-
+                    {row.value && (
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          color: "#334155",
+                          fontWeight: 700,
+                          fontSize: 11,
+                        }}
+                      >
+                        · {row.value}
+                      </span>
+                    )}
                     <span
                       style={{
                         marginLeft: 10,
