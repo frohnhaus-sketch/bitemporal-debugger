@@ -121,6 +121,7 @@ export function detectHistoricalPatterns(
         "Multiple valid historical matches detected. This may lead to duplicate rows and inconsistent reporting.",
       evidence: [
         `${joinAmbiguities} ambiguous joins detected`,
+        "Potential duplicate rows in historical reporting",
       ],
     });
   }
@@ -133,6 +134,7 @@ export function detectHistoricalPatterns(
       evidence: [
         `${joinGaps} join gaps detected`,
         `${visibilityLagCount} visibility lag findings detected`,
+        "Possible dimension arrival after related facts",
       ],
     });
   }

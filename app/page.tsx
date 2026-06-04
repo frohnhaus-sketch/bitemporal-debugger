@@ -1242,7 +1242,15 @@ export default function Home() {
                     >
                       Detected Historical Modeling Patterns
                     </div>
-
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#64748b",
+                        marginBottom: 12,
+                      }}
+                    >
+                      Click a pattern to investigate the underlying findings.
+                    </div>
                     {historicalPatterns.map((pattern) => {
                       const isPossiblePattern =
                         pattern.name.startsWith("Possible");
@@ -1254,12 +1262,20 @@ export default function Home() {
                             background: isPossiblePattern
                               ? "#fffbeb"
                               : "#fef2f2",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
                             border: isPossiblePattern
                               ? "1px solid #fde68a"
                               : "1px solid #fecaca",
                             borderRadius: 10,
                             padding: 12,
                             marginBottom: 8,
+                          }}
+                          onClick={() => {
+                            analysisRef.current?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
                           }}
                         >
                           <div
