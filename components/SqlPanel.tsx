@@ -154,6 +154,10 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
     <div
       style={{
         flex: 1,
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        boxSizing: "border-box",
         background: "#ffffff",
         padding: 20,
         borderRadius: 12,
@@ -171,7 +175,9 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
             background: "#f8fafc",
             border: "1px solid #cbd5e1",
             borderRadius: 12,
-            padding: 24,
+            padding: 18,
+            boxSizing: "border-box",
+            maxWidth: "100%",
             color: "#0f172a",
           }}
         >
@@ -527,6 +533,9 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
             color: "#e5e7eb",
             border: "none",
             whiteSpace: "pre-wrap",
+            overflowX: "auto",
+            maxWidth: "100%",
+            boxSizing: "border-box",
             fontSize: 12,
             lineHeight: 1.5,
           }}

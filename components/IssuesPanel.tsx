@@ -178,7 +178,7 @@ export function IssuesPanel({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
             gap: 10,
             marginBottom: 12,
           }}

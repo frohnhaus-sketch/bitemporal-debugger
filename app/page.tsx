@@ -1717,9 +1717,7 @@ export default function Home() {
                 width: "100%",
                 boxSizing: "border-box",
                 display: "grid",
-                gridTemplateColumns: isMobile
-                  ? "1fr"
-                  : "minmax(0, 1.05fr) minmax(340px, 1.1fr)",
+                gridTemplateColumns: "1fr",
                 gap: 20,
                 alignItems: "start",
                 marginBottom: 20,
