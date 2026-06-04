@@ -106,6 +106,17 @@ export function TwoSourceInputPanel({
       >
         <div
           style={{
+            fontSize: 21,
+            fontWeight: 700,
+            maxWidth: 900,
+            color: "#e2e8f0",
+            lineHeight: 1.5,
+          }}
+        >
+          Start with the Example Assessment or paste your own historized datasets.
+        </div>
+        <div
+          style={{
             display: "flex",
             gap: 16,
             alignItems: "flex-end",
@@ -131,64 +142,10 @@ export function TwoSourceInputPanel({
               gap: 12,
             }}
           >
-            <span style={{ fontSize: 22, lineHeight: 1 }}>◎</span>
-            Load demo dataset
+            <span style={{ fontSize: 22, lineHeight: 1 }}>🧪</span>
+            Run Example Assessment
           </button>
-
-          <button
-            onClick={() => {
-              if (!canAnalyze) return;
-              onAnalyze();
-            }}
-            disabled={!canAnalyze}
-            style={{
-              height: 56,
-              minWidth: 230,
-              padding: "0 24px",
-              borderRadius: 12,
-              background: canAnalyze ? "#1d4ed8" : "#1e293b",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.08)",
-              fontWeight: 800,
-              fontSize: 15,
-              cursor: canAnalyze ? "pointer" : "not-allowed",
-              opacity: canAnalyze ? 1 : 0.58,
-              boxShadow: canAnalyze
-                ? "0 8px 24px rgba(37,99,235,0.24)"
-                : "none",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <span style={{ fontSize: 22 }}>▷</span>
-            Analyze Sources
-          </button>
-
-          <div
-            style={{
-              minWidth: 330,
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-            }}
-          >
-            {analysisModeControl}
-          </div>
         </div>
-
-        <div
-          style={{
-            fontSize: 15,
-            color: "#cbd5e1",
-            lineHeight: 1.5,
-          }}
-        >
-          Upload two historized datasets and instantly{" "}
-          <strong style={{ color: "#ffffff" }}>identify</strong>{" "}
-          historical modeling risks, temporal join issues and source behavior patterns.
-        </div>
-
         <div
           style={{
             display: "grid",
@@ -253,22 +210,39 @@ export function TwoSourceInputPanel({
             </div>
           ))}
         </div>
-
-        <p
+        <div
           style={{
             marginBottom: "-10px",
-            fontSize: 16,
-            color: "#cbd5f5",
-            fontWeight: 600,
           }}
         >
-          Upload → Analyze → Identify Patterns → Validate Findings
-        </p>
+          <div
+            style={{
+              fontSize: 14,
+              color: "#94a3b8",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 6,
+            }}
+          >
+            How it works
+          </div>
+          
+          <div
+            style={{
+              fontSize: 16,
+              color: "#cbd5f5",
+              fontWeight: 600,
+            }}
+          >
+            Upload → Analyze → Identify Patterns → Validate Findings
+          </div>
+        </div>
       </div>
 
         <div
           style={{
-            marginTop: 10,
+            marginTop: 12,
             padding: "12px 16px",
             borderRadius: 10,
             border: "1px solid #1e293b",
@@ -284,7 +258,7 @@ Uploaded datasets remain in your session and are not stored.</strong>
 
       <div
         style={{
-          marginTop: 5,
+          marginTop: 8,
           display: "grid",
           gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           gap: 20,
@@ -559,9 +533,16 @@ Uploaded datasets remain in your session and are not stored.</strong>
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 12,
+          gap: 8,
         }}
       >
+        <div
+          style={{
+            minWidth: 330,
+          }}
+        >
+          {analysisModeControl}
+        </div>
         <button
           onClick={() => {
             if (!canAnalyze) return;
@@ -569,15 +550,15 @@ Uploaded datasets remain in your session and are not stored.</strong>
           }}
           disabled={!canAnalyze}
           style={{
-            height: 52,
-            minWidth: 260,
+            height: 60,
+            minWidth: 300,
             padding: "0 24px",
             borderRadius: 12,
             background: canAnalyze ? "#1d4ed8" : "#1e293b",
             color: "#ffffff",
             border: "1px solid rgba(255,255,255,0.08)",
             fontWeight: 800,
-            fontSize: 15,
+            fontSize: 18,
             cursor: canAnalyze ? "pointer" : "not-allowed",
             opacity: canAnalyze ? 1 : 0.58,
             boxShadow: canAnalyze
@@ -589,7 +570,7 @@ Uploaded datasets remain in your session and are not stored.</strong>
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 20 }}>▷</span>
+          <span style={{ fontSize: 24 }}>▷</span>
           Analyze Sources
         </button>
       </div>

@@ -1707,7 +1707,7 @@ export default function Home() {
               overlapMarkers={overlapMarkers}
             />
             </div>
-            <div style={{ marginTop: 24 }}>
+            {/* <div style={{ marginTop: 24 }}>
             <details
               style={{
                 background: "#ffffff",
@@ -1872,7 +1872,7 @@ export default function Home() {
                   </div>
                 )}
             </details>
-            </div>
+            </div> */}
           </>
         )}
         <Footer />
