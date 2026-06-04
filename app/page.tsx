@@ -53,6 +53,16 @@ const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 5,object_v2,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 900);
+
+    update();
+    window.addEventListener("resize", update);
+
+    return () => window.removeEventListener("resize", update);
+  }, []);
   const [showMapping, setShowMapping] = useState(false);
   const [maxColumns, setMaxColumns] = useState<number | "all">(8);
   const [fileNameA, setFileNameA] = useState("");
@@ -812,7 +822,7 @@ export default function Home() {
       style={{
         minHeight: "100vh",
         background: "#0f172a",
-        padding: "40px",
+        padding: isMobile ? "16px 10px" : "40px",
         fontFamily: "Inter, Arial, sans-serif",
         color: "#0f172a",
       }}
@@ -839,7 +849,7 @@ export default function Home() {
           <h1
             style={{
               margin: 0,
-              fontSize: 42,
+              fontSize: isMobile ? 32 : 42,
               lineHeight: 1.05,
               letterSpacing: "-0.04em",
               color: "#ffffff",
@@ -1409,7 +1419,7 @@ export default function Home() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
+                      gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                       gap: 16,
                       marginTop: 16,
                     }}
@@ -1423,6 +1433,8 @@ export default function Home() {
                             borderRadius: 12,
                             padding: 16,
                             background: "#f8fafc",
+                            minWidth: 0,
+                            boxSizing: "border-box",
                           }}
                         >
                           <div
@@ -1687,7 +1699,9 @@ export default function Home() {
               ref={analysisRef}
               style={{
                 display: "grid",
-                gridTemplateColumns: "minmax(0, 1.05fr) minmax(340px, 1.1fr)",
+                gridTemplateColumns: isMobile
+                  ? "1fr"
+                  : "minmax(0, 1.05fr) minmax(340px, 1.1fr)",
                 gap: 20,
                 alignItems: "start",
                 marginBottom: 20,
@@ -1723,8 +1737,8 @@ export default function Home() {
             
               <div
                 style={{
-                  position: "sticky",
-                  top: 20,
+                  position: isMobile ? "static" : "sticky",
+                  top: isMobile ? undefined : 20,
                 }}
               >
                 <SqlPanel
@@ -1754,7 +1768,7 @@ export default function Home() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                 gap: 20,
                 marginBottom: 20,
               }}

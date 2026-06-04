@@ -193,19 +193,25 @@ export function DataPreview({
         borderRadius: 8,
         border: "1px solid #1e293b",
         overflow: "hidden",
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        boxSizing: "border-box",
       }}
     >
       <button
-        onClick={() => setOpen(!open)}
         style={{
           width: "100%",
-          padding: "8px 10px",
+          padding: "10px 12px",
           background: "#111827",
           color: "#e2e8f0",
           border: "none",
           cursor: "pointer",
           textAlign: "left",
           fontWeight: "bold",
+          lineHeight: 1.35,
+          whiteSpace: "normal",
+          overflowWrap: "anywhere",
         }}
         onMouseEnter={(event) => {
           event.currentTarget.style.transform = "translateY(-1px)";
@@ -222,10 +228,17 @@ export function DataPreview({
       </button>
 
       {open && (
-        <div style={{ overflowX: "auto" }}>
+        <div
+          style={{
+            overflowX: "auto",
+            maxWidth: "100%",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           <table
             style={{
               width: "100%",
+              minWidth: 720,
               borderCollapse: "collapse",
               fontSize: 12,
             }}
@@ -367,14 +380,16 @@ export function DataPreview({
           </table>
 
           <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: 8,
-              fontSize: 11,
-              color: "#64748b",
-            }}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            padding: 8,
+            fontSize: 11,
+            color: "#64748b",
+            flexWrap: "wrap",
+          }}
           >
             <span>
               showing {Math.min(limit, rows.length)} of {rows.length} rows
