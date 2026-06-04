@@ -38,13 +38,13 @@ export function explainJoinIssue(
       title: "Ambiguous join",
       summary: `${scope}. The join from ${direction} finds multiple possible matches.`,
       cause:
-        "The target source contains more than one valid candidate for the same business-effective period.",
+        "The target source contains more than one historical candidate for the same business-effective period.",
       interpretation: issue.isAggregated
         ? "Because this happens across multiple entities, it likely points to a systematic overlap or duplication pattern in the target source."
         : "This usually means the target source has overlapping valid-time ranges, duplicate records, or the join needs an additional tie-breaker.",
       severity: "error",
       hints: [
-        `Check overlapping valid_from / valid_to ranges in ${issue.targetSource}.`,
+        `Check overlapping historical intervals in ${issue.targetSource}.`,
         "Look for duplicate records for the same entity.",
         "Add another join condition if multiple matches are expected.",
       ],
@@ -117,7 +117,7 @@ WHERE b.entity_id IS NULL;`,
       fixes: [
         "Check whether the target source was loaded later than the source row.",
         "Align ingestion / visible-time timestamps across both pipelines.",
-        "If correct for your use case, join against the latest visible record as of the analysis timestamp.",
+        "If this is expected, define a visible-time snapshot rule, for example latest visible record as of the reporting timestamp.",
       ],
       sqlSuggestion: `-- Require visible-time overlap
 AND a.visible_from < b.visible_to

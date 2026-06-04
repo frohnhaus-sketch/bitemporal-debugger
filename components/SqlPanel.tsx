@@ -402,7 +402,7 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
                   border: "1px solid #86efac",
                 }}
               >
-                <strong>Suggested action</strong>
+                <strong>Suggested Investigation</strong>
                 <ul style={{ margin: "6px 0 0 0", paddingLeft: 18 }}>
                   {explanation.fixes.map((fix) => (
                     <li key={fix}>{fix}</li>

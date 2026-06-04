@@ -46,22 +46,22 @@ export function TwoSourceInputPanel({
   const featureCards = [
     {
       icon: "⌕",
-      title: "Detect Gaps",
-      text: "Find missing history periods before they cause incomplete snapshots, broken reports or unexpected null values.",
+      title: "Detect Historical Modeling Risks",
+      text: "Identify gaps, overlaps and unstable temporal relationships.",
       bg: "#14532d",
       color: "#86efac",
     },
     {
       icon: "∞",
-      title: "Detect Ambiguous Joins",
-      text: "Identify overlapping history and multiple temporal matches before duplicate records reach production.",
+      title: "Identify Modeling Patterns",
+      text: "Recognize late arriving dimensions, ambiguous history and snapshot risks.",
       bg: "#3b0764",
       color: "#d8b4fe",
     },
     {
       icon: "◷",
-      title: "Explain Temporal Alignment",
-      text: "Visualize how two historized datasets align across time and understand exactly why joins succeed or fail.",
+      title: "Understand Historical Behavior",
+      text: "Learn how historized sources interact and why reporting may change over time.",
       bg: "#1e3a8a",
       color: "#bfdbfe",
     },
@@ -185,8 +185,8 @@ export function TwoSourceInputPanel({
           }}
         >
           Upload two historized datasets and instantly{" "}
-          <strong style={{ color: "#ffffff" }}>detect</strong> gaps, overlaps
-          and broken temporal joins.
+          <strong style={{ color: "#ffffff" }}>identify</strong>{" "}
+          historical modeling risks, temporal join issues and source behavior patterns.
         </div>
 
         <div
@@ -262,7 +262,7 @@ export function TwoSourceInputPanel({
             fontWeight: 600,
           }}
         >
-          Upload or paste → Analyze → understand historical source behavior
+          Upload → Analyze → Identify Patterns → Validate Findings
         </p>
       </div>
 

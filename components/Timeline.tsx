@@ -209,7 +209,7 @@ export function Timeline({
       >
         <div>
           <h3 style={{ margin: "0 0 6px", fontSize: 20 }}>
-            Timeline Evidence
+            Valid-Time Evidence
           </h3>
 
           <p
@@ -220,7 +220,7 @@ export function Timeline({
               lineHeight: 1.6,
             }}
           >
-            Use this view to verify the selected finding against the actual historical source records.
+            Valid-time timeline. Bitemporal findings are highlighted as investigation markers and may involve visible-time conditions.
           </p>
         </div>
 
@@ -574,7 +574,11 @@ export function Timeline({
                       return (
                         <div
                           key={overlapIndex}
-                          title={`Overlap: multiple records are valid at the same time (${overlap.from} → ${overlap.to})`}
+                          title={
+                            matchingIssue?.explanation
+                              ? `${matchingIssue.title}: ${matchingIssue.explanation} (${overlap.from} → ${overlap.to})`
+                              : `Overlap: multiple records overlap (${overlap.from} → ${overlap.to})`
+                          }
                           onClick={(event) => {
                             event.stopPropagation();
                           

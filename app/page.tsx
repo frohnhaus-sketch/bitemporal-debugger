@@ -557,8 +557,9 @@ export default function Home() {
         gaps: activeGaps,
         overlapMarkers: activeOverlapMarkers,
         drifts: activeDrifts,
+        validationMode,
       }),
-    [activeJoinIssues, activeGaps, activeOverlapMarkers, activeDrifts]
+    [activeJoinIssues, activeGaps, activeOverlapMarkers, activeDrifts, validationMode]
   );
 
   function buildSourceSummary(sourceName: string) {
@@ -616,6 +617,7 @@ export default function Home() {
     gaps,
     overlapMarkers,
     drifts,
+    validationMode,
   });
 
   function selectTemporalIssue(issue: TemporalIssue | null) {
@@ -791,7 +793,7 @@ export default function Home() {
               color: "#ffffff",
             }}
           >
-            Debug Historical Data Models in Minutes
+            Understand and Debug Historical Data Models
           </h1>
           
           <p
@@ -803,7 +805,7 @@ export default function Home() {
               color: "#cbd5e1",
             }}
           >
-            Find gaps, overlaps and broken temporal joins before they reach production.
+            Identify historical modeling risks, temporal join issues and snapshot reproducibility problems before they reach production.
           </p>
           
           <p
@@ -1151,16 +1153,27 @@ export default function Home() {
                         marginBottom: 8,
                       }}
                     >
-                      Recommended Historical Modeling Pattern
+                      Recommended Modeling Strategy
                     </div>
 
                     <div
                       style={{
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: 800,
+                        lineHeight: 1.25,
                       }}
                     >
-                      {relationshipAnalysis?.recommendedPattern}
+                      {relationshipAnalysis?.recommendation}
+                    </div>
+                    
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontSize: 13,
+                        color: "#64748b",
+                      }}
+                    >
+                      Pattern: <strong>{relationshipAnalysis?.recommendedPattern}</strong>
                     </div>
                   </div>
 
@@ -1200,28 +1213,6 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.7,
-                      color: "#64748b",
-                      marginBottom: 8,
-                      marginTop: 16,
-                    }}
-                  >
-                    Why this pattern?
-                  </div>
-                <p
-                  style={{
-                    margin: 0,
-                    color: "#334155",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {relationshipAnalysis?.recommendation}
-                </p>
                 {historicalPatterns.length > 0 && (
                   <div
                     style={{

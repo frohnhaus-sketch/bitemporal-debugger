@@ -12,8 +12,15 @@ export function buildTemporalIssues(params: {
   gaps: GapIssue[];
   overlapMarkers: OverlapIssue[];
   drifts?: DriftSummary[];
+  validationMode?: "monotemporal" | "bitemporal";
 }): TemporalIssue[] {
-  const { joinIssues, gaps, overlapMarkers, drifts = [] } = params;
+  const {
+    joinIssues,
+    gaps,
+    overlapMarkers,
+    drifts = [],
+    validationMode = "monotemporal",
+  } = params;
 
   const normalizedJoinIssues: TemporalIssue[] = joinIssues.map(
     (issue, index) => ({
@@ -91,7 +98,9 @@ export function buildTemporalIssues(params: {
       title: "Overlapping historization",
 
       explanation:
-        "Multiple rows overlap in valid-time. Historical joins may become nondeterministic.",
+        validationMode === "bitemporal"
+          ? "Multiple rows overlap in both valid-time and visible-time. Historical joins may become nondeterministic."
+          : "Multiple rows overlap in valid-time. Historical joins may become nondeterministic.",
 
       originalIssue: {
         kind: "overlap",
