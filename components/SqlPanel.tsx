@@ -319,6 +319,14 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
               cursor: "pointer",
               fontWeight: 700,
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px)";
+              e.currentTarget.style.background = "#020617";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.background = "#0f172a";
+            }}
           >
             Copy modeling report
           </button>
@@ -537,9 +545,10 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
             marginTop: 10,
             padding: "8px 12px",
             borderRadius: 8,
-            background: sql ? "#0f172a" : "#e2e8f0",
-            color: sql ? "#ffffff" : "#64748b",
-            border: "none",
+            background: "#e2e8f0",
+            color: "#334155",
+            border: "1px solid #cbd5e1",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
             cursor: sql ? "pointer" : "not-allowed",
             fontWeight: 700,
             transition: "all 0.15s ease",
@@ -549,7 +558,7 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
             e.currentTarget.style.transform = "translateY(-1px)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.transform = "translateY(0)";         
           }}
         >
           Copy Snapshot Filter

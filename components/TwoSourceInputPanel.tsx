@@ -1,5 +1,4 @@
-import type React from "react";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 
 type TwoSourceInputPanelProps = {
   fileNameA: string;
@@ -42,7 +41,20 @@ export function TwoSourceInputPanel({
 }: TwoSourceInputPanelProps) {
   const canAnalyze = Boolean(inputA.trim() && inputB.trim());
   const [dragTarget, setDragTarget] = useState<string | null>(null);
-
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const updateIsMobile = () => {
+      setIsMobile(window.innerWidth < 900);
+    };
+  
+    updateIsMobile();
+    window.addEventListener("resize", updateIsMobile);
+  
+    return () => {
+      window.removeEventListener("resize", updateIsMobile);
+    };
+  }, []);
   const featureCards = [
     {
       icon: "⌕",
@@ -95,7 +107,12 @@ export function TwoSourceInputPanel({
   ];
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div
+      style={{
+        marginBottom: 16,
+        padding: isMobile ? "0 12px" : undefined,
+      }}
+    >
       <div
         style={{
           display: "flex",
@@ -123,33 +140,72 @@ export function TwoSourceInputPanel({
             flexWrap: "wrap",
           }}
         >
-          <button
-            onClick={onLoadExample}
+        <button
+          onClick={onLoadExample}
+          style={{
+            height: 58,
+            minWidth: 240,
+            padding: "0 26px",
+            borderRadius: 12,
+          
+            background:
+              "linear-gradient(180deg, #1f2937 0%, #111827 100%)",
+          
+            border: "1px solid rgba(34,197,94,0.45)",
+          
+            boxShadow:
+              "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 12px rgba(0,0,0,0.18)",
+          
+            color: "#ffffff",
+            fontWeight: 700,
+            fontSize: 15,
+          
+            cursor: "pointer",
+          
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          
+            transition: "all 0.18s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+          
+            e.currentTarget.style.border =
+              "1px solid rgba(52,211,153,0.75)";
+          
+            e.currentTarget.style.boxShadow =
+              "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(34,197,94,0.12)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+          
+            e.currentTarget.style.border =
+              "1px solid rgba(34,197,94,0.45)";
+          
+            e.currentTarget.style.boxShadow =
+              "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 12px rgba(0,0,0,0.18)";
+          }}
+        >
+          <span
             style={{
-              height: 56,
-              minWidth: 230,
-              padding: "0 24px",
-              borderRadius: 12,
-              border: "1px solid #15803d",
-              background: "#16a34a",
-              color: "#ffffff",
-              fontWeight: 800,
-              fontSize: 15,
-              cursor: "pointer",
-              boxShadow: "0 8px 24px rgba(22,163,74,0.24)",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
+              fontSize: 18,
+              lineHeight: 1,
+              opacity: 0.95,
             }}
           >
-            <span style={{ fontSize: 22, lineHeight: 1 }}>🧪</span>
-            Run Example Assessment
-          </button>
+            🧪
+          </span>
+          
+          Run Example
+        </button>
         </div>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gridTemplateColumns:
+              isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
             gap: 12,
           }}
         >
@@ -256,14 +312,15 @@ export function TwoSourceInputPanel({
 Uploaded datasets remain in your session and are not stored.</strong>
         </div>
 
-      <div
-        style={{
-          marginTop: 8,
-          display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-          gap: 20,
-        }}
-      >
+        <div
+          style={{
+            marginTop: 8,
+            display: "grid",
+            gridTemplateColumns:
+              isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
+            gap: 20,
+          }}
+        >
         {sources.map((source) => (
           <div
             key={source.label}
@@ -271,7 +328,8 @@ Uploaded datasets remain in your session and are not stored.</strong>
               background: "#020617",
               border: "1px solid #334155",
               borderRadius: 16,
-              padding: 18,
+              padding:
+                isMobile ? 14 : 18,
               boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
             }}
           >
@@ -331,9 +389,11 @@ Uploaded datasets remain in your session and are not stored.</strong>
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.background = "#020617";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.background = "#0f172a";
                     }}
                   >
                     Copy A → B
@@ -476,6 +536,14 @@ Uploaded datasets remain in your session and are not stored.</strong>
                   fontWeight: 800,
                   whiteSpace: "nowrap",
                 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.background = "#020617";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.background = "#0f172a";
+                }}
               >
                 Browse
                 <input
@@ -529,7 +597,7 @@ Uploaded datasets remain in your session and are not stored.</strong>
       <div
         style={{
           marginTop: 12,
-          marginBottom: 12,
+          marginBottom: 24,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -551,26 +619,62 @@ Uploaded datasets remain in your session and are not stored.</strong>
           disabled={!canAnalyze}
           style={{
             height: 60,
-            minWidth: 300,
-            padding: "0 24px",
+            width: "100%",
+            maxWidth: 420,
+            padding: "0 26px",
             borderRadius: 12,
-            background: canAnalyze ? "#1d4ed8" : "#1e293b",
+          
+            background: canAnalyze
+              ? "linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)"
+              : "#1e293b",
+          
             color: "#ffffff",
-            border: "1px solid rgba(255,255,255,0.08)",
-            fontWeight: 800,
-            fontSize: 18,
+          
+            border: canAnalyze
+              ? "1px solid rgba(147,197,253,0.35)"
+              : "1px solid rgba(255,255,255,0.08)",
+          
+            fontWeight: 750,
+            fontSize: 17,
+          
             cursor: canAnalyze ? "pointer" : "not-allowed",
             opacity: canAnalyze ? 1 : 0.58,
+          
             boxShadow: canAnalyze
-              ? "0 8px 24px rgba(37,99,235,0.24)"
+              ? "0 1px 0 rgba(255,255,255,0.12) inset, 0 8px 24px rgba(37,99,235,0.22)"
               : "none",
+          
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 10,
+          
+            transition: "all 0.18s ease",
+          }}
+          onMouseEnter={(e) => {
+            if (!canAnalyze) return;
+          
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.background =
+              "linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)";
+            e.currentTarget.style.border =
+              "1px solid rgba(191,219,254,0.50)";
+            e.currentTarget.style.boxShadow =
+              "0 1px 0 rgba(255,255,255,0.14) inset, 0 10px 28px rgba(37,99,235,0.28)";
+          }}
+          onMouseLeave={(e) => {
+            if (!canAnalyze) return;
+          
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.background =
+              "linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)";
+            e.currentTarget.style.border =
+              "1px solid rgba(147,197,253,0.35)";
+            e.currentTarget.style.boxShadow =
+              "0 1px 0 rgba(255,255,255,0.12) inset, 0 8px 24px rgba(37,99,235,0.22)";
           }}
         >
-          <span style={{ fontSize: 24 }}>▷</span>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>▷</span>
           Analyze Sources
         </button>
       </div>

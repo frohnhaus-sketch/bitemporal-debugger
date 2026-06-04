@@ -79,6 +79,8 @@ export default function Home() {
   const [sql, setSql] = useState("")
   const [validationMode, setValidationMode] = useState<ValidationMode>("monotemporal");
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [showAssessmentGenerated, setShowAssessmentGenerated] =
+    useState(false);
   const [sourcePatterns, setSourcePatterns] = useState<{
     sourceA: SourcePatternResult | null;
     sourceB: SourcePatternResult | null;
@@ -88,7 +90,7 @@ export default function Home() {
   });
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
-  const sourceSummaryRef = useRef<HTMLDivElement>(null);
+  const assessmentRef = useRef<HTMLDivElement>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function scheduleHighlightRow(row: HighlightTarget | null) {
@@ -240,6 +242,16 @@ export default function Home() {
     updateMappingsFromInputs(EXAMPLE_A, EXAMPLE_B);
 
     resetAnalysis();
+
+    setTimeout(() => {
+      analyzeTwoSourcesFromValues(
+        EXAMPLE_A,
+        EXAMPLE_B,
+        "Source_A",
+        "Source_B",
+        validationMode
+      );
+    }, 0);
   }
 
   function copySourceAToB() {
@@ -318,6 +330,41 @@ export default function Home() {
     return REQUIRED_COLUMNS.every((column) =>
       Object.prototype.hasOwnProperty.call(parsedRows[0], column)
     );
+  }
+
+  function slowScrollTo(element: HTMLElement) {
+    const target =
+      element.getBoundingClientRect().top +
+      window.scrollY -
+      20;
+  
+    const start = window.scrollY;
+    const distance = target - start;
+  
+    const duration = 1200; // 1.2 Sekunden
+  
+    let startTime: number | null = null;
+  
+    function animate(currentTime: number) {
+      if (!startTime) startTime = currentTime;
+    
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+    
+      const ease =
+        1 - Math.pow(1 - progress, 3);
+    
+      window.scrollTo(
+        0,
+        start + distance * ease
+      );
+    
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    }
+  
+    requestAnimationFrame(animate);
   }
 
   function analyzeTwoSourcesFromValues(
@@ -417,11 +464,16 @@ export default function Home() {
     setJoinIssues(computedJoinIssues);
     setHasAnalyzed(true);
 
+    setShowAssessmentGenerated(true);
+      
     setTimeout(() => {
-      sourceSummaryRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+      setShowAssessmentGenerated(false);
+    }, 2500);
+
+    setTimeout(() => {
+      if (assessmentRef.current) {
+        slowScrollTo(assessmentRef.current);
+      }
     }, 100);
   }
 
@@ -935,6 +987,12 @@ export default function Home() {
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                     }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }}
                   >
                     {showMapping ? (
                       <>
@@ -1077,7 +1135,23 @@ export default function Home() {
           }
         />
         {hasAnalyzed && (
-          <div ref={sourceSummaryRef}>
+          <div ref={assessmentRef}>
+            {showAssessmentGenerated && (
+              <div
+                style={{
+                  marginBottom: 16,
+                  padding: "12px 16px",
+                  borderRadius: 10,
+                  background: "#ecfdf5",
+                  border: "1px solid #22c55e",
+                  color: "#166534",
+                  fontWeight: 700,
+                  textAlign: "center",
+                }}
+              >
+                ✓ Historical Modeling Assessment ready
+              </div>
+            )}
             {sourcePatterns.sourceA && sourcePatterns.sourceB && (
               <>
               <section
@@ -1526,9 +1600,9 @@ export default function Home() {
                       style={{
                         padding: "9px 13px",
                         borderRadius: 8,
-                        border: "1px solid #475569",
-                        background: "#1e293b",
-                        color: "#e2e8f0",
+                        background: "#e2e8f0",
+                        color: "#334155",
+                        border: "1px solid #cbd5e1",
                         cursor: "pointer",
                         fontWeight: 700,
                         fontSize: 13,

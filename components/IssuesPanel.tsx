@@ -106,6 +106,12 @@ export function IssuesPanel({
           fontSize: 12,
           lineHeight: 1.35,
         }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-1px)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
       >
         <div style={{ fontWeight: 800 }}>{issue.title}</div>
 
@@ -246,6 +252,12 @@ export function IssuesPanel({
                     lineHeight: 1,
                     flexShrink: 0,
                   }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
                 >
                   {kpi.value}
                 </div>
@@ -345,6 +357,12 @@ export function IssuesPanel({
                       fontFamily: "inherit",
                       fontSize: 12,
                       lineHeight: 1.35,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
                     <strong>

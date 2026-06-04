@@ -240,6 +240,12 @@ export function Timeline({
               fontSize: 12,
               fontWeight: 700,
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
           >
             Clear investigation focus
           </button>
