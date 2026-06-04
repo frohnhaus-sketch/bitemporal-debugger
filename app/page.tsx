@@ -1,6 +1,7 @@
 "use client";
 import {
   analyzeSourceRelationship,
+  detectHistoricalPatterns,
 } from "@/lib/sourceRelationships";
 import { buildTemporalIssues } from "../lib/temporalIssues";
 import type { TemporalIssue } from "../lib/types";
@@ -715,6 +716,12 @@ export default function Home() {
         )
       : null;
 
+  const historicalPatterns = detectHistoricalPatterns(
+    joinAmbiguityCount,
+    joinGapCount,
+    drifts.length
+  );
+
   function getComplexityStyle(complexity: "Low" | "Medium" | "High") {
     if (complexity === "Low") {
       return {
@@ -1215,6 +1222,86 @@ export default function Home() {
                 >
                   {relationshipAnalysis?.recommendation}
                 </p>
+                {historicalPatterns.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 20,
+                      paddingTop: 16,
+                      borderTop: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.7,
+                        color: "#64748b",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Detected Historical Modeling Patterns
+                    </div>
+
+                    {historicalPatterns.map((pattern) => {
+                      const isPossiblePattern =
+                        pattern.name.startsWith("Possible");
+                    
+                      return (
+                        <div
+                          key={pattern.name}
+                          style={{
+                            background: isPossiblePattern
+                              ? "#fffbeb"
+                              : "#fef2f2",
+                            border: isPossiblePattern
+                              ? "1px solid #fde68a"
+                              : "1px solid #fecaca",
+                            borderRadius: 10,
+                            padding: 12,
+                            marginBottom: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontWeight: 800,
+                              marginBottom: 4,
+                              color: isPossiblePattern
+                                ? "#92400e"
+                                : "#b91c1c",
+                            }}
+                          >
+                            {pattern.name}
+                          </div>
+                          
+                          <div
+                            style={{
+                              fontSize: 13,
+                              color: "#334155",
+                            }}
+                          >
+                          <div
+                            style={{
+                              marginBottom: 8,
+                              fontSize: 12,
+                              color: "#64748b",
+                            }}
+                          >
+                            <strong>Evidence</strong>
+                          
+                            {pattern.evidence.map((item) => (
+                              <div key={item}>
+                                • {item}
+                              </div>
+                            ))}
+                          </div>
+                            {pattern.description}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 </div>
                 <details
                   style={{

@@ -101,3 +101,41 @@ export function analyzeSourceRelationship(
       };
   }
 }
+export type HistoricalPattern = {
+  name: string;
+  description: string;
+  evidence: string[];
+};
+
+export function detectHistoricalPatterns(
+  joinAmbiguities: number,
+  joinGaps: number,
+  visibilityLagCount: number
+): HistoricalPattern[] {
+  const patterns: HistoricalPattern[] = [];
+
+  if (joinAmbiguities > 0) {
+    patterns.push({
+      name: "Historical Match Ambiguity",
+      description:
+        "Multiple valid historical matches detected. This may lead to duplicate rows and inconsistent reporting.",
+      evidence: [
+        `${joinAmbiguities} ambiguous joins detected`,
+      ],
+    });
+  }
+
+  if (joinGaps > 0 && visibilityLagCount > 0) {
+    patterns.push({
+      name: "Possible Late Arriving Dimension",
+      description:
+        "Missing historical matches combined with visibility lag detected. This may indicate dimensions becoming available after related facts.",
+      evidence: [
+        `${joinGaps} join gaps detected`,
+        `${visibilityLagCount} visibility lag findings detected`,
+      ],
+    });
+  }
+
+  return patterns;
+}
