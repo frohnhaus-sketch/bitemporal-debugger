@@ -3,6 +3,7 @@ import type {
   TemporalIssue,
 } from "@/lib/types";
 import { track } from "@/lib/analytics";
+import { useState } from "react";
 import { explainJoinIssue } from "@/lib/explainJoinIssue";
 import { IssueWhyPanel } from "./IssueWhyPanel";
 
@@ -71,7 +72,8 @@ export function SqlPanel({
   selectedTemporalIssue,
 }: SqlPanelProps) {
   const explanation = selectedIssue ? explainJoinIssue(selectedIssue) : null;
-
+  const [copiedSql, setCopiedSql] = useState(false);
+  const [copiedReport, setCopiedReport] = useState(false);
   const temporalGuidance =
     selectedTemporalIssue && !selectedIssue
       ? getTemporalGuidance(selectedTemporalIssue)
@@ -309,32 +311,47 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
           <button
             onClick={() => {
               const report = buildModelingReport();
+            
               if (!report) return;
-
+            
               track("Modeling Report Copied");
               navigator.clipboard.writeText(report);
+            
+              setCopiedReport(true);
+            
+              setTimeout(() => {
+                setCopiedReport(false);
+              }, 1600);
             }}
             style={{
               display: "block",
               marginTop: 14,
               padding: "10px 14px",
               borderRadius: 8,
-              background: "#0f172a",
-              color: "#ffffff",
-              border: "none",
+              background: copiedReport ? "#dcfce7" : "#0f172a",
+              color: copiedReport ? "#166534" : "#ffffff",
+              border: copiedReport
+                ? "1px solid #86efac"
+                : "none",
               cursor: "pointer",
               fontWeight: 700,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.background = "#020617";
+            
+              if (!copiedReport) {
+                e.currentTarget.style.background = "#020617";
+              }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.background = "#0f172a";
+            
+              if (!copiedReport) {
+                e.currentTarget.style.background = "#0f172a";
+              }
             }}
           >
-            Copy modeling report
+            {copiedReport ? "✓ Copied" : "Copy modeling report"}
           </button>
         </>
       )}
@@ -471,33 +488,48 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
           <button
             onClick={() => {
               const report = buildModelingReport();
+            
               if (!report) return;
             
               track("Modeling Report Copied");
               navigator.clipboard.writeText(report);
+            
+              setCopiedReport(true);
+            
+              setTimeout(() => {
+                setCopiedReport(false);
+              }, 1600);
             }}
             style={{
               display: "block",
               marginTop: 14,
               padding: "10px 14px",
               borderRadius: 8,
-              background: "#0f172a",
-              color: "#ffffff",
-              border: "none",
+              background: copiedReport ? "#dcfce7" : "#0f172a",
+              color: copiedReport ? "#166534" : "#ffffff",
+              border: copiedReport
+                ? "1px solid #86efac"
+                : "none",
               cursor: "pointer",
               fontWeight: 700,
               transition: "all 0.15s ease",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.background = "#020617";
+            
+              if (!copiedReport) {
+                e.currentTarget.style.background = "#020617";
+              }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.background = "#0f172a";
+            
+              if (!copiedReport) {
+                e.currentTarget.style.background = "#0f172a";
+              }
             }}
           >
-            Copy modeling report
+            {copiedReport ? "✓ Copied" : "Copy modeling report"}
           </button>
         </>
       )}
@@ -544,18 +576,25 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
         </pre>
 
         <button
-          onClick={() => {
-            track("SQL Copied");
+          onClick={async () => {
             if (!sql) return;
-            navigator.clipboard.writeText(sql);
+          
+            track("SQL Copied");
+            await navigator.clipboard.writeText(sql);
+          
+            setCopiedSql(true);
+          
+            setTimeout(() => {
+              setCopiedSql(false);
+            }, 1600);
           }}
           disabled={!sql}
           style={{
             marginTop: 10,
             padding: "8px 12px",
             borderRadius: 8,
-            background: "#e2e8f0",
-            color: "#334155",
+            background: copiedSql ? "#dcfce7" : "#e2e8f0",
+            color: copiedSql ? "#166534" : "#334155",
             border: "1px solid #cbd5e1",
             boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
             cursor: sql ? "pointer" : "not-allowed",
@@ -563,14 +602,20 @@ Interval: ${selectedTemporalIssue.from ?? "n/a"} → ${
             transition: "all 0.15s ease",
           }}
           onMouseEnter={(e) => {
-            if (!sql) return;
+            if (!sql || copiedSql) return;
+          
             e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.background = "#cbd5e1";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";         
+            e.currentTarget.style.transform = "translateY(0)";
+          
+            if (!copiedSql) {
+              e.currentTarget.style.background = "#e2e8f0";
+            }
           }}
         >
-          Copy Snapshot Filter
+          {copiedSql ? "✓ Copied" : "Copy Snapshot Filter"}
         </button>
       </div>
     </div>
