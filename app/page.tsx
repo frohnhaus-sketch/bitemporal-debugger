@@ -827,7 +827,14 @@ export default function Home() {
         color: "#0f172a",
       }}
     >
-    <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 1280,
+          margin: "0 auto",
+          boxSizing: "border-box",
+        }}
+      >
       <section style={{ marginBottom: -12 }}>
         <div style={{ marginBottom: 28 }}>
           <div
@@ -1166,6 +1173,8 @@ export default function Home() {
               <>
               <section
                 style={{
+                  width: "100%",
+                  boxSizing: "border-box",
                   background: "#ffffff",
                   border: "1px solid #e5e7eb",
                   borderRadius: 16,
@@ -1544,7 +1553,14 @@ export default function Home() {
                   </div>
                 </details>
               </section>
-            <div style={{ marginBottom: 18, marginTop: 18 }}>
+              <div
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  marginBottom: 18,
+                  marginTop: 18,
+                }}
+              >
               <details
                 style={{
                   background: "#ffffff",
@@ -1698,6 +1714,8 @@ export default function Home() {
             <div
               ref={analysisRef}
               style={{
+                width: "100%",
+                boxSizing: "border-box",
                 display: "grid",
                 gridTemplateColumns: isMobile
                   ? "1fr"
@@ -1767,6 +1785,8 @@ export default function Home() {
 
             <div
               style={{
+                width: "100%",
+                boxSizing: "border-box",
                 display: "grid",
                 gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                 gap: 20,
