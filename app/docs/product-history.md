@@ -15,3 +15,16 @@ Released: June 2026
 ## Goal
 
 Move from temporal validation to historical modeling guidance.
+
+-----------------------------------
+Historical Modeling Assessment v1.1
+
+- Historical Modeling Assessment
+- Source Relationship Analysis
+- Recommended Modeling Strategy
+- Historical Pattern Detection
+- Historical Match Ambiguity
+- Possible Late Arriving Dimension
+- Improved Landing Page Messaging
+- Bitemporal overlap explanations
+- Valid-Time timeline clarification

@@ -98,7 +98,7 @@ export default function Home() {
 
     highlightTimeoutRef.current = setTimeout(() => {
       setHighlightedRow(row);
-    }, 400);
+    }, 300);
   }
 
   function loadCsvFile(
@@ -1318,8 +1318,7 @@ export default function Home() {
                     padding: 16,
                     color: "#0f172a",
                     boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                    marginTop: 18,
-                    marginBottom: 18,
+                    marginTop: 8,
                   }}
                 >
                   <summary

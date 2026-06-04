@@ -121,6 +121,7 @@ export function DataPreview({
   const [open, setOpen] = useState(true);
   const [limit, setLimit] = useState(10);
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null);
+  const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (forceOpen) setOpen(true);
@@ -134,6 +135,10 @@ export function DataPreview({
 
   useEffect(() => {
     setLimit(10);
+  }, [rowSignature]);
+
+  useEffect(() => {
+    setSelectedRowKey(null);
   }, [rowSignature]);
 
   const columns = useMemo(() => {
@@ -254,6 +259,7 @@ export function DataPreview({
                   const hasIssue = Boolean(joinIssue || overlapIssue);
                   const rowKey = `${row.source}-${row.entity_id}-${row.valid_from}-${row.valid_to}-${originalIndex}`;
                   const isHovered = hoveredRowKey === rowKey;
+                  const isSelectedRow = selectedRowKey === rowKey;
 
                   return (
                   <tr
@@ -261,20 +267,41 @@ export function DataPreview({
                     onMouseEnter={() => {
                       setHoveredRowKey(rowKey);
                     
+                    if (!selectedRowKey) {
                       onHighlightRow?.({
                         entity_id: String(row.entity_id),
                         source: row.source,
                         valid_from: row.valid_from,
                         valid_to: row.valid_to,
                       });
+                    }
                     }}
                     onMouseLeave={() => {
                       setHoveredRowKey(null);
+                    
+                      if (!selectedRowKey) {
+                        onHighlightRow?.(null);
+                      }
                     }}
                     onClick={() => {
+                      const nextSelectedRowKey =
+                        selectedRowKey === rowKey ? null : rowKey;
+                    
+                      setSelectedRowKey(nextSelectedRowKey);
+                    
+                      onHighlightRow?.(
+                        nextSelectedRowKey
+                          ? {
+                              entity_id: String(row.entity_id),
+                              source: row.source,
+                              valid_from: row.valid_from,
+                              valid_to: row.valid_to,
+                            }
+                          : null
+                      );
+                    
                       if (joinIssue) {
                         onSelectIssue?.(joinIssue);
-                        return;
                       }
                     }}
                       title={
@@ -286,8 +313,10 @@ export function DataPreview({
                       }
                       style={{
                         color: "#e2e8f0",
-                        cursor: joinIssue ? "pointer" : "default",
-                        background: isHovered
+                        cursor: "pointer",
+                        background: isSelectedRow
+                          ? "rgba(59, 130, 246, 0.26)"
+                          : isHovered
                           ? "rgba(56, 189, 248, 0.14)"
                           : exactHighlighted
                           ? "rgba(56, 189, 248, 0.22)"
@@ -304,7 +333,9 @@ export function DataPreview({
                           : sameEntityHighlighted
                           ? "rgba(56, 189, 248, 0.08)"
                           : "transparent",
-                          outline: exactHighlighted
+                          outline: isSelectedRow
+                            ? "2px solid #3b82f6"
+                            : exactHighlighted
                             ? "2px solid #38bdf8"
                             : sameEntityHighlighted
                             ? "1px solid rgba(56, 189, 248, 0.55)"
