@@ -413,6 +413,17 @@ export default function Home() {
         sourceA: sourceAName,
         sourceB: sourceBName,
         mode,
+      
+        rowCountA: parsedA.rows.length,
+        rowCountB: parsedB.rows.length,
+      
+        columnsA: [...new Set(
+          parsedA.headerMappings.map((m) => m.original)
+        )].slice(0, 20),
+        
+        columnsB: [...new Set(
+          parsedB.headerMappings.map((m) => m.original)
+        )].slice(0, 20),
       });
 
       alert(
