@@ -1,5 +1,5 @@
 import type { AggregatedJoinabilityIssue, TemporalIssue } from "@/lib/types";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { useState } from "react";
 import SelectedIssueCard from "./SelectedIssueCard";
 
