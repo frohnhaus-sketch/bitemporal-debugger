@@ -47,13 +47,14 @@ const EXAMPLE_A = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 
 const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 1,object_active,2024-01-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00
-2,object_active,2024-04-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+2,object_active,2024-04-01,2024-12-31,2025-01-01T00:00:00,9999-12-31T00:00:00
 3,object_v1,2024-01-01,2024-12-31,2024-01-01T00:00:00,2024-12-31T00:00:00
 3,object_v2,2024-01-01,2024-12-31,2025-01-01T00:00:00,9999-12-31T00:00:00
 5,object_v1,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
 5,object_v2,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
+  const [guidedDemoStep, setGuidedDemoStep] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function Home() {
 
     return () => window.removeEventListener("resize", update);
   }, []);
+  const [demoBeforeCount, setDemoBeforeCount] = useState<number | null>(null);
   const [showMapping, setShowMapping] = useState(false);
   const [maxColumns, setMaxColumns] = useState<number | "all">(8);
   const [fileNameA, setFileNameA] = useState("");
@@ -90,8 +92,16 @@ export default function Home() {
   const [sql, setSql] = useState("")
   const [validationMode, setValidationMode] = useState<ValidationMode>("monotemporal");
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
-  const [showAssessmentGenerated, setShowAssessmentGenerated] =
-    useState(false);
+  const [showAssessmentGenerated, setShowAssessmentGenerated] = useState(false);
+  const [pendingScrollTarget, setPendingScrollTarget] =
+    useState<
+      | "validation"
+      | "findings"
+      | "guidedDemo"
+      | "validationContext"
+      | "snapshotActive"
+      | null
+    >(null);
   const [sourcePatterns, setSourcePatterns] = useState<{
     sourceA: SourcePatternResult | null;
     sourceB: SourcePatternResult | null;
@@ -99,19 +109,28 @@ export default function Home() {
     sourceA: null,
     sourceB: null,
   });
+  const guidedDemoRef = useRef<HTMLDivElement>(null);
+  const validationContextRef = useRef<HTMLDivElement>(null);
+  const snapshotActiveRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
   const assessmentRef = useRef<HTMLDivElement>(null);
-  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const validationResultTopRef = useRef<HTMLDivElement>(null);
+  const explanationRef = useRef<HTMLDivElement>(null);
 
   function scheduleHighlightRow(row: HighlightTarget | null) {
-    if (highlightTimeoutRef.current) {
-      clearTimeout(highlightTimeoutRef.current);
+    setHighlightedRow(row);
+  }
+
+  function highlightFindingEntity(issue: any | null) {
+    if (!issue || issue.isAggregated) {
+      scheduleHighlightRow(null);
+      return;
     }
 
-    highlightTimeoutRef.current = setTimeout(() => {
-      setHighlightedRow(row);
-    }, 300);
+    scheduleHighlightRow({
+      entity_id: String(issue.entity_id),
+    });
   }
 
   function loadCsvFile(
@@ -151,10 +170,6 @@ export default function Home() {
 
     reader.readAsText(file);
   }
-
-  useEffect(() => {
-    track("page_view");
-  }, []);
 
   const minDate = rows.length
     ? Math.min(...rows.map((r) => new Date(r.valid_from).getTime()))
@@ -239,10 +254,12 @@ export default function Home() {
     }
   }
 
-  function loadExample() {
+  function loadExample(isGuidedDemo = false) {
     track("example_loaded", {
       type: "default_example"
     });
+
+    setPendingScrollTarget(isGuidedDemo ? "guidedDemo" : "validation");
 
     setInputA(EXAMPLE_A);
     setInputB(EXAMPLE_B);
@@ -263,6 +280,21 @@ export default function Home() {
         validationMode
       );
     }, 0);
+  }
+
+  function loadGuidedDemo() {
+    track("guided_demo_started");
+
+    setDemoBeforeCount(null);
+    setGuidedDemoStep(1);
+    setSelectedIssue(null);
+    setSelectedTemporalIssue(null);
+    setAsOfDate("");
+    setVisibleAsOf("2024-01-02T00:00");
+    setSql("");
+    setPendingScrollTarget("findings");
+
+    loadExample(true);
   }
 
   function copySourceAToB() {
@@ -343,39 +375,21 @@ export default function Home() {
     );
   }
 
-  function slowScrollTo(element: HTMLElement) {
+  function scrollToElement(
+    element: HTMLElement | null,
+    offset = 90
+  ) {
+    if (!element) return;
+
     const target =
       element.getBoundingClientRect().top +
       window.scrollY -
-      20;
-  
-    const start = window.scrollY;
-    const distance = target - start;
-  
-    const duration = 1200; // 1.2 Sekunden
-  
-    let startTime: number | null = null;
-  
-    function animate(currentTime: number) {
-      if (!startTime) startTime = currentTime;
-    
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-    
-      const ease =
-        1 - Math.pow(1 - progress, 3);
-    
-      window.scrollTo(
-        0,
-        start + distance * ease
-      );
-    
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    }
-  
-    requestAnimationFrame(animate);
+      offset;
+
+    window.scrollTo({
+      top: Math.max(target, 0),
+      behavior: "smooth",
+    });
   }
 
   function analyzeTwoSourcesFromValues(
@@ -490,16 +504,11 @@ export default function Home() {
       
     setTimeout(() => {
       setShowAssessmentGenerated(false);
-    }, 2500);
-
-    setTimeout(() => {
-      if (assessmentRef.current) {
-        slowScrollTo(assessmentRef.current);
-      }
-    }, 100);
+    }, 4000);
   }
 
   function analyzeTwoSources() {
+    setGuidedDemoStep(null);
     track("analyze_clicked", {
       hasBothSources: !!inputA.trim() && !!inputB.trim(),
       hasUploadedA: !!fileNameA,
@@ -636,6 +645,47 @@ export default function Home() {
     [activeJoinIssues, activeGaps, activeOverlapMarkers, activeDrifts, validationMode]
   );
 
+  const activeMissingMatchCount = activeJoinIssues.filter(
+    (i) => i.type === "JOIN_GAP"
+  ).length;
+
+  const snapshotDriftDetected =
+    guidedDemoStep === 3 &&
+    demoBeforeCount !== null &&
+    activeMissingMatchCount !== demoBeforeCount;
+
+  const snapshotDriftIssue: TemporalIssue | null =
+    snapshotDriftDetected && demoBeforeCount !== null
+      ? {
+          id: "snapshot-drift-guided-demo",
+          type: "SNAPSHOT_DRIFT",
+          severity: "medium",
+          title: "Snapshot Drift",
+          source: "Validation Snapshot",
+          entity_id: "snapshot",
+          from: "earlier visible-time",
+          to: visibleAsOf || "later visible-time",
+          explanation: `Missing Matches changed from ${demoBeforeCount} to ${activeMissingMatchCount} after switching visible-time.`,
+        }
+      : null;
+
+  const activeTemporalIssuesWithSnapshotDrift = snapshotDriftIssue
+    ? [snapshotDriftIssue, ...activeTemporalIssues]
+    : activeTemporalIssues;
+  
+  const hasSelectedFinding =
+    selectedIssue !== null || selectedTemporalIssue !== null;
+
+  const hasActiveFindings = activeTemporalIssuesWithSnapshotDrift.length > 0;
+
+  const sourceRecordRowsA = activeRows.filter(
+    (r) => r.source === sourceNameA
+  );
+
+  const sourceRecordRowsB = activeRows.filter(
+    (r) => r.source === sourceNameB
+  );
+
   function buildSourceSummary(sourceName: string) {
     const sourceRows = activeRows.filter((r) => r.source === sourceName);
 
@@ -696,6 +746,7 @@ export default function Home() {
 
   function selectTemporalIssue(issue: TemporalIssue | null) {
     setSelectedTemporalIssue(issue);
+    highlightFindingEntity(issue);
 
     if (issue) {
       track("issue_selected", {
@@ -713,10 +764,20 @@ export default function Home() {
     } else {
       setSelectedIssue(null);
     }
+
+    if (!guidedDemoStep) {
+      setTimeout(() => {
+        explanationRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    }
   }
 
   function selectJoinIssue(issue: AggregatedJoinabilityIssue | null) {
     setSelectedIssue(issue);
+    highlightFindingEntity(issue);
 
     if (issue) {
       track("join_issue_selected", {
@@ -741,6 +802,15 @@ export default function Home() {
       ) ?? null;
 
     setSelectedTemporalIssue(matchingTemporalIssue);
+
+    if (!guidedDemoStep) {
+      setTimeout(() => {
+        explanationRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    }
   }
 
   function generateSQL() {
@@ -776,6 +846,44 @@ export default function Home() {
   useEffect(() => {
     generateSQL();
   }, [asOfDate, visibleAsOf]);
+
+  useEffect(() => {
+    if (!hasAnalyzed || !pendingScrollTarget) return;
+
+    const timeout = window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        const target =
+          pendingScrollTarget === "guidedDemo"
+            ? guidedDemoRef.current
+            : pendingScrollTarget === "validationContext"
+            ? validationContextRef.current
+            : pendingScrollTarget === "snapshotActive"
+            ? snapshotActiveRef.current
+            : pendingScrollTarget === "findings"
+            ? analysisRef.current
+            : validationResultTopRef.current;
+
+        if (!target) return;
+
+        scrollToElement(target, 10);
+
+        setPendingScrollTarget(null);
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [hasAnalyzed, pendingScrollTarget]);
+
+  useEffect(() => {
+    if (
+      guidedDemoStep === 1 &&
+      (selectedIssue || selectedTemporalIssue)
+    ) {
+      track("guided_demo_finding_selected");
+      setGuidedDemoStep(2);
+      setPendingScrollTarget("validationContext");
+    }
+  }, [guidedDemoStep, selectedIssue, selectedTemporalIssue]);
 
   const joinGapCount = joinIssues.filter((i) => i.type === "JOIN_GAP").length;
   const joinAmbiguityCount = joinIssues.filter(
@@ -829,6 +937,34 @@ export default function Home() {
     ? getComplexityStyle(relationshipAnalysis.complexity)
     : null;
 
+  const findingMetricNumberStyle = {
+    fontSize: 24,
+    fontWeight: 900,
+    lineHeight: 1,
+  };
+
+  const findingMetricLabelStyle = {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  };
+
+  function findingMetricStyle(
+    background: string,
+    border: string,
+    color: string
+  ) {
+    return {
+      padding: 14,
+      borderRadius: 12,
+      background,
+      border: `1px solid ${border}`,
+      color,
+    };
+  }
+
   return (
     <main
       style={{
@@ -874,7 +1010,9 @@ export default function Home() {
               color: "#ffffff",
             }}
           >
-            Validate Historical Data Models Before They Reach Production
+            Build Historical Models.
+            Validate Them.
+            Deploy With Confidence.
           </h1>
           
           <p
@@ -886,9 +1024,9 @@ export default function Home() {
               color: "#cbd5e1",
             }}
           >
-            Identify historical modeling risks, temporal join issues and snapshot reproducibility problems before they reach production.
+            Validate historical joins, SCD2-style sources and snapshot behavior before your data model reaches production.
           </p>
-          
+
           <p
             style={{
               margin: "8px 0 18px",
@@ -911,11 +1049,13 @@ export default function Home() {
           inputA={inputA}
           inputB={inputB}
           setInputA={(value) => {
+            setGuidedDemoStep(null);
             setInputA(value);
             if (!value.trim()) resetAnalysis();
             updateMappingForSourceA(value);
           }}
           setInputB={(value) => {
+            setGuidedDemoStep(null);
             setInputB(value);
             if (!value.trim()) resetAnalysis();
             updateMappingForSourceB(value);
@@ -925,7 +1065,8 @@ export default function Home() {
           setSourceNameA={setSourceNameA}
           setSourceNameB={setSourceNameB}
           onAnalyze={analyzeTwoSources}
-          onLoadExample={loadExample}
+          onLoadExample={() => loadExample(false)}
+          onLoadGuidedDemo={loadGuidedDemo}
           onCopyAtoB={copySourceAToB}
           analysisModeControl={
             <div>
@@ -1165,41 +1306,54 @@ export default function Home() {
         />
         {hasAnalyzed && (
           <div ref={assessmentRef}>
-            {showAssessmentGenerated && (
-              <div
-                style={{
-                  marginBottom: 16,
-                  padding: "12px 16px",
-                  borderRadius: 10,
-                  background: "#ecfdf5",
-                  border: "1px solid #22c55e",
-                  color: "#166534",
-                  fontWeight: 700,
-                  textAlign: "center",
-                }}
-              >
-                ✓ Validation Complete
-              </div>
-            )}
+            <div
+              ref={validationResultTopRef}
+              style={{
+                scrollMarginTop: 96,
+                marginBottom: 16,
+                padding: showAssessmentGenerated ? "12px 16px" : "0 16px",
+                minHeight: showAssessmentGenerated ? 45 : 1,
+                borderRadius: 10,
+                background: showAssessmentGenerated ? "#ecfdf5" : "transparent",
+                border: showAssessmentGenerated ? "1px solid #22c55e" : "1px solid transparent",
+                color: "#166534",
+                fontWeight: 700,
+                textAlign: "center",
+                opacity: showAssessmentGenerated ? 1 : 0,
+                transition: "opacity 0.2s ease",
+              }}
+            >
+              ✓ Validation Complete
+            </div>
             {sourcePatterns.sourceA && sourcePatterns.sourceB && (
               <>
-              <section
+              <details
+                open={false}
                 style={{
                   width: "100%",
                   boxSizing: "border-box",
                   background: "#ffffff",
                   border: "1px solid #e5e7eb",
-                  borderRadius: 16,
-                  padding: 20,
+                  borderRadius: 12,
+                  padding: 14,
                   marginTop: 18,
                   marginBottom: 18,
                 }}
               >
-                <h2 style={{ marginTop: 0 }}>Validation Summary</h2>
-
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: "#475569",
+                    marginBottom: 12,
+                  }}
+                >
+                  Validation Summary
+                </summary>
                 <div
                   style={{
-                    padding: 16,
+                    padding: 14,
                     borderRadius: 12,
                     background: "#f8fafc",
                     border: "1px solid #e2e8f0",
@@ -1410,7 +1564,7 @@ export default function Home() {
                     background: "#ffffff",
                     border: "1px solid #e2e8f0",
                     borderRadius: 12,
-                    padding: 16,
+                    padding: 14,
                     color: "#0f172a",
                     boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
                     marginTop: 8,
@@ -1554,9 +1708,11 @@ export default function Home() {
                     )}
                   </div>
                 </details>
-              </section>
+              </details>
               <div
+                ref={validationContextRef}
                 style={{
+                  scrollMarginTop: 96,
                   width: "100%",
                   boxSizing: "border-box",
                   marginBottom: 18,
@@ -1564,11 +1720,16 @@ export default function Home() {
                 }}
               >
               <details
+                open={
+                  guidedDemoStep === 2 ||
+                  guidedDemoStep === 3 ||
+                  Boolean(asOfDate || visibleAsOf)
+                }
                 style={{
                   background: "#ffffff",
                   border: "1px solid #e2e8f0",
                   borderRadius: 12,
-                  padding: 16,
+                  padding: 14,
                   color: "#0f172a",
                   boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
                 }}
@@ -1657,13 +1818,15 @@ export default function Home() {
           </div>
         )}
         {hasAnalyzed && (
-          <>                  
+          <>
             {(asOfDate || visibleAsOf) && (
               <div
+                ref={snapshotActiveRef}
                 style={{
+                  scrollMarginTop: 96,
                   marginBottom: 16,
-                  padding: 16,
-                  borderRadius: 10,
+                  padding: 14,
+                  borderRadius: 12,
                   background: "#1e3a8a",
                   border: "1px solid #3b82f6",
                   color: "#dbeafe",
@@ -1712,42 +1875,203 @@ export default function Home() {
                 </div>
               </div>
             )}
-
-            <div
-              ref={analysisRef}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                display: "grid",
-                gridTemplateColumns: "1fr",
-                gap: 20,
-                alignItems: "start",
-                marginBottom: 20,
-              }}
-            >
+              <div
+                ref={analysisRef}
+                style={{
+                  scrollMarginTop: 96,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  display: "grid",
+                  gridTemplateColumns: "1fr",
+                  gap: 20,
+                  alignItems: "start",
+                  marginBottom: 20,
+                }}
+              >
               <div>
-                <IssuesPanel
-                  joinIssues={activeJoinIssues}
-                  selectedIssue={selectedIssue}
-                  setSelectedIssue={selectJoinIssue}
-                  temporalIssues={activeTemporalIssues}
-                  selectedTemporalIssue={selectedTemporalIssue}
-                  onSelectTemporalIssue={selectTemporalIssue}
-                  hasAnalyzed={hasAnalyzed}
-                />
+              {guidedDemoStep && (
+                <div
+                  ref={guidedDemoRef}
+                  style={{
+                    scrollMarginTop: 96,
+                    marginBottom: 16,
+                    padding: 14,
+                    borderRadius: 12,
+                    background: "#e0f2fe",
+                    border: "1px solid #38bdf8",
+                    color: "#075985",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {guidedDemoStep === 1 && (
+                    <>
+                      <div style={{ fontWeight: 900, marginBottom: 6 }}>
+                        Guided Demo · Step 1 of 3
+                      </div>
+                      <div>
+                        This model looks broken at first: several source records cannot find a matching historical target row.
 
-                <IssueWhyPanel
-                  selectedIssue={selectedIssue}
-                  selectedTemporalIssue={selectedTemporalIssue}
-                />
+                        The Missing Matches category is already selected. Now choose one concrete finding below to inspect the validation evidence.
+                      </div>
+                    </>
+                  )}
+                  {guidedDemoStep === 2 && (
+                    <>
+                      <div style={{ fontWeight: 900, marginBottom: 6 }}>
+                        Guided Demo · Step 2 of 3
+                      </div>
+                  
+                      <div style={{ marginBottom: 10 }}>
+                        You selected a concrete finding. Now validate the same model from a later
+                        visible-time snapshot. Some findings may disappear when late-arriving
+                        records become visible.
+                      </div>
+                  
+                      <button
+                        type="button"
+                        onClick={() => {
+                          track("guided_demo_visibility_time_test");
+                          setDemoBeforeCount(activeMissingMatchCount);
+                          setVisibleAsOf("2025-01-02T00:00");
+                          setGuidedDemoStep(3);
+                          setPendingScrollTarget("snapshotActive");
+                          track("guided_demo_completed");
+                        }}
+                        style={{
+                          marginTop: 10,
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          background: "#0ea5e9",
+                          color: "#ffffff",
+                          border: "1px solid #38bdf8",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Use later visible-time
+                      </button>
+                    </>
+                  )}
+                  {guidedDemoStep === 3 && (
+                    <>
+                      <div style={{ fontWeight: 900, marginBottom: 6 }}>
+                        Guided Demo · Step 3 of 3
+                      </div>
+                  
+                      <div style={{ fontWeight: 900, marginBottom: 8 }}>
+                        🎉 Aha Moment
+                      </div>
+                  
+                      <div
+                        style={{
+                          marginTop: 12,
+                          marginBottom: 12,
+                          padding: 12,
+                          borderRadius: 10,
+                          background: "#ffffff",
+                          border: "1px solid #86efac",
+                        }}
+                      >
+                        <div style={{ color: "#b91c1c", marginBottom: 4, fontWeight: 800 }}>
+                          Before: {demoBeforeCount} Missing Matches were detected
+                        </div>
+                      
+                        <div style={{ color: "#166534", fontWeight: 800 }}>
+                          After: {activeMissingMatchCount} Missing Matches
+                        </div>
+                      </div>
+                      
+                      <div>
+                        This is snapshot drift: the same historical model produces a different validation result after switching to a later visible-time snapshot.
 
+                        The join was not necessarily broken. Some target rows were valid for the
+                        business period, but were not visible at the earlier snapshot.
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGuidedDemoStep(null);
+                        
+                          selectJoinIssue(null);
+                          selectTemporalIssue(null);
+                        
+                          setAsOfDate("");
+                          setVisibleAsOf("");
+                          setSql("");
+                        }}
+                        style={{
+                          marginTop: 12,
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          background: "#0ea5e9",
+                          color: "#ffffff",
+                          border: "1px solid #38bdf8",
+                          cursor: "pointer",
+                          fontWeight: 800,
+                        }}
+                      >
+                        End Demo
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+              <IssuesPanel
+                joinIssues={activeJoinIssues}
+                selectedIssue={selectedIssue}
+                setSelectedIssue={selectJoinIssue}
+                temporalIssues={activeTemporalIssuesWithSnapshotDrift}
+                selectedTemporalIssue={selectedTemporalIssue}
+                onSelectTemporalIssue={selectTemporalIssue}
+                hasAnalyzed={hasAnalyzed}
+                showIssueDetails={hasSelectedFinding}
+                initialFilter={
+                  guidedDemoStep === 1 || guidedDemoStep === 2
+                    ? "JOIN_GAP"
+                    : "ALL"
+                }
+              />
+              {!hasActiveFindings && (
+                <div
+                  style={{
+                    marginTop: 16,
+                    padding: 24,
+                    background: "#ecfdf5",
+                    borderRadius: 12,
+                    border: "1px solid #86efac",
+                    color: "#166534",
+                    textAlign: "center",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  ✓ No validation findings detected for the selected snapshot.
+                </div>
+              )}
+              {hasSelectedFinding && (
+                <div ref={explanationRef} style={{ scrollMarginTop: 96 }}>
+                  <IssueWhyPanel
+                    selectedIssue={selectedIssue}
+                    selectedTemporalIssue={selectedTemporalIssue}
+                  />
+                </div>
+              )}
+              {hasSelectedFinding && (
                 <div ref={timelineRef} style={{ marginTop: 20 }}>
+                <h3 style={{ margin: "0 0 8px", color: "#ffffff", fontSize: 20 }}>
+                  Timeline Evidence
+                </h3>
+                <p style={{ margin: "0 0 12px", color: "#94a3b8", fontSize: 13 }}>
+                  See how the selected finding appears across valid-time and visible-time.
+                </p>
                   <Timeline
                     rows={activeRows}
                     gaps={activeGaps}
                     overlapMarkers={activeOverlapMarkers}
                     selectedIssue={selectedIssue}
-                    temporalIssues={activeTemporalIssues}
+                    temporalIssues={activeTemporalIssuesWithSnapshotDrift}
                     selectedTemporalIssue={selectedTemporalIssue}
                     onSelectTemporalIssue={selectTemporalIssue}
                     getPosition={getPosition}
@@ -1756,68 +2080,72 @@ export default function Home() {
                   />
                   <TimelineLegend />
                 </div>
+              )}
               </div>
-            
               <div
                 style={{
                   position: isMobile ? "static" : "sticky",
                   top: isMobile ? undefined : 20,
                 }}
               >
-                <SqlPanel sql={sql} />
+                {snapshotActive && <SqlPanel sql={sql} />}
               </div>
             </div>
 
-            <div style={{ margin: "24px 0 12px" }}>
-              <h3 style={{ margin: 0, color: "#ffffff", fontSize: 20 }}>
-                Source Record Details
-              </h3>
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  color: "#94a3b8",
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                }}
-              >
-                Inspect the underlying rows behind the selected finding.
-              </p>
-            </div>
+            {hasSelectedFinding && (
+              <>
+                <div style={{ margin: isMobile ? "16px 0 10px" : "24px 0 12px" }}>
+                  <h3 style={{ margin: 0, color: "#ffffff", fontSize: 20 }}>
+                    Underlying Source Records
+                  </h3>
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      color: "#94a3b8",
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Inspect the underlying rows behind the selected finding.
+                  </p>
+                </div>
+                  
+                <div
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    display: "grid",
+                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                    gap: 20,
+                    marginBottom: 20,
+                  }}
+                >
+                <DataPreview
+                  title={`Raw source records: ${sourceNameA}`}
+                  rows={sourceRecordRowsA}
+                  joinIssues={activeJoinIssues}
+                  onSelectIssue={selectJoinIssue}
+                  highlightedRow={highlightedRow}
+                  onHighlightRow={scheduleHighlightRow}
+                  forceOpen={expandedSources.includes(sourceNameA)}
+                  overlapMarkers={overlapMarkers}
+                />
 
-            <div
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                display: "grid",
-                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-                gap: 20,
-                marginBottom: 20,
-              }}
-            >
-            <DataPreview
-              title={`Raw source records: ${sourceNameA}`}
-              rows={activeRows.filter((r) => r.source === sourceNameA)}
-              joinIssues={activeJoinIssues}
-              onSelectIssue={selectJoinIssue}
-              highlightedRow={highlightedRow}
-              onHighlightRow={scheduleHighlightRow}
-              forceOpen={expandedSources.includes(sourceNameA)}
-              overlapMarkers={overlapMarkers}
-            />
-
-            <DataPreview
-              title={`Raw source records: ${sourceNameB}`}
-              rows={activeRows.filter((r) => r.source === sourceNameB)}
-              joinIssues={activeJoinIssues}
-              onSelectIssue={selectJoinIssue}
-              highlightedRow={highlightedRow}
-              onHighlightRow={scheduleHighlightRow}
-              forceOpen={expandedSources.includes(sourceNameB)}
-              overlapMarkers={overlapMarkers}
-            />
-            </div>
+                <DataPreview
+                  title={`Raw source records: ${sourceNameB}`}
+                  rows={sourceRecordRowsB}
+                  joinIssues={activeJoinIssues}
+                  onSelectIssue={selectJoinIssue}
+                  highlightedRow={highlightedRow}
+                  onHighlightRow={scheduleHighlightRow}
+                  forceOpen={expandedSources.includes(sourceNameB)}
+                  overlapMarkers={overlapMarkers}
+                />
+                </div>
+              </>
+            )}
           </>
-        )}
+        )}        
         <Footer />
       </div>
       <Analytics />

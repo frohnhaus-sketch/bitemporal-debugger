@@ -96,6 +96,7 @@ export type TemporalIssueType =
   | "VALID_GAP"
   | "JOIN_GAP"
   | "JOIN_AMBIGUITY"
-  | "VISIBILITY_LAG";
+  | "VISIBILITY_LAG"
+  | "SNAPSHOT_DRIFT";
 
 export type TemporalIssueSeverity = "low" | "medium" | "high";

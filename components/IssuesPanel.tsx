@@ -1,9 +1,9 @@
 import type { AggregatedJoinabilityIssue, TemporalIssue } from "@/lib/types";
 import { track } from "@/lib/analytics";
-import { useState } from "react";
-import SelectedIssueCard from "./SelectedIssueCard";
+import { useEffect, useState } from "react";
 
 type IssuesPanelProps = {
+  initialFilter?: "ALL" | "JOIN_GAP" | "JOIN_AMBIGUITY" | "OVERLAP" | "VALID_GAP";
   joinIssues: AggregatedJoinabilityIssue[];
   selectedIssue: AggregatedJoinabilityIssue | null;
   setSelectedIssue: (j: AggregatedJoinabilityIssue | null) => void;
@@ -11,7 +11,57 @@ type IssuesPanelProps = {
   selectedTemporalIssue: TemporalIssue | null;
   onSelectTemporalIssue: (issue: TemporalIssue | null) => void;
   hasAnalyzed: boolean;
+  showIssueDetails: boolean;
 };
+
+type IssueFilter =
+  | "ALL"
+  | "JOIN_GAP"
+  | "JOIN_AMBIGUITY"
+  | "VALID_GAP"
+  | "OVERLAP"
+  | "VISIBILITY_LAG"
+  | "SNAPSHOT_DRIFT";
+type FindingSeverity = "high" | "medium" | "low";
+
+type KpiItem = {
+  label: string;
+  value: number;
+  filter: IssueFilter;
+  icon: string;
+  color: string;
+  background: string;
+};
+
+function getFindingSeverity(type: string): FindingSeverity {
+  if (type === "OVERLAP") return "high";
+  if (type === "JOIN_AMBIGUITY") return "high";
+
+  if (type === "JOIN_GAP") return "medium";
+  if (type === "VALID_GAP") return "medium";
+
+  if (type === "VISIBILITY_LAG") return "low";
+
+  return "medium";
+}
+
+function getFindingPriority(type: string) {
+  const severity = getFindingSeverity(type);
+
+  if (severity === "high") return 1;
+  if (severity === "medium") return 2;
+  return 3;
+}
+
+function getFindingLabel(type: string) {
+  if (type === "JOIN_GAP") return "Missing Match";
+  if (type === "VALID_GAP") return "Missing Coverage";
+  if (type === "JOIN_AMBIGUITY") return "Ambiguous Match";
+  if (type === "VISIBILITY_LAG") return "Visibility Lag";
+  if (type === "OVERLAP") return "Overlapping Historization";
+
+  return type;
+}
 
 function formatJoinReason(reason: string) {
   if (reason === "NO_VISIBLE_OVERLAP") return "No visible-time overlap";
@@ -20,7 +70,44 @@ function formatJoinReason(reason: string) {
   return reason;
 }
 
+function getTemporalIssueAccent(type: TemporalIssue["type"]) {
+  if (type === "SNAPSHOT_DRIFT") {
+    return {
+      border: "#14b8a6",
+      background: "#f0fdfa",
+      color: "#0f766e",
+      icon: "↔",
+    };
+  }
+
+  if (type === "VALID_GAP") {
+    return {
+      border: "#f59e0b",
+      background: "#fffaf0",
+      color: "#92400e",
+      icon: "?",
+    };
+  }
+
+  if (type === "VISIBILITY_LAG") {
+    return {
+      border: "#8b5cf6",
+      background: "#faf5ff",
+      color: "#6d28d9",
+      icon: "◷",
+    };
+  }
+
+  return {
+    border: "#3b82f6",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    icon: "•",
+  };
+}
+
 export function IssuesPanel({
+  initialFilter,
   joinIssues,
   selectedIssue,
   setSelectedIssue,
@@ -28,57 +115,295 @@ export function IssuesPanel({
   selectedTemporalIssue,
   onSelectTemporalIssue,
   hasAnalyzed,
+  showIssueDetails,
 }: IssuesPanelProps) {
-  const [activeIssueFilter, setActiveIssueFilter] = useState<
-    "ALL" | "JOIN" | "VALID_GAP" | "OVERLAP" | "VISIBILITY_LAG"
-  >("ALL");
 
-  const gapIssues = temporalIssues.filter((issue) => issue.type === "VALID_GAP");
-  const overlapIssues = temporalIssues.filter((issue) => issue.type === "OVERLAP");
+  function mapInitialFilter(
+    filter?: IssuesPanelProps["initialFilter"]
+  ): IssueFilter {
+    if (filter === "JOIN_GAP") return "JOIN_GAP";
+    if (filter === "JOIN_AMBIGUITY") return "JOIN_AMBIGUITY";
+    if (filter === "VALID_GAP") return "VALID_GAP";
+    if (filter === "OVERLAP") return "OVERLAP";
+
+    return "ALL";
+  }
+
+  const [activeIssueFilter, setActiveIssueFilter] =
+    useState<IssueFilter>(
+      mapInitialFilter(initialFilter)
+    );
+
+  useEffect(() => {
+    if (!initialFilter || initialFilter === "ALL") return;
+  
+    setActiveIssueFilter(mapInitialFilter(initialFilter));
+  }, [initialFilter]);
+
+  const gapIssues = temporalIssues.filter((i) => i.type === "VALID_GAP");
+  const overlapIssues = temporalIssues.filter((i) => i.type === "OVERLAP");
   const visibilityLagIssues = temporalIssues.filter(
-    (issue) => issue.type === "VISIBILITY_LAG"
+    (i) => i.type === "VISIBILITY_LAG"
   );
 
-  const aggregatedJoinGaps = joinIssues.filter(
-    (issue) => issue.type === "JOIN_GAP" && issue.isAggregated
+  const snapshotDriftIssues = temporalIssues.filter(
+    (i) => i.type === "SNAPSHOT_DRIFT"
   );
 
   const MAX_VISIBLE_JOIN_ISSUES = 50;
   const visibleJoinIssues = joinIssues.slice(0, MAX_VISIBLE_JOIN_ISSUES);
 
+  const hasFindings =
+    joinIssues.length > 0 ||
+    gapIssues.length > 0 ||
+    overlapIssues.length > 0 ||
+    visibilityLagIssues.length > 0 ||
+    snapshotDriftIssues.length > 0;
+
   const filteredJoinIssues =
-    activeIssueFilter === "ALL" || activeIssueFilter === "JOIN"
+    activeIssueFilter === "ALL"
       ? visibleJoinIssues
+      : activeIssueFilter === "JOIN_GAP" ||
+        activeIssueFilter === "JOIN_AMBIGUITY"
+      ? visibleJoinIssues.filter((i) => i.type === activeIssueFilter)
       : [];
 
   const filteredGapIssues =
-    activeIssueFilter === "ALL" || activeIssueFilter === "VALID_GAP"
+    activeIssueFilter === "VALID_GAP" || activeIssueFilter === "ALL"
       ? gapIssues
       : [];
 
   const filteredOverlapIssues =
-    activeIssueFilter === "ALL" || activeIssueFilter === "OVERLAP"
+    activeIssueFilter === "OVERLAP" || activeIssueFilter === "ALL"
       ? overlapIssues
       : [];
 
   const filteredVisibilityLagIssues =
-    activeIssueFilter === "ALL" || activeIssueFilter === "VISIBILITY_LAG"
+    activeIssueFilter === "VISIBILITY_LAG" || activeIssueFilter === "ALL"
       ? visibilityLagIssues
       : [];
 
-  const kpis = [
-    { label: "Missing Matches", value: joinIssues.length, filter: "JOIN" },
-    { label: "Missing Coverage", value: gapIssues.length, filter: "VALID_GAP" },
-    { label: "Overlapping History", value: overlapIssues.length, filter: "OVERLAP" },
-    { label: "Visibility Lag", value: visibilityLagIssues.length, filter: "VISIBILITY_LAG" },
-  ] as const;
+  const filteredSnapshotDriftIssues =
+    activeIssueFilter === "SNAPSHOT_DRIFT" || activeIssueFilter === "ALL"
+      ? snapshotDriftIssues
+      : [];
 
-  const hasFindings = kpis.some((kpi) => kpi.value > 0);
+  const hasHighRisk = temporalIssues.some((issue) =>
+    ["OVERLAP", "JOIN_AMBIGUITY"].includes(issue.type)
+  );
 
-  const rootCause = aggregatedJoinGaps[0] ?? null;
+  const hasMediumRisk = temporalIssues.some((issue) =>
+    ["JOIN_GAP", "VALID_GAP"].includes(issue.type)
+  );
+
+  const validationRisk = hasHighRisk
+    ? "High"
+    : hasMediumRisk
+    ? "Medium"
+    : "Low";
+
+  const kpis: KpiItem[] = [
+    {
+      label: "Overlaps",
+      value: overlapIssues.length,
+      filter: "OVERLAP",
+      icon: "!",
+      color: "#dc2626",
+      background: "#fef2f2",
+    },
+    {
+      label: "Ambiguous Matches",
+      value: joinIssues.filter((i) => i.type === "JOIN_AMBIGUITY").length,
+      filter: "JOIN_AMBIGUITY" as IssueFilter,
+      icon: "=",
+      color: "#2563eb",
+      background: "#eff6ff",
+    },
+    ...(snapshotDriftIssues.length > 0
+      ? [
+          {
+            label: "Snapshot Drift",
+            value: snapshotDriftIssues.length,
+            filter: "SNAPSHOT_DRIFT" as IssueFilter,
+            icon: "↔",
+            color: "#0f766e",
+            background: "#f0fdfa",
+          }
+        ]
+      : []),
+    {
+      label: "Missing Matches",
+      value: joinIssues.filter((i) => i.type === "JOIN_GAP").length,
+      filter: "JOIN_GAP",
+      icon: "−",
+      color: "#f59e0b",
+      background: "#fffaf0",
+    },
+    {
+      label: "Missing Coverage",
+      value: gapIssues.length,
+      filter: "VALID_GAP",
+      icon: "?",
+      color: "#92400e",
+      background: "#fffbeb",
+    },
+    {
+      label: "Visibility Lag",
+      value: visibilityLagIssues.length,
+      filter: "VISIBILITY_LAG",
+      icon: "◷",
+      color: "#7c3aed",
+      background: "#faf5ff",
+    },
+  ];
+
+  const shouldShowDetails = showIssueDetails || activeIssueFilter !== "ALL";
+
+  function renderJoinIssue(issue: AggregatedJoinabilityIssue, index: number) {
+    const isSelected = selectedIssue === issue;
+    const isAmbiguity = issue.type === "JOIN_AMBIGUITY";
+
+    const accentColor = isAmbiguity ? "#ef4444" : "#f59e0b";
+    const textColor = isAmbiguity ? "#b91c1c" : "#92400e";
+    const background = isAmbiguity ? "#fff7f7" : "#fffaf0";
+
+    return (
+      <button
+        key={index}
+        onClick={() => {
+          track("issue_selected", {
+            type: issue.type,
+            reason: issue.reason,
+            aggregated: Boolean(issue.isAggregated),
+          });
+
+          setSelectedIssue(isSelected ? null : issue);
+        }}
+        style={{
+          width: "100%",
+          minHeight: 58,
+          textAlign: "left",
+          cursor: "pointer",
+          padding: "12px 14px",
+          marginBottom: 8,
+          borderRadius: 8,
+          background,
+          border: isSelected
+            ? "2px solid #2563eb"
+            : `1px solid ${accentColor}`,
+          boxShadow: isSelected
+            ? "0 0 0 2px rgba(37,99,235,0.14)"
+            : "none",
+          color: "#0f172a",
+          fontFamily: "inherit",
+          fontSize: 13,
+          lineHeight: 1.35,
+          transition: "all 0.15s ease",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "minmax(120px, 180px) minmax(220px, 1fr) minmax(180px, 240px) minmax(200px, 1fr) minmax(90px, 120px)",
+            alignItems: "center",
+            gap: 16,
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 999,
+                background: accentColor,
+                color: "#ffffff",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 900,
+                flexShrink: 0,
+                fontSize: 15,
+              }}
+            >
+              {isAmbiguity ? "!" : "−"}
+            </span>
+
+            <strong
+              style={{
+                color: textColor,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {getFindingLabel(issue.type)}
+            </strong>
+          </div>
+
+          <div
+            style={{
+              color: "#475569",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {issue.source} → {issue.targetSource}
+            {issue.isAggregated
+              ? ` · ${issue.count} entities`
+              : ` · Entity ${issue.entity_id}`}
+          </div>
+
+          <div
+            style={{
+              color: "#64748b",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {issue.valid_from} → {issue.valid_to}
+          </div>
+
+          <div
+            style={{
+              color: "#64748b",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            Reason: {formatJoinReason(issue.reason)}
+          </div>
+
+          <div
+            style={{
+              color: textColor,
+              textAlign: "right",
+              fontWeight: 700,
+              opacity: 0.8,
+              whiteSpace: "nowrap",
+            }}
+          >
+            investigate →
+          </div>
+        </div>
+      </button>
+    );
+  }
 
   function renderTemporalIssue(issue: TemporalIssue) {
     const isSelected = selectedTemporalIssue?.id === issue.id;
+    const accent = getTemporalIssueAccent(issue.type);
 
     return (
       <button
@@ -90,54 +415,132 @@ export function IssuesPanel({
             source: issue.source,
           });
 
-          onSelectTemporalIssue(issue);
+          onSelectTemporalIssue(isSelected ? null : issue);
         }}
         style={{
           width: "100%",
+          minHeight: 58,
           textAlign: "left",
-          padding: "9px 10px",
+          cursor: "pointer",
+          padding: "12px 14px",
           marginBottom: 8,
           borderRadius: 8,
-          border: isSelected ? "2px solid #2563eb" : "1px solid #e2e8f0",
-          background: isSelected ? "#eff6ff" : "#ffffff",
-          cursor: "pointer",
+          background: accent.background,
+          border: isSelected
+            ? "2px solid #2563eb"
+            : `1px solid ${accent.border}`,
+          boxShadow: isSelected
+            ? "0 0 0 2px rgba(37,99,235,0.14)"
+            : "none",
           color: "#0f172a",
           fontFamily: "inherit",
-          fontSize: 12,
+          fontSize: 13,
           lineHeight: 1.35,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-1px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
+          transition: "all 0.15s ease",
         }}
       >
-        <div style={{ fontWeight: 800 }}>{issue.title}</div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "minmax(160px, 220px) minmax(160px, 1fr) minmax(180px, 240px) minmax(240px, 1fr) minmax(90px, 120px)",
+            alignItems: "center",
+            gap: 16,
+            width: "100%",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 999,
+                background: accent.border,
+                color: "#ffffff",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 900,
+                flexShrink: 0,
+                fontSize: 14,
+              }}
+            >
+              {accent.icon}
+            </span>
 
-        <div style={{ color: "#64748b", marginTop: 3 }}>
-          Entity {issue.entity_id}
-          {issue.source ? ` · ${issue.source}` : ""}
-        </div>
-
-        {issue.from && issue.to && (
-          <div style={{ color: "#94a3b8", marginTop: 3 }}>
-            {issue.from} → {issue.to}
+            <strong
+              style={{
+                color: accent.color,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {issue.title}
+            </strong>
           </div>
-        )}
 
-        {issue.type === "VISIBILITY_LAG" && issue.targetSource && (
-          <div style={{ color: "#94a3b8", marginTop: 3 }}>
-            Compared with {issue.targetSource}
+          <div
+            style={{
+              color: "#475569",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            Entity {issue.entity_id}
+            {issue.source ? ` · ${issue.source}` : ""}
           </div>
-        )}
 
-        <div style={{ color: "#64748b", marginTop: 5 }}>
-          {issue.explanation}
+          <div
+            style={{
+              color: "#64748b",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {issue.from && issue.to ? `${issue.from} → ${issue.to}` : "n/a"}
+          </div>
+
+          <div
+            style={{
+              color: "#64748b",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {issue.explanation}
+          </div>
+
+          <div
+            style={{
+              color: accent.color,
+              textAlign: "right",
+              fontWeight: 700,
+              opacity: 0.8,
+              whiteSpace: "nowrap",
+            }}
+          >
+            investigate →
+          </div>
         </div>
       </button>
     );
   }
+
+  const overlapCount = overlapIssues.length;
+
+  const ambiguityCount =
+    joinIssues.filter(
+      (i) => i.type === "JOIN_AMBIGUITY"
+    ).length;
+
+  const joinGapCount =
+    joinIssues.filter(
+      (i) => i.type === "JOIN_GAP"
+    ).length;
 
   return (
     <div
@@ -151,10 +554,53 @@ export function IssuesPanel({
         color: "#0f172a",
       }}
     >
-      <h3 style={{ margin: "0 0 10px", fontSize: 17 }}>
+      <h3 style={{ margin: "0 0 14px", fontSize: 20, fontWeight: 700 }}>
         Validation Findings
       </h3>
-
+      {hasAnalyzed && hasFindings && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "12px 16px",
+            borderRadius: 12,
+            background:
+              validationRisk === "High"
+                ? "#fef2f2"
+                : validationRisk === "Medium"
+                ? "#fffbeb"
+                : "#ecfdf5",
+            border:
+              validationRisk === "High"
+                ? "1px solid #fecaca"
+                : validationRisk === "Medium"
+                ? "1px solid #fde68a"
+                : "1px solid #86efac",
+            color:
+              validationRisk === "High"
+                ? "#991b1b"
+                : validationRisk === "Medium"
+                ? "#92400e"
+                : "#166534",
+            fontWeight: 800,
+            fontSize: 14,
+          }}
+        >
+          {validationRisk === "High"
+            ? "🚨 High Validation Risk"
+            : validationRisk === "Medium"
+            ? "⚠️ Medium Validation Risk"
+            : "✓ Low Validation Risk"}
+          <span
+            style={{
+              marginLeft: 10,
+              fontWeight: 500,
+              color: "#64748b",
+            }}
+          >
+            {`Detected: ${overlapCount} overlaps • ${ambiguityCount} ambiguous matches • ${joinGapCount} missing matches`}
+          </span>
+        </div>
+      )}
       {!hasAnalyzed && (
         <div
           style={{
@@ -169,8 +615,7 @@ export function IssuesPanel({
         >
           <strong style={{ color: "#0f172a" }}>No analysis yet.</strong>
           <br />
-          Load or paste two datasets and click Analyze Sources to detect temporal
-          alignment issues.
+          Load or paste two datasets and click Analyze Sources.
         </div>
       )}
 
@@ -178,9 +623,9 @@ export function IssuesPanel({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: 10,
-            marginBottom: 12,
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: 12,
+            marginBottom: 16,
           }}
         >
           {kpis.map((kpi) => {
@@ -196,67 +641,82 @@ export function IssuesPanel({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  gap: 10,
-                  background: isActive ? "#eff6ff" : "#f8fafc",
-                  border: isActive ? "1px solid #3b82f6" : "1px solid #e2e8f0",
+                  gap: 12,
+                  background: isActive ? kpi.background : "#f8fafc",
+                  border: isActive
+                    ? `1px solid ${kpi.color}`
+                    : "1px solid #e2e8f0",
                   boxShadow: isActive
-                    ? "0 0 0 2px rgba(59,130,246,0.18)"
+                    ? `0 0 0 2px ${kpi.color}22`
                     : "none",
-                  borderRadius: 8,
-                  padding: "10px 12px",
+                  borderRadius: 10,
+                  padding: "12px 14px",
                   cursor: "pointer",
                   fontFamily: "inherit",
                   transition: "all 0.15s ease",
-                  minHeight: 54,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
+                  minHeight: 72,
                 }}
               >
                 <div
                   style={{
-                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
                     minWidth: 0,
                   }}
                 >
-                  <div
+                  <span
                     style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: isActive ? "#1d4ed8" : "#475569",
-                      lineHeight: 1.2,
+                      width: 30,
+                      height: 30,
+                      borderRadius: 999,
+                      background: kpi.color,
+                      color: "#ffffff",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 900,
+                      flexShrink: 0,
+                      fontSize: 17,
                     }}
                   >
-                    {kpi.label}
-                  </div>
-                  
-                  <div
-                    style={{
-                      marginTop: 2,
-                      fontSize: 11,
-                      color: "#94a3b8",
-                    }}
-                  >
-                    {kpi.value === 1 ? "1 finding" : `${kpi.value} findings`}
+                    {kpi.icon}
+                  </span>
+
+                  <div style={{ textAlign: "left", minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 800,
+                        color: isActive ? kpi.color : "#475569",
+                        lineHeight: 1.2,
+                        whiteSpace: "normal",
+                        overflow: "visible",
+                        textOverflow: "clip",
+                      }}
+                    >
+                      {kpi.label}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 3,
+                        fontSize: 12,
+                        color: "#94a3b8",
+                      }}
+                    >
+                      {kpi.value === 1 ? "1 finding" : `${kpi.value} findings`}
+                    </div>
                   </div>
                 </div>
-                  
+
                 <div
                   style={{
-                    fontSize: 24,
+                    fontSize: 26,
                     fontWeight: 900,
                     color: "#0f172a",
                     lineHeight: 1,
                     flexShrink: 0,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
                   {kpi.value}
@@ -266,210 +726,111 @@ export function IssuesPanel({
           })}
         </div>
       )}
-      
-      {hasAnalyzed && (
-        <>
-      {/* <SelectedIssueCard issue={selectedTemporalIssue} /> */}
 
-      {(activeIssueFilter === "ALL" || activeIssueFilter === "JOIN") &&
-        rootCause && (
-          <div
-            style={{
-              marginTop: 12,
-              marginBottom: 12,
-              padding: 12,
-              borderRadius: 10,
-              background: "#eff6ff",
-              border: "1px solid #60a5fa",
-              color: "#1e3a8a",
-              fontSize: 12,
-              lineHeight: 1.45,
-            }}
-          >
-            <strong>Historical Modeling Guidance</strong>
-            <br />
-            {rootCause.count} entities fail with the same pattern:
-            <br />
-            <code>
-              {rootCause.source} rows from {rootCause.valid_from} →{" "}
-              {rootCause.valid_to} do not overlap with{" "}
-              {rootCause.targetSource}
-            </code>
-            <br />
-            <span>
-              This suggests a systematic source alignment issue for Core Layer
-              modeling.
-            </span>
-          </div>
-        )}
-        </>
+      {hasAnalyzed && hasFindings && !shouldShowDetails && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: 24,
+            background: "#f8fafc",
+            borderRadius: 12,
+            border: "1px solid #e2e8f0",
+            color: "#64748b",
+            textAlign: "center",
+            fontSize: 14,
+            lineHeight: 1.5,
+          }}
+        >
+          Select a finding category to start investigating.
+        </div>
       )}
 
-      {(activeIssueFilter === "ALL" || activeIssueFilter === "JOIN") && (
-        <div style={{ marginTop: 12 }}>
-          {filteredJoinIssues.length === 0 ? (
-            <p style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>
-              Source alignment findings will appear here after analyzing two
-              sources.
-            </p>
-          ) : (
-            <>
-              <p style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>
-                Click a finding to open the explanation.
-              </p>
+      {hasAnalyzed && !hasFindings && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: 24,
+            background: "#ecfdf5",
+            borderRadius: 12,
+            border: "1px solid #86efac",
+            color: "#166534",
+            textAlign: "center",
+            fontSize: 14,
+            fontWeight: 700,
+            lineHeight: 1.5,
+          }}
+        >
+          ✓ No validation findings detected for the selected snapshot.
+        </div>
+      )}
 
-              {filteredJoinIssues.map((issue, index) => {
-                const isSelected = selectedIssue === issue;
+      {hasAnalyzed && hasFindings && shouldShowDetails && (
+        <>
+          {(activeIssueFilter === "ALL" ||
+            activeIssueFilter === "JOIN_GAP" ||
+            activeIssueFilter === "JOIN_AMBIGUITY") &&
+            filteredJoinIssues.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "#64748b",
+                    margin: "0 0 10px",
+                  }}
+                >
+                  Click a finding to open the explanation.
+                </p>
 
-                return (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      track("issue_selected", {
-                        type: issue.type,
-                        reason: issue.reason,
-                        aggregated: Boolean(issue.isAggregated),
-                      });
+                {filteredJoinIssues.map(renderJoinIssue)}
 
-                      setSelectedIssue(issue);
-                    }}
+                {joinIssues.length > MAX_VISIBLE_JOIN_ISSUES && (
+                  <div
                     style={{
-                      width: "100%",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      padding: "9px 10px",
-                      marginBottom: 8,
-                      borderRadius: 8,
-                      background: isSelected
-                        ? "#e0f2fe"
-                        : issue.type === "JOIN_AMBIGUITY"
-                        ? "#fee2e2"
-                        : "#fef3c7",
-                      border: isSelected
-                        ? "2px solid #0f172a"
-                        : issue.type === "JOIN_AMBIGUITY"
-                        ? "1px solid #ef4444"
-                        : "1px solid #f59e0b",
-                      color:
-                        issue.type === "JOIN_AMBIGUITY"
-                          ? "#991b1b"
-                          : "#92400e",
-                      fontFamily: "inherit",
+                      marginTop: 8,
                       fontSize: 12,
-                      lineHeight: 1.35,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-1px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
+                      color: "#64748b",
                     }}
                   >
-                    <strong>
-                      {issue.type}
-                      {issue.isAggregated ? " · systematic pattern" : ""}
-                    </strong>
-
-                    <span style={{ float: "right", fontSize: 11, opacity: 0.6 }}>
-                      investigate →
-                    </span>
-
-                    <br />
-
-                    {issue.source} → {issue.targetSource}
-                    {issue.isAggregated
-                      ? ` · ${issue.count} entities`
-                      : ` · Entity ${issue.entity_id}`}
-
-                    <br />
-                    {issue.valid_from} → {issue.valid_to}
-
-                    <br />
-                    Reason: {formatJoinReason(issue.reason)}
-                  </button>
-                );
-              })}
-
-              {joinIssues.length > MAX_VISIBLE_JOIN_ISSUES && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
-                  Showing first {MAX_VISIBLE_JOIN_ISSUES} of{" "}
-                  {joinIssues.length} join issues.
-                </div>
-              )}
-            </>
+                    Showing first {MAX_VISIBLE_JOIN_ISSUES} of{" "}
+                    {joinIssues.length} join findings.
+                  </div>
+                )}
+              </div>
+            )}
+          {filteredOverlapIssues.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
+                Overlap Findings
+              </h4>
+              {filteredOverlapIssues.map(renderTemporalIssue)}
+            </div>
           )}
-        </div>
+          {filteredGapIssues.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
+                Valid-Time Coverage Gaps
+              </h4>
+              {filteredGapIssues.map(renderTemporalIssue)}
+            </div>
+          )}
+          {filteredSnapshotDriftIssues.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
+                Snapshot Drift Findings
+              </h4>
+              {filteredSnapshotDriftIssues.map(renderTemporalIssue)}
+            </div>
+          )}
+          {filteredVisibilityLagIssues.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
+                Visibility Lag Findings
+              </h4>
+              {filteredVisibilityLagIssues.map(renderTemporalIssue)}
+            </div>
+          )}
+        </>
       )}
-
-      {filteredVisibilityLagIssues.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
-            Visibility Lag Findings
-          </h4>
-          {filteredVisibilityLagIssues.map(renderTemporalIssue)}
-        </div>
-      )}
-
-      {activeIssueFilter === "VISIBILITY_LAG" &&
-        filteredVisibilityLagIssues.length === 0 && (
-          <p style={{ fontSize: 12, color: "#64748b", marginTop: 12 }}>
-            No visibility lag findings detected.
-          </p>
-        )}
-
-      {filteredOverlapIssues.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
-            Overlap Findings
-          </h4>
-          {filteredOverlapIssues.map(renderTemporalIssue)}
-        </div>
-      )}
-
-      {activeIssueFilter === "OVERLAP" &&
-        filteredOverlapIssues.length === 0 && (
-          <p style={{ fontSize: 12, color: "#64748b", marginTop: 12 }}>
-            No overlap findings detected.
-          </p>
-        )}
-
-      {filteredGapIssues.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
-            Valid-Time Coverage Gaps
-          </h4>
-          {filteredGapIssues.map(renderTemporalIssue)}
-        </div>
-      )}
-
-      {activeIssueFilter === "VALID_GAP" && filteredGapIssues.length === 0 && (
-        <p style={{ fontSize: 12, color: "#64748b", marginTop: 12 }}>
-          No valid-time coverage gaps detected.
-        </p>
-      )}
-
-      {activeIssueFilter === "ALL" &&
-        joinIssues.length === 0 &&
-        filteredVisibilityLagIssues.length === 0 &&
-        filteredOverlapIssues.length === 0 &&
-        filteredGapIssues.length === 0 && (
-          <div
-            style={{
-              marginTop: 16,
-              padding: 14,
-              borderRadius: 10,
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              color: "#475569",
-              fontSize: 13,
-            }}
-          >
-            No historical modeling findings detected.
-            <br />
-            The analyzed sources appear internally consistent for the selected
-            checks.
-          </div>
-        )}
     </div>
   );
 }

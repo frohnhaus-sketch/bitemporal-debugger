@@ -13,6 +13,7 @@ type TwoSourceInputPanelProps = {
   setSourceNameB: (v: string) => void;
   onAnalyze: () => void;
   onLoadExample: () => void;
+  onLoadGuidedDemo: () => void;
   onCopyAtoB: () => void;
   controls?: React.ReactNode;
   analysisModeControl?: React.ReactNode;
@@ -35,6 +36,7 @@ export function TwoSourceInputPanel({
   setSourceNameB,
   onAnalyze,
   onLoadExample,
+  onLoadGuidedDemo,
   onCopyAtoB,
   controls,
   analysisModeControl,
@@ -141,6 +143,22 @@ export function TwoSourceInputPanel({
           }}
         >
         <button
+          type="button"
+          onClick={onLoadGuidedDemo}
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #38bdf8",
+            background: "#0ea5e9",
+            color: "#ffffff",
+            fontWeight: 800,
+            cursor: "pointer",
+            boxShadow: "0 8px 20px rgba(14,165,233,0.25)",
+          }}
+        >
+          ▶ Guided Demo
+        </button>
+        <button
           onClick={onLoadExample}
           style={{
             height: 58,
@@ -197,7 +215,6 @@ export function TwoSourceInputPanel({
           >
             🧪
           </span>
-          
           Validate Example Model
         </button>
         </div>
