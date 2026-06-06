@@ -21,7 +21,8 @@ type IssueFilter =
   | "VALID_GAP"
   | "OVERLAP"
   | "VISIBILITY_LAG"
-  | "SNAPSHOT_DRIFT";
+  | "SNAPSHOT_DRIFT"
+  | "DIMENSION_COMPLETION_RISK";
 type FindingSeverity = "high" | "medium" | "low";
 
 type KpiItem = {
@@ -59,6 +60,7 @@ function getFindingLabel(type: string) {
   if (type === "JOIN_AMBIGUITY") return "Ambiguous Match";
   if (type === "VISIBILITY_LAG") return "Visibility Lag";
   if (type === "OVERLAP") return "Overlapping Historization";
+  if (type === "DIMENSION_COMPLETION_RISK") return "Dimension Completion Risk";
 
   return type;
 }
@@ -125,6 +127,15 @@ function getTemporalIssueAccent(type: TemporalIssue["type"]) {
     };
   }
 
+  if (type === "DIMENSION_COMPLETION_RISK") {
+    return {
+      border: "#be123c",
+      background: "#fff1f2",
+      color: "#9f1239",
+      icon: "◧",
+    };
+  }
+
   return {
     border: "#64748b",
     background: "#f8fafc",
@@ -169,8 +180,12 @@ export function IssuesPanel({
 
   const gapIssues = temporalIssues.filter((i) => i.type === "VALID_GAP");
   const overlapIssues = temporalIssues.filter((i) => i.type === "OVERLAP");
-  const visibilityLagIssues = temporalIssues.filter(
+  const visibilityLagIssues= temporalIssues.filter(
     (i) => i.type === "VISIBILITY_LAG"
+  );
+
+  const dimensionCompletionIssues = temporalIssues.filter(
+    (i) => i.type === "DIMENSION_COMPLETION_RISK"
   );
 
   const snapshotDriftIssues = temporalIssues.filter(
@@ -185,8 +200,7 @@ export function IssuesPanel({
     gapIssues.length > 0 ||
     overlapIssues.length > 0 ||
     visibilityLagIssues.length > 0 ||
-    snapshotDriftIssues.length > 0;
-
+    snapshotDriftIssues.length > 0 || dimensionCompletionIssues.length > 0;
   const filteredJoinIssues =
     activeIssueFilter === "ALL"
       ? visibleJoinIssues
@@ -208,6 +222,12 @@ export function IssuesPanel({
   const filteredVisibilityLagIssues =
     activeIssueFilter === "VISIBILITY_LAG" || activeIssueFilter === "ALL"
       ? visibilityLagIssues
+      : [];
+
+  const filteredDimensionCompletionIssues =
+    activeIssueFilter === "DIMENSION_COMPLETION_RISK" ||
+    activeIssueFilter === "ALL"
+      ? dimensionCompletionIssues
       : [];
 
   const filteredSnapshotDriftIssues =
@@ -281,6 +301,14 @@ export function IssuesPanel({
       icon: "◷",
       color: "#7c3aed",
       background: "#faf5ff",
+    },
+    {
+      label: "Dimension Completion",
+      value: dimensionCompletionIssues.length,
+      filter: "DIMENSION_COMPLETION_RISK",
+      icon: "◧",
+      color: "#be123c",
+      background: "#fff1f2",
     },
   ];
 
@@ -848,6 +876,15 @@ export function IssuesPanel({
                 Snapshot Drift Findings
               </h4>
               {filteredSnapshotDriftIssues.map(renderTemporalIssue)}
+            </div>
+          )}
+          {filteredDimensionCompletionIssues.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
+                Dimension Completion Risks
+              </h4>
+          
+              {filteredDimensionCompletionIssues.map(renderTemporalIssue)}
             </div>
           )}
           {filteredVisibilityLagIssues.length > 0 && (

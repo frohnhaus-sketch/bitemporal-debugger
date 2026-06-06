@@ -43,7 +43,8 @@ const EXAMPLE_A = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 3,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
 4,contract_active,2024-01-01,2024-03-31,2024-01-01T00:00:00,9999-12-31T00:00:00
 4,contract_active,2024-05-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-5,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
+5,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+4,contract_active,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
 
 const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 1,object_active,2024-01-01,2024-12-31,2024-07-01T00:00:00,9999-12-31T00:00:00
@@ -51,7 +52,8 @@ const EXAMPLE_B = `entity_id,value,valid_from,valid_to,visible_from,visible_to
 3,object_v1,2024-01-01,2024-12-31,2024-01-01T00:00:00,2024-12-31T00:00:00
 3,object_v2,2024-01-01,2024-12-31,2025-01-01T00:00:00,9999-12-31T00:00:00
 5,object_v1,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
-5,object_v2,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
+5,object_v2,2024-01-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00
+4,object_active,2024-06-01,2024-12-31,2024-01-01T00:00:00,9999-12-31T00:00:00`;
 
 export default function Home() {
   const [guidedDemoStep, setGuidedDemoStep] = useState<number | null>(null);
@@ -636,13 +638,25 @@ export default function Home() {
   const activeTemporalIssues = useMemo(
     () =>
       buildTemporalIssues({
+        rows: activeRows,
+        sourceAName: sourceNameA,
+        sourceBName: sourceNameB,
         joinIssues: activeJoinIssues,
         gaps: activeGaps,
         overlapMarkers: activeOverlapMarkers,
         drifts: activeDrifts,
         validationMode,
       }),
-    [activeJoinIssues, activeGaps, activeOverlapMarkers, activeDrifts, validationMode]
+    [
+      activeRows,
+      sourceNameA,
+      sourceNameB,
+      activeJoinIssues,
+      activeGaps,
+      activeOverlapMarkers,
+      activeDrifts,
+      validationMode,
+    ]
   );
 
   const activeMissingMatchCount = activeJoinIssues.filter(
@@ -737,12 +751,15 @@ export default function Home() {
       : sourceSummaryB;
 
   const temporalIssues = buildTemporalIssues({
-    joinIssues,
-    gaps,
-    overlapMarkers,
-    drifts,
+    rows: activeRows,
+    sourceAName: sourceNameA,
+    sourceBName: sourceNameB,
+    joinIssues: activeJoinIssues,
+    gaps: activeGaps,
+    overlapMarkers: activeOverlapMarkers,
+    drifts: activeDrifts,
     validationMode,
-  });
+  })
 
   function selectTemporalIssue(issue: TemporalIssue | null) {
     setSelectedTemporalIssue(issue);

@@ -85,11 +85,17 @@ export type GapIssue = {
   valid_to?: string;
 };
 
+export type DimensionCompletionIssue = {
+  sourceRow: BitemporalRow;
+  targetRows: BitemporalRow[];
+};
+
 export type SelectedDebugIssue =
   | { kind: "join"; issue: AggregatedJoinabilityIssue }
   | { kind: "gap"; issue: GapIssue }
   | { kind: "overlap"; issue: OverlapIssue }
-  | { kind: "drift"; issue: DriftSummary };
+  | { kind: "drift"; issue: DriftSummary }
+  | { kind: "dimension-completion"; issue: DimensionCompletionIssue };
 
 export type TemporalIssueType =
   | "OVERLAP"
@@ -97,6 +103,7 @@ export type TemporalIssueType =
   | "JOIN_GAP"
   | "JOIN_AMBIGUITY"
   | "VISIBILITY_LAG"
-  | "SNAPSHOT_DRIFT";
+  | "SNAPSHOT_DRIFT"
+  | "DIMENSION_COMPLETION_RISK";
 
 export type TemporalIssueSeverity = "low" | "medium" | "high";
