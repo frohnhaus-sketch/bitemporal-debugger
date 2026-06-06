@@ -63,7 +63,7 @@ export function analyzeSourceRelationship(
     case "RETROACTIVE_SOURCE|STATE_SOURCE":
     case "STATE_SOURCE|RETROACTIVE_SOURCE":
       return {
-        recommendedPattern: "Visible-Time Snapshotting",
+        recommendedPattern: "Related Pattern",
         complexity: "High",
         relationship: "Retroactive Source ↔ State Source",
         challenges: [

@@ -26,6 +26,6 @@ The interesting part is that most of these are not platform problems.
 
 They are historical modeling problems.
 
-Which one has caused you the most pain?
+Which one do you see most often?
 
 #DataEngineering #Databricks #DataModeling #DataWarehouse #AnalyticsEngineering #Lakehouse

@@ -86,4 +86,4 @@ npm run dev
 
 ## Status
 
-Early-stage prototype focused on historical source analysis and temporal data modeling workflows.
+Early-stage prototype focused on validation findings and temporal data modeling workflows.

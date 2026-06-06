@@ -3,6 +3,7 @@ import {
   analyzeSourceRelationship,
   detectHistoricalPatterns,
 } from "@/lib/sourceRelationships";
+import { IssueWhyPanel } from "@/components/IssueWhyPanel";
 import { buildTemporalIssues } from "../lib/temporalIssues";
 import type { TemporalIssue } from "../lib/types";
 import { track } from "@/lib/analytics";
@@ -420,7 +421,7 @@ export default function Home() {
         columnsA: [...new Set(
           parsedA.headerMappings.map((m) => m.original)
         )].slice(0, 20),
-        
+
         columnsB: [...new Set(
           parsedB.headerMappings.map((m) => m.original)
         )].slice(0, 20),
@@ -817,7 +818,7 @@ export default function Home() {
     }
 
     return {
-      label: "High Modeling Effort",
+      label: "High Validation Risk",
       background: "#fee2e2",
       border: "#fca5a5",
       color: "#991b1b",
@@ -873,7 +874,7 @@ export default function Home() {
               color: "#ffffff",
             }}
           >
-            Understand and Debug Historical Data Models
+            Validate Historical Data Models Before They Reach Production
           </h1>
           
           <p
@@ -1177,7 +1178,7 @@ export default function Home() {
                   textAlign: "center",
                 }}
               >
-                ✓ Historical Modeling Assessment ready
+                ✓ Validation Complete
               </div>
             )}
             {sourcePatterns.sourceA && sourcePatterns.sourceB && (
@@ -1194,7 +1195,7 @@ export default function Home() {
                   marginBottom: 18,
                 }}
               >
-                <h2 style={{ marginTop: 0 }}>Historical Modeling Assessment</h2>
+                <h2 style={{ marginTop: 0 }}>Validation Summary</h2>
 
                 <div
                   style={{
@@ -1214,7 +1215,7 @@ export default function Home() {
                       marginBottom: 8,
                     }}
                   >
-                    Detected Source Relationship
+                    Detected Historical Relationship
                   </div>
 
                   <div
@@ -1257,7 +1258,7 @@ export default function Home() {
                         marginBottom: 8,
                       }}
                     >
-                      Recommended Modeling Strategy
+                      Suggested Action
                     </div>
 
                     <div
@@ -1268,16 +1269,6 @@ export default function Home() {
                       }}
                     >
                       {relationshipAnalysis?.recommendation}
-                    </div>
-                    
-                    <div
-                      style={{
-                        marginTop: 8,
-                        fontSize: 13,
-                        color: "#64748b",
-                      }}
-                    >
-                      Pattern: <strong>{relationshipAnalysis?.recommendedPattern}</strong>
                     </div>
                   </div>
 
@@ -1292,7 +1283,7 @@ export default function Home() {
                       marginBottom: 8,
                     }}
                   >
-                    Expected Modeling Challenges
+                    Potential Risks
                   </div>
                   <div
                     style={{
@@ -1335,7 +1326,7 @@ export default function Home() {
                         marginBottom: 8,
                       }}
                     >
-                      Detected Historical Modeling Patterns
+                      Validation Findings
                     </div>
                     <div
                       style={{
@@ -1344,7 +1335,7 @@ export default function Home() {
                         marginBottom: 12,
                       }}
                     >
-                      Click a pattern to investigate the underlying findings.
+                      Click a finding to inspect the validation evidence.
                     </div>
                     {historicalPatterns.map((pattern) => {
                       const isPossiblePattern =
@@ -1433,7 +1424,7 @@ export default function Home() {
                     color: "#475569",
                   }}
                   >
-                    Source Patterns
+                    Source Characteristics
                   </summary>
 
                   <div
@@ -1546,7 +1537,7 @@ export default function Home() {
                                 marginBottom: 8,
                               }}
                             >
-                              Modeling Implication
+                              Validation Notes
                             </div>
 
                             <div
@@ -1590,7 +1581,7 @@ export default function Home() {
                   color: "#475569",
                 }}
                 >
-                  Historical Snapshot
+                  Validation Context
                 </summary>
                 
                 <div style={{ marginTop: 12 }}>
@@ -1602,8 +1593,8 @@ export default function Home() {
                       marginBottom: 12,
                     }}
                   >
-                    Analyze the model at a specific point in time.
-                    The timeline, findings and SQL predicate are updated automatically.
+                    Validate the model at a specific historical point in time.
+                    Findings, timeline evidence and snapshot filters update automatically.
                   </div>
                   
                   <div
@@ -1745,6 +1736,11 @@ export default function Home() {
                   hasAnalyzed={hasAnalyzed}
                 />
 
+                <IssueWhyPanel
+                  selectedIssue={selectedIssue}
+                  selectedTemporalIssue={selectedTemporalIssue}
+                />
+
                 <div ref={timelineRef} style={{ marginTop: 20 }}>
                   <Timeline
                     rows={activeRows}
@@ -1768,11 +1764,7 @@ export default function Home() {
                   top: isMobile ? undefined : 20,
                 }}
               >
-                <SqlPanel
-                  sql={sql}
-                  selectedIssue={selectedIssue}
-                  selectedTemporalIssue={selectedTemporalIssue}
-                />
+                <SqlPanel sql={sql} />
               </div>
             </div>
 
@@ -1824,172 +1816,6 @@ export default function Home() {
               overlapMarkers={overlapMarkers}
             />
             </div>
-            {/* <div style={{ marginTop: 24 }}>
-            <details
-              style={{
-                background: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: 12,
-                padding: 16,
-                color: "#0f172a",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                marginBottom: 18,
-              }}
-            >
-              <summary
-              style={{
-                cursor: "pointer",
-                fontSize: 16,
-                fontWeight: 700,
-                color: "#475569",
-              }}
-              >
-                Source Summary
-              </summary>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: 14,
-                  marginTop: 16,
-                }}
-              >
-                {[sourceSummaryA, sourceSummaryB].map((summary) => (
-                  <div
-                    key={summary.sourceName}
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 12,
-                      padding: 16,
-                      color: "#0f172a",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        letterSpacing: 0.7,
-                        textTransform: "uppercase",
-                        color: "#64748b",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Historical source summary
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 17,
-                        fontWeight: 900,
-                        marginBottom: 12,
-                      }}
-                    >
-                      {summary.sourceName}
-                    </div>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      {[
-                        { label: "Entities", value: summary.entities, tone: "neutral" },
-                        { label: "Records", value: summary.records, tone: "neutral" },
-                        {
-                          label: "Avg. Records / Entity",
-                          value: summary.recordsPerEntity.toFixed(1),
-                          tone: "neutral",
-                        },
-                        { label: "Gaps", value: summary.gaps, tone: "neutral" },
-                        {
-                          label: "Valid overlaps",
-                          value: summary.validTimeOverlaps,
-                          tone: "red",
-                        },
-                        {
-                          label: "Bitemp. overlaps",
-                          value: summary.bitemporalOverlaps,
-                          tone: "purple",
-                        },
-                      ].map((metric) => {
-                        const hasFinding = Number(metric.value) > 0;
-
-                        const metricColor =
-                          !hasFinding
-                            ? "#64748b"
-                            : metric.tone === "orange"
-                            ? "#d97706"
-                            : metric.tone === "red"
-                            ? "#dc2626"
-                            : metric.tone === "purple"
-                            ? "#7c3aed"
-                            : "#0f172a";
-
-                        return (
-                          <div
-                            key={metric.label}
-                            style={{
-                              background: "#f8fafc",
-                              border: "1px solid #e2e8f0",
-                              borderRadius: 8,
-                              padding: "8px 10px",
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: 18,
-                                fontWeight: 900,
-                                lineHeight: 1,
-                                color: metricColor,
-                              }}
-                            >
-                              {metric.value}
-                            </div>
-
-                            <div
-                              style={{
-                                marginTop: 5,
-                                fontSize: 11,
-                                color: "#64748b",
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              {metric.label}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {sourceSummaryA.entities > 0 &&
-                sourceSummaryB.entities > 0 &&
-                densityRatio >= 1.5 && (
-                  <div
-                    style={{
-                      marginTop: 14,
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      background: "#eff6ff",
-                      border: "1px solid #bfdbfe",
-                      color: "#1e3a8a",
-                      fontSize: 13,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {denserSource.sourceName} has {densityRatio.toFixed(1)}× more
-                    records per entity.
-                  </div>
-                )}
-            </details>
-            </div> */}
           </>
         )}
         <Footer />

@@ -14,7 +14,7 @@ Released: June 2026
 
 ## Goal
 
-Move from temporal validation to historical modeling guidance.
+Move from temporal validation to historical investigation guide.
 
 -----------------------------------
 Historical Modeling Assessment v1.1

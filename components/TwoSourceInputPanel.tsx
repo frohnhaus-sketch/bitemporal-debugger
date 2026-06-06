@@ -58,22 +58,22 @@ export function TwoSourceInputPanel({
   const featureCards = [
     {
       icon: "⌕",
-      title: "Detect Historical Modeling Risks",
-      text: "Identify gaps, overlaps and unstable temporal relationships.",
+      title: "Detect Invalid Temporal Joins",
+      text: "Find duplicate matches, missing matches and join ambiguities before deployment.",
       bg: "#14532d",
       color: "#86efac",
     },
     {
       icon: "∞",
-      title: "Identify Modeling Patterns",
-      text: "Recognize late arriving dimensions, ambiguous history and snapshot risks.",
+      title: "Validate Historical Integrity",
+      text: "Detect gaps, overlaps and broken historical timelines.",
       bg: "#3b0764",
       color: "#d8b4fe",
     },
     {
       icon: "◷",
-      title: "Understand Historical Behavior",
-      text: "Learn how historized sources interact and why reporting may change over time.",
+      title: "Verify SCD2 Relationships",
+      text: "Ensure dimensions resolve correctly across time.",
       bg: "#1e3a8a",
       color: "#bfdbfe",
     },
@@ -130,7 +130,7 @@ export function TwoSourceInputPanel({
             lineHeight: 1.5,
           }}
         >
-          Start with the Example Assessment or paste your own historized datasets.
+          Upload two historized datasets and detect gaps, overlaps, duplicate matches and temporal inconsistencies in seconds.
         </div>
         <div
           style={{
@@ -198,7 +198,7 @@ export function TwoSourceInputPanel({
             🧪
           </span>
           
-          Run Example
+          Validate Example Model
         </button>
         </div>
         <div

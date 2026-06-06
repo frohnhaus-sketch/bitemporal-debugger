@@ -67,7 +67,7 @@ export function IssuesPanel({
       : [];
 
   const kpis = [
-    { label: "Broken Joins", value: joinIssues.length, filter: "JOIN" },
+    { label: "Missing Matches", value: joinIssues.length, filter: "JOIN" },
     { label: "Missing Coverage", value: gapIssues.length, filter: "VALID_GAP" },
     { label: "Overlapping History", value: overlapIssues.length, filter: "OVERLAP" },
     { label: "Visibility Lag", value: visibilityLagIssues.length, filter: "VISIBILITY_LAG" },
@@ -152,7 +152,7 @@ export function IssuesPanel({
       }}
     >
       <h3 style={{ margin: "0 0 10px", fontSize: 17 }}>
-        Historical Source Analysis
+        Validation Findings
       </h3>
 
       {!hasAnalyzed && (
