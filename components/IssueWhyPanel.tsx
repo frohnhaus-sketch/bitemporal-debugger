@@ -40,6 +40,10 @@ function getTitle(
     return "Historical changes become visible later than their valid-time effect";
   }
 
+  if (issue?.type === "SNAPSHOT_DRIFT") {
+    return "Validation result changed between visible-time snapshots";
+  }
+
   return issue?.title ?? "Validation Finding";
 }
 
@@ -65,6 +69,10 @@ function getExplanation(
 
   if (issue?.type === "VISIBILITY_LAG") {
     return "A historical change is valid earlier than it becomes visible. Validate whether this delay is expected business behavior, or whether the model may produce different answers depending on the visible-time perspective.";
+  }
+
+  if (issue?.type === "SNAPSHOT_DRIFT") {
+    return "The same historical validation produces a different result when evaluated from a later visible-time snapshot. This usually means late-arriving records changed what the model could know at the earlier point in time.";
   }
 
   return issue?.explanation ?? "Review this finding before deploying the historical model.";
@@ -119,6 +127,15 @@ function getChecks(
     ];
   }
 
+  if (issue?.type === "SNAPSHOT_DRIFT") {
+    return [
+      "Compare the early and later visible-time snapshots.",
+      "Check which entities changed their validation status.",
+      "Validate whether the drift is expected late-arriving history.",
+      "Decide whether historical reports must be reproducible as originally visible or recalculated with later knowledge.",
+    ];
+  }
+
   return [
     "Inspect the timeline evidence.",
     "Compare the affected source records.",
@@ -164,7 +181,7 @@ export function IssueWhyPanel({
           marginBottom: 8,
         }}
       >
-        Investigation Guide
+        Why this finding exists
       </div>
 
       <div
@@ -177,7 +194,7 @@ export function IssueWhyPanel({
         {title}
       </div>
 
-      {joinIssue && (
+      {joinIssue && (        
         <div
           style={{
             fontSize: 13,
@@ -186,6 +203,9 @@ export function IssueWhyPanel({
             marginBottom: 10,
           }}
         >
+          <div style={{ fontWeight: 800, color: "#334155", marginBottom: 4 }}>
+            Affected interval
+          </div>
           <div>
             <strong>Entity:</strong>{" "}
             {joinIssue.isAggregated
@@ -219,23 +239,42 @@ export function IssueWhyPanel({
             marginBottom: 10,
           }}
         >
-          <div>
-            <strong>Entity:</strong> {selectedTemporalIssue.entity_id}
+          <div style={{ fontWeight: 800, color: "#334155", marginBottom: 4 }}>
+            Affected interval
           </div>
-
-          <div>
-            <strong>Source:</strong> {selectedTemporalIssue.source}
-          </div>
-
-          {selectedTemporalIssue.from && selectedTemporalIssue.to && (
-            <div>
-              <strong>Interval:</strong>{" "}
-              {selectedTemporalIssue.from} → {selectedTemporalIssue.to}
-            </div>
+          {selectedTemporalIssue.type === "SNAPSHOT_DRIFT" ? (
+            <>
+              <div>
+                <strong>Comparison:</strong> Visible-time snapshots
+              </div>
+          
+              {selectedTemporalIssue.from && selectedTemporalIssue.to && (
+                <div>
+                  <strong>Visible-time range:</strong>{" "}
+                  {selectedTemporalIssue.from} → {selectedTemporalIssue.to}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div>
+                <strong>Entity:</strong> {selectedTemporalIssue.entity_id}
+              </div>
+          
+              <div>
+                <strong>Source:</strong> {selectedTemporalIssue.source}
+              </div>
+          
+              {selectedTemporalIssue.from && selectedTemporalIssue.to && (
+                <div>
+                  <strong>Interval:</strong>{" "}
+                  {selectedTemporalIssue.from} → {selectedTemporalIssue.to}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
-
       <div
         style={{
           padding: 10,
@@ -248,9 +287,16 @@ export function IssueWhyPanel({
           marginBottom: 10,
         }}
       >
+        <div
+          style={{
+            fontWeight: 800,
+            marginBottom: 6,
+          }}
+        >
+          What it means
+        </div>
         {explanation}
       </div>
-
       <div
         style={{
           padding: 10,

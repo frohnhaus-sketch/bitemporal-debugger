@@ -71,19 +71,37 @@ function formatJoinReason(reason: string) {
 }
 
 function getTemporalIssueAccent(type: TemporalIssue["type"]) {
-  if (type === "SNAPSHOT_DRIFT") {
+  if (type === "OVERLAP") {
     return {
-      border: "#14b8a6",
-      background: "#f0fdfa",
-      color: "#0f766e",
-      icon: "↔",
+      border: "#ef4444",
+      background: "#fff7f7",
+      color: "#b91c1c",
+      icon: "!",
+    };
+  }
+
+  if (type === "JOIN_AMBIGUITY") {
+    return {
+      border: "#2563eb",
+      background: "#eff6ff",
+      color: "#1d4ed8",
+      icon: "=",
+    };
+  }
+
+  if (type === "JOIN_GAP") {
+    return {
+      border: "#f59e0b",
+      background: "#fffaf0",
+      color: "#92400e",
+      icon: "−",
     };
   }
 
   if (type === "VALID_GAP") {
     return {
-      border: "#f59e0b",
-      background: "#fffaf0",
+      border: "#92400e",
+      background: "#fffbeb",
       color: "#92400e",
       icon: "?",
     };
@@ -98,10 +116,19 @@ function getTemporalIssueAccent(type: TemporalIssue["type"]) {
     };
   }
 
+  if (type === "SNAPSHOT_DRIFT") {
+    return {
+      border: "#0f766e",
+      background: "#f0fdfa",
+      color: "#0f766e",
+      icon: "↔",
+    };
+  }
+
   return {
-    border: "#3b82f6",
-    background: "#eff6ff",
-    color: "#1d4ed8",
+    border: "#64748b",
+    background: "#f8fafc",
+    color: "#475569",
     icon: "•",
   };
 }
@@ -136,7 +163,7 @@ export function IssuesPanel({
 
   useEffect(() => {
     if (!initialFilter || initialFilter === "ALL") return;
-  
+
     setActiveIssueFilter(mapInitialFilter(initialFilter));
   }, [initialFilter]);
 
@@ -263,9 +290,9 @@ export function IssuesPanel({
     const isSelected = selectedIssue === issue;
     const isAmbiguity = issue.type === "JOIN_AMBIGUITY";
 
-    const accentColor = isAmbiguity ? "#ef4444" : "#f59e0b";
-    const textColor = isAmbiguity ? "#b91c1c" : "#92400e";
-    const background = isAmbiguity ? "#fff7f7" : "#fffaf0";
+    const accentColor = isAmbiguity ? "#2563eb" : "#f59e0b";
+    const textColor = isAmbiguity ? "#1d4ed8" : "#92400e";
+    const background = isAmbiguity ? "#eff6ff" : "#fffaf0";
 
     return (
       <button
@@ -334,7 +361,7 @@ export function IssuesPanel({
                 fontSize: 15,
               }}
             >
-              {isAmbiguity ? "!" : "−"}
+              {isAmbiguity ? "=" : "−"}
             </span>
 
             <strong
@@ -548,6 +575,8 @@ export function IssuesPanel({
         flex: 1,
         background: "#ffffff",
         border: "1px solid #1e293b",
+        boxSizing: "border-box",
+        width: "100%",
         padding: 18,
         borderRadius: 12,
         boxShadow: "0 2px 6px rgba(0,0,0,0.04)",

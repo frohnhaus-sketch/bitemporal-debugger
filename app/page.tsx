@@ -1041,6 +1041,21 @@ export default function Home() {
           </p>
         </div>
       </section>
+      <div
+        style={{
+          marginBottom: 16,
+          padding: 12,
+          borderRadius: 10,
+          background: "#e0f2fe",
+          border: "1px solid #7dd3fc",
+          color: "#075985",
+          fontSize: 14,
+          lineHeight: 1.5,
+        }}
+      >
+        Start with the Guided Demo to understand the validation workflow,
+        or paste two historized sources from your own environment.
+      </div>
         <TwoSourceInputPanel
           fileNameA={fileNameA}
           fileNameB={fileNameB}
@@ -1824,6 +1839,10 @@ export default function Home() {
                 ref={snapshotActiveRef}
                 style={{
                   scrollMarginTop: 96,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  minWidth: 0,
+
                   marginBottom: 16,
                   padding: 14,
                   borderRadius: 12,
@@ -1832,10 +1851,13 @@ export default function Home() {
                   color: "#dbeafe",
                 }}
               >
-                <div
+                <div          
                   style={{
                     fontWeight: 700,
                     marginBottom: 10,
+                    width: "100%",
+                    boxSizing: "border-box",
+                    minWidth: 0,
                   }}
                 >
                   Historical Snapshot Active
@@ -1848,6 +1870,8 @@ export default function Home() {
                     flexWrap: "wrap",
                     marginBottom: 10,
                     fontSize: 13,
+                    minWidth: 0,
+                    width: "100%",
                   }}
                 >
                   {asOfDate && (
@@ -1867,6 +1891,7 @@ export default function Home() {
                   style={{
                     fontSize: 13,
                     opacity: 0.95,
+                    overflowWrap: "anywhere",
                   }}
                 >
                   Showing {activeTemporalIssues.length} findings
@@ -1888,12 +1913,23 @@ export default function Home() {
                   marginBottom: 20,
                 }}
               >
-              <div>
+            <div
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                minWidth: 0,
+                overflow: "hidden",
+              }}
+            >
               {guidedDemoStep && (
                 <div
                   ref={guidedDemoRef}
                   style={{
                     scrollMarginTop: 96,
+                    width: "100%",
+                    boxSizing: "border-box",
+                    minWidth: 0,
+                    overflowWrap: "anywhere",
                     marginBottom: 16,
                     padding: 14,
                     borderRadius: 12,
@@ -2106,7 +2142,7 @@ export default function Home() {
                       lineHeight: 1.5,
                     }}
                   >
-                    Inspect the underlying rows behind the selected finding.
+                    Review the source rows behind the selected finding and verify whether the detected behavior is expected.
                   </p>
                 </div>
                   
@@ -2127,7 +2163,7 @@ export default function Home() {
                   onSelectIssue={selectJoinIssue}
                   highlightedRow={highlightedRow}
                   onHighlightRow={scheduleHighlightRow}
-                  forceOpen={expandedSources.includes(sourceNameA)}
+                  forceOpen={hasSelectedFinding || expandedSources.includes(sourceNameA)}
                   overlapMarkers={overlapMarkers}
                 />
 
@@ -2138,7 +2174,7 @@ export default function Home() {
                   onSelectIssue={selectJoinIssue}
                   highlightedRow={highlightedRow}
                   onHighlightRow={scheduleHighlightRow}
-                  forceOpen={expandedSources.includes(sourceNameB)}
+                  forceOpen={hasSelectedFinding || expandedSources.includes(sourceNameB)}
                   overlapMarkers={overlapMarkers}
                 />
                 </div>
