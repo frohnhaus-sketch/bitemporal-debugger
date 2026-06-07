@@ -44,6 +44,10 @@ function getTitle(
     return "Validation result changed between visible-time snapshots";
   }
 
+  if (issue?.type === "DIMENSION_COMPLETION_RISK") {
+    return "The dimension does not cover the full historical interval";
+  }
+
   return issue?.title ?? "Validation Finding";
 }
 
@@ -73,6 +77,10 @@ function getExplanation(
 
   if (issue?.type === "SNAPSHOT_DRIFT") {
     return "The same historical validation produces a different result when evaluated from a later visible-time snapshot. This usually means late-arriving records changed what the model could know at the earlier point in time.";
+  }
+
+  if (issue?.type === "DIMENSION_COMPLETION_RISK") {
+    return "The target source covers only part of the required historical interval. Historical facts, contracts or core entities may exist for periods where no matching dimension record is available. This can lead to incomplete attributes, missing joins or incorrect historical snapshots.";
   }
 
   return issue?.explanation ?? "Review this finding before deploying the historical model.";
@@ -133,6 +141,15 @@ function getChecks(
       "Check which entities changed their validation status.",
       "Validate whether the drift is expected late-arriving history.",
       "Decide whether historical reports must be reproducible as originally visible or recalculated with later knowledge.",
+    ];
+  }
+
+  if (issue?.type === "DIMENSION_COMPLETION_RISK") {
+    return [
+      "Check whether the dimension history starts early enough.",
+      "Validate SCD2 generation and backfilling logic.",
+      "Verify that every fact interval has matching dimension coverage.",
+      "Test month-end and as-of snapshots for missing attributes.",
     ];
   }
 

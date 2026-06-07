@@ -171,20 +171,27 @@ export function Timeline({
       if (String(issue.entity_id) !== String(entityId)) return false;
       if (issue.source !== source) return false;
       if (!issue.from || !issue.to) return false;
-
+    
       if (issue.type === "JOIN_GAP" || issue.type === "JOIN_AMBIGUITY") {
         const originalJoinIssue =
           issue.originalIssue?.kind === "join" ? issue.originalIssue.issue : null;
-
+      
         if (!originalJoinIssue) return false;
-
+      
         return (
           originalJoinIssue.valid_from === row.valid_from &&
           originalJoinIssue.valid_to === row.valid_to
         );
       }
-
-      return true;
+    
+      if (issue.type === "DIMENSION_COMPLETION_RISK") {
+        return (
+          issue.from === row.valid_from &&
+          issue.to === row.valid_to
+        );
+      }
+    
+      return false;
     });
   }
 
@@ -289,26 +296,6 @@ export function Timeline({
           </div>
         </div>
       )}
-
-      <div
-        style={{
-          marginBottom: 16,
-          fontSize: 12,
-          color: "#64748b",
-          lineHeight: 1.6,
-        }}
-      >
-        <span style={{ color: "#d1d5db" }}>■</span> No data{" "}
-        <span style={{ margin: "0 8px", color: "#cbd5e1" }}>·</span>
-        <span style={{ color: "#64748b" }}>■</span> Valid interval{" "}
-        <span style={{ margin: "0 8px", color: "#cbd5e1" }}>·</span>
-        <span style={{ color: "#f59e0b" }}>■</span> Gap{" "}
-        <span style={{ margin: "0 8px", color: "#cbd5e1" }}>·</span>
-        <span style={{ color: "#ef4444" }}>■</span> Overlap{" "}
-        <span style={{ margin: "0 8px", color: "#cbd5e1" }}>·</span>
-        Dashed border = source alignment finding
-      </div>
-
       {Object.entries(groupedRows).map(([entityId, entityRows]) => {
         const sources = Array.from(
           new Set(entityRows.map((row) => row.source).filter(Boolean))
@@ -435,7 +422,11 @@ export function Timeline({
                       return (
                         <div
                           key={issue.id}
-                          title={`${issue.title}: ${displayFrom} → ${displayTo}`}
+                          title={
+                            issue.type === "DIMENSION_COMPLETION_RISK"
+                              ? `Dimension completion risk: ${displayFrom} → ${displayTo}`
+                              : `${issue.title}: ${displayFrom} → ${displayTo}`
+                          }
                           onClick={(event) => {
                             event.stopPropagation();
                           
@@ -454,9 +445,12 @@ export function Timeline({
                             width: `${getWidth(displayFrom, displayTo)}%`,
                             height: "100%",
                             border:
-                              issue.type === "JOIN_AMBIGUITY" ||
-                              issue.type === "OVERLAP"
+                              issue.type === "JOIN_AMBIGUITY"
+                                ? "3px dashed #2563eb"
+                                : issue.type === "OVERLAP"
                                 ? "3px dashed #ef4444"
+                                : issue.type === "DIMENSION_COMPLETION_RISK"
+                                ? "3px dashed #be123c"
                                 : "3px dashed #f59e0b",
                             background: isSelected
                               ? "rgba(59, 130, 246, 0.25)"

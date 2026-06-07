@@ -32,6 +32,13 @@ const legendItems: LegendItem[] = [
       "No matching interval found in the other source.",
   },
   {
+    label: "Dimension risk",
+    color: "#be123c",
+    dashed: true,
+    description:
+      "Target source covers only part of the required historical interval.",
+  },
+  {
     label: "Overlap",
     color: "#ef4444",
     description:
@@ -39,7 +46,7 @@ const legendItems: LegendItem[] = [
   },
   {
     label: "Ambiguous",
-    color: "#ef4444",
+    color: "#2563eb",
     dashed: true,
     description:
       "Multiple temporal matches found.",
