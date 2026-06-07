@@ -1360,7 +1360,7 @@ export default function Home() {
             {sourcePatterns.sourceA && sourcePatterns.sourceB && (
               <>
               <details
-                open={false}
+                open
                 style={{
                   width: "100%",
                   boxSizing: "border-box",
@@ -1381,7 +1381,7 @@ export default function Home() {
                     marginBottom: 12,
                   }}
                 >
-                  Validation Summary
+                  Historical Modeling Assessment
                 </summary>
                 <div
                   style={{
@@ -1521,7 +1521,7 @@ export default function Home() {
                         marginBottom: 12,
                       }}
                     >
-                      Click a finding to inspect the validation evidence.
+                      Investigate the findings below to understand the root cause and historical impact.
                     </div>
                     {historicalPatterns.map((pattern) => {
                       const isPossiblePattern =

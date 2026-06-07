@@ -828,15 +828,20 @@ export function IssuesPanel({
             activeIssueFilter === "JOIN_AMBIGUITY") &&
             filteredJoinIssues.length > 0 && (
               <div style={{ marginTop: 12 }}>
-                <p
-                  style={{
-                    fontSize: 13,
-                    color: "#64748b",
-                    margin: "0 0 10px",
-                  }}
-                >
-                  Click a finding to open the explanation.
-                </p>
+              <div
+                style={{
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  color: "#1e40af",
+                  padding: "12px 16px",
+                  borderRadius: 8,
+                  marginBottom: 16,
+                  fontSize: 14,
+                  fontWeight: 500,
+                }}
+              >
+                🔍 Click any finding below to investigate the root cause and recommended modeling strategy.
+              </div>
 
                 {filteredJoinIssues.map(renderJoinIssue)}
 
