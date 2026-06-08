@@ -67,6 +67,13 @@ export default function Home() {
 
     return () => window.removeEventListener("resize", update);
   }, []);
+  useEffect(() => {
+    track("page_view", {
+      path: window.location.pathname,
+      referrer: document.referrer,
+      url: window.location.href,
+    });
+  }, []);
   const [demoBeforeCount, setDemoBeforeCount] = useState<number | null>(null);
   const [showMapping, setShowMapping] = useState(false);
   const [maxColumns, setMaxColumns] = useState<number | "all">(8);
