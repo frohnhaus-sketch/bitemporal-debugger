@@ -29,7 +29,7 @@ export function track(event: string, data?: Record<string, unknown>) {
     return;
   }
 
-  fetch("/api/track", {
+  fetch("/api/capture", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
