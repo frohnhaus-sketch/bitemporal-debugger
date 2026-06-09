@@ -1,4 +1,7 @@
 "use client";
+import { AdvisorPanel } from "@/components/AdvisorPanel";
+import { GuidedDemoPanel } from "@/components/GuidedDemoPanel";
+import { AssessmentPanel } from "@/components/AssessmentPanel";
 import {
   analyzeSourceRelationship,
   detectHistoricalPatterns,
@@ -1077,9 +1080,38 @@ export default function Home() {
           lineHeight: 1.5,
         }}
       >
-        Start with the Guided Demo to understand the validation workflow,
-        or paste two historized sources from your own environment.
+        Start with the Advisor to design your historical model, then use the Validator to test historized sources and snapshot behavior.
       </div>
+      <AdvisorPanel />
+        <div style={{ margin: "28px 0 14px" }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 800,
+              color: "#93c5fd",
+              textTransform: "uppercase",
+              letterSpacing: 0.7,
+              marginBottom: 6,
+            }}
+          >
+            Historical Model Validator
+          </div>
+          
+          <h2 style={{ margin: 0, color: "#ffffff", fontSize: 26 }}>
+            Validate the model after implementation
+          </h2>
+          
+          <p
+            style={{
+              margin: "8px 0 0",
+              color: "#cbd5e1",
+              fontSize: 15,
+              lineHeight: 1.5,
+            }}
+          >
+            Paste two historized sources, detect temporal modeling risks and inspect timeline evidence.
+          </p>
+        </div>      
         <TwoSourceInputPanel
           fileNameA={fileNameA}
           fileNameB={fileNameB}
@@ -1364,496 +1396,21 @@ export default function Home() {
             >
               ✓ Validation Complete
             </div>
-            {sourcePatterns.sourceA && sourcePatterns.sourceB && (
-              <>
-              <details
-                open
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  background: "#ffffff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  padding: 14,
-                  marginTop: 18,
-                  marginBottom: 18,
-                }}
-              >
-                <summary
-                  style={{
-                    cursor: "pointer",
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: "#475569",
-                    marginBottom: 12,
-                  }}
-                >
-                  Historical Modeling Assessment
-                </summary>
-                <div
-                  style={{
-                    padding: 14,
-                    borderRadius: 12,
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.7,
-                      color: "#64748b",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Detected Historical Relationship
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 800,
-                      marginBottom: 8,
-                    }}
-                  >
-                    {relationshipAnalysis?.relationship}
-                  </div>
-
-                  {relationshipComplexityStyle && (
-                    <div
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        padding: "6px 10px",
-                        borderRadius: 999,
-                        background: relationshipComplexityStyle.background,
-                        border: `1px solid ${relationshipComplexityStyle.border}`,
-                        color: relationshipComplexityStyle.color,
-                        fontSize: 12,
-                        fontWeight: 800,
-                        marginBottom: 0,
-                      }}
-                    >
-                      {relationshipComplexityStyle.label}
-                    </div>
-                  )}
-
-                  <div style={{ marginTop: 16, marginBottom: 16 }}>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.7,
-                        color: "#64748b",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Suggested Action
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 22,
-                        fontWeight: 800,
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      {relationshipAnalysis?.recommendation}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.7,
-                      color: "#64748b",
-                      marginTop: 12,
-                      marginBottom: 8,
-                    }}
-                  >
-                    Potential Risks
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 8,
-                      marginBottom: 16,
-                    }}
-                  >
-                    {relationshipAnalysis?.challenges.map((challenge) => (
-                      <div
-                        key={challenge}
-                        style={{
-                          background: "#f1f5f9",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 999,
-                          padding: "6px 10px",
-                          fontSize: 13,
-                        }}
-                      >
-                        {challenge}
-                      </div>
-                    ))}
-                  </div>
-                {historicalPatterns.length > 0 && (
-                  <div
-                    style={{
-                      marginTop: 20,
-                      paddingTop: 16,
-                      borderTop: "1px solid #e2e8f0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.7,
-                        color: "#64748b",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Validation Findings
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "#64748b",
-                        marginBottom: 12,
-                      }}
-                    >
-                      Investigate the findings below to understand the root cause and historical impact.
-                    </div>
-                    {historicalPatterns.map((pattern) => {
-                      const isPossiblePattern =
-                        pattern.name.startsWith("Possible");
-                    
-                      return (
-                        <div
-                          key={pattern.name}
-                          style={{
-                            background: isPossiblePattern
-                              ? "#fffbeb"
-                              : "#fef2f2",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                            border: isPossiblePattern
-                              ? "1px solid #fde68a"
-                              : "1px solid #fecaca",
-                            borderRadius: 10,
-                            padding: 12,
-                            marginBottom: 8,
-                          }}
-                          onClick={() => {
-                            analysisRef.current?.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            });
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontWeight: 800,
-                              marginBottom: 4,
-                              color: isPossiblePattern
-                                ? "#92400e"
-                                : "#b91c1c",
-                            }}
-                          >
-                            {pattern.name}
-                          </div>
-                          
-                          <div
-                            style={{
-                              fontSize: 13,
-                              color: "#334155",
-                            }}
-                          >
-                          <div
-                            style={{
-                              marginBottom: 8,
-                              fontSize: 12,
-                              color: "#64748b",
-                            }}
-                          >
-                            <strong>Evidence</strong>
-                          
-                            {pattern.evidence.map((item) => (
-                              <div key={item}>
-                                • {item}
-                              </div>
-                            ))}
-                          </div>
-                            {pattern.description}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                </div>
-                <details
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 12,
-                    padding: 14,
-                    color: "#0f172a",
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                    marginTop: 8,
-                  }}
-                >
-                  <summary
-                  style={{
-                    cursor: "pointer",
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: "#475569",
-                  }}
-                  >
-                    Source Characteristics
-                  </summary>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-                      gap: 16,
-                      marginTop: 16,
-                    }}
-                  >
-                    {[sourcePatterns.sourceA, sourcePatterns.sourceB].map(
-                      (pattern, index) => (
-                        <div
-                          key={index}
-                          style={{
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 12,
-                            padding: 16,
-                            background: "#f8fafc",
-                            minWidth: 0,
-                            boxSizing: "border-box",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: 13,
-                              color: "#64748b",
-                              marginBottom: 4,
-                            }}
-                          >
-                            {index === 0 ? "Source A" : "Source B"}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 800,
-                              textTransform: "uppercase",
-                              letterSpacing: 0.7,
-                              color: "#64748b",
-                              marginBottom: 6,
-                            }}
-                          >
-                            Detected Pattern
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: 24,
-                              fontWeight: 800,
-                              marginBottom: 14,
-                            }}
-                          >
-                            {pattern.label.replace("Likely ", "")}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 800,
-                              textTransform: "uppercase",
-                              letterSpacing: 0.7,
-                              color: "#64748b",
-                              marginBottom: 8,
-                            }}
-                          >
-                            Indicators
-                          </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 8,
-                              marginBottom: 16,
-                            }}
-                          >
-                            {pattern.indicators.map((indicator) => (
-                              <div
-                                key={indicator}
-                                style={{
-                                  display: "flex",
-                                  gap: 8,
-                                  alignItems: "center",
-                                }}
-                              >
-                                <span style={{ color: "#16a34a", fontWeight: 700 }}>
-                                  ✓
-                                </span>
-                                <span>{indicator}</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div
-                            style={{
-                              background: "#ffffff",
-                              border: "1px solid #e2e8f0",
-                              borderRadius: 10,
-                              padding: 14,
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 800,
-                                textTransform: "uppercase",
-                                letterSpacing: 0.7,
-                                color: "#64748b",
-                                marginBottom: 8,
-                              }}
-                            >
-                              Validation Notes
-                            </div>
-
-                            <div
-                              style={{
-                                color: "#334155",
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              {pattern.modelingInsight}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </details>
-              </details>
-              <div
-                ref={validationContextRef}
-                style={{
-                  scrollMarginTop: 96,
-                  width: "100%",
-                  boxSizing: "border-box",
-                  marginBottom: 18,
-                  marginTop: 18,
-                }}
-              >
-              <details
-                open={
-                  guidedDemoStep === 2 ||
-                  guidedDemoStep === 3 ||
-                  Boolean(asOfDate || visibleAsOf)
-                }
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 12,
-                  padding: 14,
-                  color: "#0f172a",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                }}
-              >
-                <summary
-                style={{
-                  cursor: "pointer",
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "#475569",
-                }}
-                >
-                  Validation Context
-                </summary>
-                
-                <div style={{ marginTop: 12 }}>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      color: "#64748b",
-                      lineHeight: 1.5,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Validate the model at a specific historical point in time.
-                    Findings, timeline evidence and snapshot filters update automatically.
-                  </div>
-                  
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 16,
-                      flexWrap: "wrap",
-                      alignItems: "flex-end",
-                    }}
-                  >
-                    <div>
-                      <label style={{ fontSize: 12 }}>Valid As-of Date</label>
-                      <br />
-                      <input
-                        type="date"
-                        value={asOfDate || ""}
-                        onChange={(e) => setAsOfDate(e.target.value || "")}
-                      />
-                    </div>
-                  
-                    <div>
-                      <label style={{ fontSize: 12 }}>Visible As-of Timestamp</label>
-                      <br />
-                      <input
-                        type="datetime-local"
-                        value={visibleAsOf || ""}
-                        onChange={(e) => setVisibleAsOf(e.target.value || "")}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={resetDates}
-                      style={{
-                        padding: "9px 13px",
-                        borderRadius: 8,
-                        background: "#e2e8f0",
-                        color: "#334155",
-                        border: "1px solid #cbd5e1",
-                        cursor: "pointer",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                        transition: "all 0.15s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      Reset Dates
-                    </button>
-                  </div>
-                </div>
-              </details>
-            </div>
-              </>
-            )}
+          <AssessmentPanel
+            sourcePatterns={sourcePatterns}
+            relationshipAnalysis={relationshipAnalysis}
+            relationshipComplexityStyle={relationshipComplexityStyle}
+            historicalPatterns={historicalPatterns}
+            isMobile={isMobile}
+            analysisRef={analysisRef}
+            validationContextRef={validationContextRef}
+            guidedDemoStep={guidedDemoStep}
+            asOfDate={asOfDate}
+            visibleAsOf={visibleAsOf}
+            setAsOfDate={setAsOfDate}
+            setVisibleAsOf={setVisibleAsOf}
+            resetDates={resetDates}
+          />
           </div>
         )}
         {hasAnalyzed && (
@@ -1945,138 +1502,20 @@ export default function Home() {
                 overflow: "hidden",
               }}
             >
-              {guidedDemoStep && (
-                <div
-                  ref={guidedDemoRef}
-                  style={{
-                    scrollMarginTop: 96,
-                    width: "100%",
-                    boxSizing: "border-box",
-                    minWidth: 0,
-                    overflowWrap: "anywhere",
-                    marginBottom: 16,
-                    padding: 14,
-                    borderRadius: 12,
-                    background: "#e0f2fe",
-                    border: "1px solid #38bdf8",
-                    color: "#075985",
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {guidedDemoStep === 1 && (
-                    <>
-                      <div style={{ fontWeight: 900, marginBottom: 6 }}>
-                        Guided Demo · Step 1 of 3
-                      </div>
-                      <div>
-                        This model looks broken at first: several source records cannot find a matching historical target row.
-
-                        The Missing Matches category is already selected. Now choose one concrete finding below to inspect the validation evidence.
-                      </div>
-                    </>
-                  )}
-                  {guidedDemoStep === 2 && (
-                    <>
-                      <div style={{ fontWeight: 900, marginBottom: 6 }}>
-                        Guided Demo · Step 2 of 3
-                      </div>
-                  
-                      <div style={{ marginBottom: 10 }}>
-                        You selected a concrete finding. Now validate the same model from a later
-                        visible-time snapshot. Some findings may disappear when late-arriving
-                        records become visible.
-                      </div>
-                  
-                      <button
-                        type="button"
-                        onClick={() => {
-                          track("guided_demo_visibility_time_test");
-                          setDemoBeforeCount(activeMissingMatchCount);
-                          setVisibleAsOf("2025-01-02T00:00");
-                          setGuidedDemoStep(3);
-                          setPendingScrollTarget("snapshotActive");
-                          track("guided_demo_completed");
-                        }}
-                        style={{
-                          marginTop: 10,
-                          padding: "8px 12px",
-                          borderRadius: 8,
-                          background: "#0ea5e9",
-                          color: "#ffffff",
-                          border: "1px solid #38bdf8",
-                          fontWeight: 800,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Use later visible-time
-                      </button>
-                    </>
-                  )}
-                  {guidedDemoStep === 3 && (
-                    <>
-                      <div style={{ fontWeight: 900, marginBottom: 6 }}>
-                        Guided Demo · Step 3 of 3
-                      </div>
-                  
-                      <div style={{ fontWeight: 900, marginBottom: 8 }}>
-                        🎉 Aha Moment
-                      </div>
-                  
-                      <div
-                        style={{
-                          marginTop: 12,
-                          marginBottom: 12,
-                          padding: 12,
-                          borderRadius: 10,
-                          background: "#ffffff",
-                          border: "1px solid #86efac",
-                        }}
-                      >
-                        <div style={{ color: "#b91c1c", marginBottom: 4, fontWeight: 800 }}>
-                          Before: {demoBeforeCount} Missing Matches were detected
-                        </div>
-                      
-                        <div style={{ color: "#166534", fontWeight: 800 }}>
-                          After: {activeMissingMatchCount} Missing Matches
-                        </div>
-                      </div>
-                      
-                      <div>
-                        This is snapshot drift: the same historical model produces a different validation result after switching to a later visible-time snapshot.
-
-                        The join was not necessarily broken. Some target rows were valid for the
-                        business period, but were not visible at the earlier snapshot.
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setGuidedDemoStep(null);
-                        
-                          selectJoinIssue(null);
-                          selectTemporalIssue(null);
-                        
-                          setAsOfDate("");
-                          setVisibleAsOf("");
-                          setSql("");
-                        }}
-                        style={{
-                          marginTop: 12,
-                          padding: "8px 12px",
-                          borderRadius: 8,
-                          background: "#0ea5e9",
-                          color: "#ffffff",
-                          border: "1px solid #38bdf8",
-                          cursor: "pointer",
-                          fontWeight: 800,
-                        }}
-                      >
-                        End Demo
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
+              <GuidedDemoPanel
+                guidedDemoStep={guidedDemoStep}
+                guidedDemoRef={guidedDemoRef}
+                demoBeforeCount={demoBeforeCount}
+                activeMissingMatchCount={activeMissingMatchCount}
+                setDemoBeforeCount={setDemoBeforeCount}
+                setVisibleAsOf={setVisibleAsOf}
+                setGuidedDemoStep={setGuidedDemoStep}
+                setPendingScrollTarget={setPendingScrollTarget}
+                selectJoinIssue={selectJoinIssue}
+                selectTemporalIssue={selectTemporalIssue}
+                setAsOfDate={setAsOfDate}
+                setSql={setSql}
+              />
               <IssuesPanel
                 joinIssues={activeJoinIssues}
                 selectedIssue={selectedIssue}
