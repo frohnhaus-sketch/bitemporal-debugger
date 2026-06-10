@@ -884,13 +884,35 @@ export function IssuesPanel({
             </div>
           )}
           {filteredDimensionCompletionIssues.length > 0 && (
-            <div style={{ marginTop: 14 }}>
-              <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
-                Dimension Completion Risks
-              </h4>
-          
-              {filteredDimensionCompletionIssues.map(renderTemporalIssue)}
-            </div>
+            <button
+              onClick={() => onSelectTemporalIssue(filteredDimensionCompletionIssues[0])}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                cursor: "pointer",
+                padding: "12px 14px",
+                marginBottom: 8,
+                borderRadius: 8,
+                background: "#fff1f2",
+                border: "1px solid #be123c",
+                color: "#0f172a",
+                fontFamily: "inherit",
+                fontSize: 13,
+                lineHeight: 1.35,
+              }}
+            >
+              <strong style={{ color: "#9f1239" }}>
+                Dimension completion risks
+              </strong>
+            
+              <div style={{ marginTop: 6, color: "#475569" }}>
+                {filteredDimensionCompletionIssues.length} source intervals are not fully covered by the target history.
+              </div>
+            
+              <div style={{ marginTop: 6, color: "#9f1239", fontWeight: 700 }}>
+                Click to inspect first affected interval →
+              </div>
+            </button>
           )}
           {filteredVisibilityLagIssues.length > 0 && (
             <div style={{ marginTop: 14 }}>

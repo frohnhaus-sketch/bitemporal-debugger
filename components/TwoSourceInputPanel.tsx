@@ -44,42 +44,19 @@ export function TwoSourceInputPanel({
   const canAnalyze = Boolean(inputA.trim() && inputB.trim());
   const [dragTarget, setDragTarget] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const updateIsMobile = () => {
       setIsMobile(window.innerWidth < 900);
     };
-  
+
     updateIsMobile();
     window.addEventListener("resize", updateIsMobile);
-  
+
     return () => {
       window.removeEventListener("resize", updateIsMobile);
     };
   }, []);
-  const featureCards = [
-    {
-      icon: "⌕",
-      title: "Detect Invalid Temporal Joins",
-      text: "Find duplicate matches, missing matches and join ambiguities before deployment.",
-      bg: "#14532d",
-      color: "#86efac",
-    },
-    {
-      icon: "∞",
-      title: "Validate Historical Integrity",
-      text: "Detect gaps, overlaps and broken historical timelines.",
-      bg: "#3b0764",
-      color: "#d8b4fe",
-    },
-    {
-      icon: "◷",
-      title: "Verify SCD2 Relationships",
-      text: "Ensure dimensions resolve correctly across time.",
-      bg: "#1e3a8a",
-      color: "#bfdbfe",
-    },
-  ];
 
   const sources = [
     {
@@ -92,7 +69,8 @@ export function TwoSourceInputPanel({
       setInput: setInputA,
       upload: onUploadA,
       color: "#22c55e",
-      placeholder: "Paste query results, Databricks display() output, Excel data or CSV/TSV... for Source A",
+      placeholder:
+        "Paste historized source, target table output, Databricks display(), SQL result grid, CSV or TSV...",
     },
     {
       fileName: fileNameB,
@@ -104,7 +82,8 @@ export function TwoSourceInputPanel({
       setInput: setInputB,
       upload: onUploadB,
       color: "#3b82f6",
-      placeholder: "Paste query results, Databricks display() output, Excel data or CSV/TSV... for Source B",
+      placeholder:
+        "Paste the second historized source, target table output, Databricks display(), SQL result grid, CSV or TSV...",
     },
   ];
 
@@ -112,589 +91,441 @@ export function TwoSourceInputPanel({
     <div
       style={{
         marginBottom: 16,
-        padding: isMobile ? "0 12px" : undefined,
+        padding: isMobile ? "0 4px" : undefined,
       }}
     >
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 18,
-          marginBottom: 22,
+          marginBottom: 16,
+          padding: 14,
+          borderRadius: 12,
+          border: "1px solid #1e293b",
+          background: "#0f172a",
+          color: "#cbd5e1",
+          fontSize: 13,
+          lineHeight: 1.5,
         }}
       >
-        <div
-          style={{
-            fontSize: 21,
-            fontWeight: 700,
-            maxWidth: 900,
-            color: "#e2e8f0",
-            lineHeight: 1.5,
-          }}
-        >
-          Upload two historized datasets and detect gaps, overlaps, duplicate matches and temporal inconsistencies in seconds.
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 16,
-            alignItems: "flex-end",
-            flexWrap: "wrap",
-          }}
-        >
+        Compare two historized datasets when you need row-level evidence for
+        temporal joins, source-vs-target validation, SCD2 coverage or
+        late-arriving history.
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: 14,
+        }}
+      >
         <button
           type="button"
           onClick={onLoadGuidedDemo}
-          style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid #38bdf8",
-            background: "#0ea5e9",
-            color: "#ffffff",
-            fontWeight: 800,
-            cursor: "pointer",
-            boxShadow: "0 8px 20px rgba(14,165,233,0.25)",
-          }}
+          style={secondaryButtonStyle("#0ea5e9", "#38bdf8")}
         >
           ▶ Guided Demo
         </button>
+
         <button
+          type="button"
           onClick={onLoadExample}
-          style={{
-            height: 58,
-            minWidth: 240,
-            padding: "0 26px",
-            borderRadius: 12,
-          
-            background:
-              "linear-gradient(180deg, #1f2937 0%, #111827 100%)",
-          
-            border: "1px solid rgba(34,197,94,0.45)",
-          
-            boxShadow:
-              "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 12px rgba(0,0,0,0.18)",
-          
-            color: "#ffffff",
-            fontWeight: 700,
-            fontSize: 15,
-          
-            cursor: "pointer",
-          
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-          
-            transition: "all 0.18s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-1px)";
-          
-            e.currentTarget.style.border =
-              "1px solid rgba(52,211,153,0.75)";
-          
-            e.currentTarget.style.boxShadow =
-              "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(34,197,94,0.12)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-          
-            e.currentTarget.style.border =
-              "1px solid rgba(34,197,94,0.45)";
-          
-            e.currentTarget.style.boxShadow =
-              "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 12px rgba(0,0,0,0.18)";
-          }}
+          style={secondaryButtonStyle("#111827", "rgba(34,197,94,0.55)")}
         >
-          <span
-            style={{
-              fontSize: 18,
-              lineHeight: 1,
-              opacity: 0.95,
-            }}
-          >
-            🧪
-          </span>
-          Validate Example Model
+          🧪 Validate Example
         </button>
-        </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          {featureCards.map((card) => (
-            <div
-              key={card.title}
-              style={{
-                display: "flex",
-                gap: 14,
-                alignItems: "flex-start",
-                background: "#020617",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.16)",
-                border: "1px solid #1e293b",
-                borderRadius: 12,
-                padding: 20,
-                minHeight: 112,
-              }}
-            >
-              <div
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 12,
-                  background: card.bg,
-                  color: card.color,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 26,
-                  flexShrink: 0,
-                }}
-              >
-                {card.icon}
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    color: "#e2e8f0",
-                    fontSize: 15,
-                    fontWeight: 800,
-                    marginBottom: 8,
-                  }}
-                >
-                  {card.title}
-                </div>
-
-                <div
-                  style={{
-                    color: "#94a3b8",
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {card.text}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            marginBottom: "-10px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 14,
-              color: "#94a3b8",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              marginBottom: 6,
-            }}
-          >
-            How it works
-          </div>
-          
-          <div
-            style={{
-              fontSize: 16,
-              color: "#cbd5f5",
-              fontWeight: 600,
-            }}
-          >
-            Upload → Analyze → Identify Patterns → Validate Findings
-          </div>
-        </div>
-      </div>
 
         <div
           style={{
-            marginTop: 12,
-            padding: "12px 16px",
-            borderRadius: 10,
-            border: "1px solid #1e293b",
-            background: "#020617",
+            marginLeft: "auto",
             color: "#94a3b8",
-            fontSize: 13,
-            lineHeight: 1.5,
+            fontSize: 12,
+            lineHeight: 1.4,
           }}
         >
-          <strong style={{ color: "#cbd5e1" }}>🔒 Your data never leaves the browser.
-Uploaded datasets remain in your session and are not stored.</strong>
+          Upload → Analyze → Inspect findings
         </div>
-
-        <div
-          style={{
-            marginTop: 8,
-            display: "grid",
-            gridTemplateColumns:
-              isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
-            gap: 20,
-          }}
-        >
-        {sources.map((source) => (
-          <div
-            key={source.label}
-            style={{
-              background: "#020617",
-              border: "1px solid #334155",
-              borderRadius: 16,
-              padding:
-                isMobile ? 14 : 18,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-            }}
-          >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  marginBottom: 16,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 7,
-                      border: `1px solid ${source.color}`,
-                      color: source.color,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 900,
-                      fontSize: 14,
-                    }}
-                  >
-                    {source.label}
-                  </div>
-                  
-                  <div
-                    style={{
-                      color: source.color,
-                      fontWeight: 900,
-                      fontSize: 17,
-                    }}
-                  >
-                    {source.title}
-                  </div>
-                </div>
-                  
-                {source.label === "B" && (
-                  <button
-                    title="Useful for self-join debugging"
-                    onClick={onCopyAtoB}
-                    style={{
-                      padding: "6px 9px",
-                      borderRadius: 8,
-                      border: "1px solid #334155",
-                      background: "#1e293b",
-                      color: "#e2e8f0",
-                      cursor: "pointer",
-                      fontWeight: 800,
-                      fontSize: 11,
-                      whiteSpace: "nowrap",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-1px)";
-                      e.currentTarget.style.background = "#020617";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.background = "#0f172a";
-                    }}
-                  >
-                    Copy A → B
-                  </button>
-                )}
-              </div>
-            <label
-              style={{
-                display: "block",
-                color: "#e2e8f0",
-                fontSize: 13,
-                marginBottom: 6,
-              }}
-            >
-              {source.title} name
-            </label>
-
-            <input
-              value={source.name}
-              onChange={(e) => source.setName(e.target.value)}
-              style={{
-                width: "100%",
-                marginBottom: 12,
-                padding: "11px 12px",
-                borderRadius: 9,
-                border: "1px solid #334155",
-                background: "#020617",
-                color: "#e2e8f0",
-                fontSize: 14,
-                boxSizing: "border-box",
-              }}
-            />
-
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragTarget(source.label);
-              }}
-
-              onDragLeave={() => {
-                setDragTarget(null);
-              }}
-
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragTarget(null);
-              
-                const file = e.dataTransfer.files?.[0];
-              
-                if (!file) return;
-              
-                const syntheticEvent = {
-                  target: {
-                    files: [file],
-                  },
-                } as unknown as ChangeEvent<HTMLInputElement>;
-              
-                source.upload(syntheticEvent);
-              }}
-                style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                padding: 14,
-                borderRadius: 12,
-                border:
-                  dragTarget === source.label
-                    ? "2px solid #3b82f6"
-                    : "1px solid #334155",
-                background:
-                  dragTarget === source.label
-                    ? "#0f172a"
-                    : "#020617",
-                marginBottom: 12,
-                transition: "all 0.15s ease",
-              }}
-            >
-              <div
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 12,
-                  border: `1px solid ${source.color}`,
-                  color: source.color,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 24,
-                  flexShrink: 0,
-                }}
-              >
-                ⇧
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    color: "#ffffff",
-                    fontWeight: 900,
-                    fontSize: 15,
-                    marginBottom: 4,
-                  }}
-                >
-                  {dragTarget === source.label
-                    ? "Drop file here"
-                    : "Upload CSV"}
-                </div>
-
-                {source.fileName ? (
-                  <>
-                    <div style={{ color: "#22c55e", fontSize: 12, lineHeight: 1.4 }}>
-                      ✓ {source.fileName}
-                    </div>
-                    <div style={{ color: "#94a3b8", fontSize: 11, lineHeight: 1.4 }}>
-                      Loaded successfully
-                    </div>
-                  </>
-                ) : (
-                  <div
-                    style={{
-                      color: "#94a3b8",
-                      fontSize: 12,
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    Drag & drop CSV, TSV or TXT files or click Browse.
-                  </div>
-                )}
-              </div>
-
-              <label
-                style={{
-                  padding: "8px 13px",
-                  borderRadius: 8,
-                  background: "#111827",
-                  color: "#e2e8f0",
-                  border: "1px solid #475569",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 800,
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.background = "#020617";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.background = "#0f172a";
-                }}
-              >
-                Browse
-                <input
-                  type="file"
-                  accept=".csv,.tsv,.txt"
-                  onChange={source.upload}
-                  style={{ display: "none" }}
-                />
-              </label>
-            </div>
-
-            <textarea
-              value={source.input}
-              onChange={(e) => source.setInput(e.target.value)}
-              placeholder={source.placeholder}
-              spellCheck={false}
-              autoCorrect="off"
-              autoCapitalize="off"
-              autoComplete="off"
-              style={{
-                fontSize: 12,
-                whiteSpace: "pre",
-                width: "100%",
-                height: 140,
-                fontFamily: "monospace",
-                padding: 12,
-                borderRadius: 10,
-                border: "1px solid #334155",
-                background: "#020617",
-                color: "#e2e8f0",
-                resize: "vertical",
-                boxSizing: "border-box",
-                lineHeight: 1.5,
-              }}
-            />
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#94a3b8",
-                fontSize: 12,
-              }}
-            >
-              Supported columns (auto-mapped): entity_id, value, valid_from, valid_to,
-              [visible_from, visible_to]
-            </div>
-          </div>
-        ))}
       </div>
-      {controls}
+
       <div
         style={{
-          marginTop: 12,
-          marginBottom: 24,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 8,
+          marginBottom: 12,
+          padding: "10px 12px",
+          borderRadius: 10,
+          border: "1px solid #1e293b",
+          background: "#020617",
+          color: "#94a3b8",
+          fontSize: 12,
+          lineHeight: 1.5,
         }}
       >
-        <div
-          style={{
-            minWidth: 330,
-          }}
-        >
-          {analysisModeControl}
-        </div>
+        <strong style={{ color: "#cbd5e1" }}>🔒 Local session only.</strong>{" "}
+        Uploaded datasets remain in your browser session and are not stored.
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
+          gap: 16,
+        }}
+      >
+        {sources.map((source) => (
+          <SourceInputCard
+            key={source.label}
+            source={source}
+            dragTarget={dragTarget}
+            setDragTarget={setDragTarget}
+            onCopyAtoB={onCopyAtoB}
+          />
+        ))}
+      </div>
+
+      {controls}
+
+      <div
+        style={{
+          marginTop: 14,
+          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        {analysisModeControl && (
+          <div
+            style={{
+              minWidth: isMobile ? "100%" : 260,
+            }}
+          >
+            {analysisModeControl}
+          </div>
+        )}
+
         <button
+          type="button"
           onClick={() => {
             if (!canAnalyze) return;
             onAnalyze();
           }}
           disabled={!canAnalyze}
           style={{
-            height: 60,
-            width: "100%",
-            maxWidth: 420,
-            padding: "0 26px",
+            height: 52,
+            width: isMobile ? "100%" : 320,
+            padding: "0 22px",
             borderRadius: 12,
-          
             background: canAnalyze
               ? "linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)"
               : "#1e293b",
-          
             color: "#ffffff",
-          
             border: canAnalyze
               ? "1px solid rgba(147,197,253,0.35)"
               : "1px solid rgba(255,255,255,0.08)",
-          
-            fontWeight: 750,
-            fontSize: 17,
-          
+            fontWeight: 800,
+            fontSize: 15,
             cursor: canAnalyze ? "pointer" : "not-allowed",
             opacity: canAnalyze ? 1 : 0.58,
-          
             boxShadow: canAnalyze
-              ? "0 1px 0 rgba(255,255,255,0.12) inset, 0 8px 24px rgba(37,99,235,0.22)"
+              ? "0 8px 24px rgba(37,99,235,0.22)"
               : "none",
-          
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 10,
-          
             transition: "all 0.18s ease",
           }}
-          onMouseEnter={(e) => {
-            if (!canAnalyze) return;
-          
-            e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.background =
-              "linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)";
-            e.currentTarget.style.border =
-              "1px solid rgba(191,219,254,0.50)";
-            e.currentTarget.style.boxShadow =
-              "0 1px 0 rgba(255,255,255,0.14) inset, 0 10px 28px rgba(37,99,235,0.28)";
-          }}
-          onMouseLeave={(e) => {
-            if (!canAnalyze) return;
-          
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.background =
-              "linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)";
-            e.currentTarget.style.border =
-              "1px solid rgba(147,197,253,0.35)";
-            e.currentTarget.style.boxShadow =
-              "0 1px 0 rgba(255,255,255,0.12) inset, 0 8px 24px rgba(37,99,235,0.22)";
-          }}
         >
-          <span style={{ fontSize: 22, lineHeight: 1 }}>▷</span>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>▷</span>
           Analyze Sources
         </button>
       </div>
     </div>
   );
+}
+
+function SourceInputCard({
+  source,
+  dragTarget,
+  setDragTarget,
+  onCopyAtoB,
+}: {
+  source: {
+    fileName: string;
+    label: string;
+    title: string;
+    name: string;
+    setName: (value: string) => void;
+    input: string;
+    setInput: (value: string) => void;
+    upload: (event: ChangeEvent<HTMLInputElement>) => void;
+    color: string;
+    placeholder: string;
+  };
+  dragTarget: string | null;
+  setDragTarget: (value: string | null) => void;
+  onCopyAtoB: () => void;
+}) {
+  return (
+    <div
+      style={{
+        background: "#020617",
+        border: "1px solid #334155",
+        borderRadius: 14,
+        padding: 14,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.16)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 7,
+              border: `1px solid ${source.color}`,
+              color: source.color,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 900,
+              fontSize: 13,
+            }}
+          >
+            {source.label}
+          </div>
+
+          <div
+            style={{
+              color: source.color,
+              fontWeight: 900,
+              fontSize: 16,
+            }}
+          >
+            {source.title}
+          </div>
+        </div>
+
+        {source.label === "B" && (
+          <button
+            type="button"
+            title="Useful for self-join debugging"
+            onClick={onCopyAtoB}
+            style={{
+              padding: "6px 9px",
+              borderRadius: 8,
+              border: "1px solid #334155",
+              background: "#1e293b",
+              color: "#e2e8f0",
+              cursor: "pointer",
+              fontWeight: 800,
+              fontSize: 11,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Copy A → B
+          </button>
+        )}
+      </div>
+
+      <label
+        style={{
+          display: "block",
+          color: "#e2e8f0",
+          fontSize: 12,
+          marginBottom: 6,
+        }}
+      >
+        Name
+      </label>
+
+      <input
+        value={source.name}
+        onChange={(event) => source.setName(event.target.value)}
+        style={{
+          width: "100%",
+          marginBottom: 10,
+          padding: "9px 10px",
+          borderRadius: 8,
+          border: "1px solid #334155",
+          background: "#020617",
+          color: "#e2e8f0",
+          fontSize: 13,
+          boxSizing: "border-box",
+        }}
+      />
+
+      <div
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragTarget(source.label);
+        }}
+        onDragLeave={() => {
+          setDragTarget(null);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragTarget(null);
+
+          const file = event.dataTransfer.files?.[0];
+          if (!file) return;
+
+          const syntheticEvent = {
+            target: {
+              files: [file],
+            },
+          } as unknown as ChangeEvent<HTMLInputElement>;
+
+          source.upload(syntheticEvent);
+        }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: 12,
+          borderRadius: 10,
+          border:
+            dragTarget === source.label
+              ? "2px solid #3b82f6"
+              : "1px solid #334155",
+          background: dragTarget === source.label ? "#0f172a" : "#020617",
+          marginBottom: 10,
+          transition: "all 0.15s ease",
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            border: `1px solid ${source.color}`,
+            color: source.color,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 20,
+            flexShrink: 0,
+          }}
+        >
+          ⇧
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              color: "#ffffff",
+              fontWeight: 900,
+              fontSize: 13,
+              marginBottom: 3,
+            }}
+          >
+            {dragTarget === source.label ? "Drop file here" : "Upload or paste"}
+          </div>
+
+          {source.fileName ? (
+            <div style={{ color: "#22c55e", fontSize: 12, lineHeight: 1.4 }}>
+              ✓ {source.fileName}
+            </div>
+          ) : (
+            <div
+              style={{
+                color: "#94a3b8",
+                fontSize: 11,
+                lineHeight: 1.4,
+              }}
+            >
+              CSV, TSV or TXT
+            </div>
+          )}
+        </div>
+
+        <label
+          style={{
+            padding: "7px 11px",
+            borderRadius: 8,
+            background: "#111827",
+            color: "#e2e8f0",
+            border: "1px solid #475569",
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 800,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Browse
+          <input
+            type="file"
+            accept=".csv,.tsv,.txt"
+            onChange={source.upload}
+            style={{ display: "none" }}
+          />
+        </label>
+      </div>
+
+      <textarea
+        value={source.input}
+        onChange={(event) => source.setInput(event.target.value)}
+        placeholder={source.placeholder}
+        spellCheck={false}
+        autoCorrect="off"
+        autoCapitalize="off"
+        autoComplete="off"
+        style={{
+          fontSize: 12,
+          whiteSpace: "pre",
+          width: "100%",
+          height: 120,
+          fontFamily: "monospace",
+          padding: 10,
+          borderRadius: 10,
+          border: "1px solid #334155",
+          background: "#020617",
+          color: "#e2e8f0",
+          resize: "vertical",
+          boxSizing: "border-box",
+          lineHeight: 1.5,
+        }}
+      />
+
+      <div
+        style={{
+          marginTop: 8,
+          color: "#94a3b8",
+          fontSize: 11,
+          lineHeight: 1.4,
+        }}
+      >
+        Auto-mapped columns: entity_id, value, valid_from, valid_to,
+        visible_from, visible_to.
+      </div>
+    </div>
+  );
+}
+
+function secondaryButtonStyle(background: string, border: string): React.CSSProperties {
+  return {
+    height: 40,
+    padding: "0 13px",
+    borderRadius: 10,
+    background,
+    border: `1px solid ${border}`,
+    color: "#ffffff",
+    fontWeight: 800,
+    fontSize: 13,
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  };
 }

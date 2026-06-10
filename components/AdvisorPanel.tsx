@@ -21,14 +21,27 @@ export function AdvisorPanel() {
     historizedDimensions: "SCD2",
   });
 
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+
   const blueprint = useMemo(() => generateAdvisorBlueprint(answers), [answers]);
 
   const markdown = useMemo(
     () => generateAdvisorMarkdown(answers, blueprint),
     [answers, blueprint]
   );
-  
-  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+
+  const selectedSummary = [
+    getReportingGoalLabel(answers.reportingGoal),
+    ...answers.sourceTypes,
+    answers.historizedDimensions !== "NO"
+      ? getDimensionLabel(answers.historizedDimensions)
+      : null,
+    answers.historyCorrected === "YES" ? "late or corrected history" : null,
+    answers.multipleSystems === "YES" ? "multiple systems" : null,
+    answers.changingRelationships === "YES"
+      ? "time-dependent relationships"
+      : null,
+  ].filter(Boolean);
 
   function toggleSourceType(sourceType: SourceType) {
     setAnswers((prev) => {
@@ -46,22 +59,11 @@ export function AdvisorPanel() {
   async function copyMarkdownBlueprint() {
     await navigator.clipboard.writeText(markdown);
     setCopyState("copied");
-  
+
     window.setTimeout(() => {
       setCopyState("idle");
     }, 2000);
   }
-
-  const selectedSummary = [
-    getReportingGoalLabel(answers.reportingGoal),
-    ...answers.sourceTypes,
-    answers.historizedDimensions !== "NO"
-      ? getDimensionLabel(answers.historizedDimensions)
-      : null,
-    answers.historyCorrected === "YES" ? "late or corrected history" : null,
-    answers.multipleSystems === "YES" ? "multiple systems" : null,
-    answers.changingRelationships === "YES" ? "time-dependent relationships" : null,
-  ].filter(Boolean);
 
   return (
     <section
@@ -74,25 +76,15 @@ export function AdvisorPanel() {
         boxShadow: "0 4px 16px rgba(15, 23, 42, 0.08)",
       }}
     >
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 800,
-          color: "#2563eb",
-          textTransform: "uppercase",
-          letterSpacing: 0.7,
-          marginBottom: 8,
-        }}
-      >
-        Historical Modeling Advisor (Beta)
-      </div>
+      <SectionEyebrow>Historical Modeling Advisor</SectionEyebrow>
 
       <h2 style={{ margin: "0 0 8px", fontSize: 26 }}>
         Design the model before implementation
       </h2>
 
       <p style={{ color: "#475569", marginTop: 0, marginBottom: 24 }}>
-        Answer a few questions and get a recommended historical modeling blueprint.
+        Answer a few questions and get a recommended historical modeling
+        blueprint.
       </p>
 
       <div style={{ display: "grid", gap: 18 }}>
@@ -128,13 +120,7 @@ export function AdvisorPanel() {
           ]}
         >
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {([
-              "State Records",
-              "Events",
-              "Change Log / CDC",
-              "Reference Data",
-              "Business Relationships",
-            ] as SourceType[]).map((sourceType) => {
+            {SOURCE_TYPES.map((sourceType) => {
               const active = answers.sourceTypes.includes(sourceType);
 
               return (
@@ -266,18 +252,7 @@ export function AdvisorPanel() {
           border: "1px solid #93c5fd",
         }}
       >
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 800,
-            textTransform: "uppercase",
-            color: "#1d4ed8",
-            marginBottom: 6,
-            letterSpacing: 0.7,
-          }}
-        >
-          Recommended Architecture
-        </div>
+        <SectionEyebrow color="#1d4ed8">Recommended Architecture</SectionEyebrow>
 
         <div
           style={{
@@ -348,19 +323,8 @@ export function AdvisorPanel() {
           border: "1px solid #e2e8f0",
         }}
       >
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 800,
-            color: "#2563eb",
-            textTransform: "uppercase",
-            letterSpacing: 0.7,
-            marginBottom: 6,
-          }}
-        >
-          Markdown Blueprint
-        </div>
-      
+        <SectionEyebrow>Markdown Blueprint</SectionEyebrow>
+
         <p
           style={{
             margin: "0 0 14px",
@@ -369,10 +333,11 @@ export function AdvisorPanel() {
             lineHeight: 1.5,
           }}
         >
-          Generate a Markdown blueprint that can be used in project documentation,
-          architecture reviews, notebooks or implementation tickets.
+          Generate a Markdown blueprint that can be used in project
+          documentation, architecture reviews, notebooks or implementation
+          tickets.
         </p>
-      
+
         <button
           type="button"
           onClick={copyMarkdownBlueprint}
@@ -390,7 +355,7 @@ export function AdvisorPanel() {
             ? "Copied Markdown Blueprint"
             : "Copy Markdown Blueprint"}
         </button>
-          
+
         <details style={{ marginTop: 14 }}>
           <summary
             style={{
@@ -401,7 +366,7 @@ export function AdvisorPanel() {
           >
             Preview Markdown
           </summary>
-        
+
           <pre
             style={{
               marginTop: 12,
@@ -420,6 +385,37 @@ export function AdvisorPanel() {
         </details>
       </div>
     </section>
+  );
+}
+
+const SOURCE_TYPES: SourceType[] = [
+  "State Records",
+  "Events",
+  "Change Log / CDC",
+  "Reference Data",
+  "Business Relationships",
+];
+
+function SectionEyebrow({
+  children,
+  color = "#2563eb",
+}: {
+  children: React.ReactNode;
+  color?: string;
+}) {
+  return (
+    <div
+      style={{
+        fontSize: 12,
+        fontWeight: 800,
+        color,
+        textTransform: "uppercase",
+        letterSpacing: 0.7,
+        marginBottom: 8,
+      }}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -455,54 +451,6 @@ function QuestionBlock({
       )}
 
       <div style={{ marginTop: 8 }}>{children}</div>
-    </div>
-  );
-}
-
-function AdvisorOutput({
-  title,
-  items,
-}: {
-  title: string;
-  items: string[];
-}) {
-  if (items.length === 0) return null;
-
-  return (
-    <div
-      style={{
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderRadius: 12,
-        padding: 14,
-        minWidth: 0,
-      }}
-    >
-      <h4
-        style={{
-          margin: "0 0 10px",
-          fontSize: 14,
-          color: "#0f172a",
-        }}
-      >
-        {title}
-      </h4>
-
-      <ul
-        style={{
-          margin: 0,
-          paddingLeft: 18,
-          color: "#334155",
-          fontSize: 13,
-          lineHeight: 1.45,
-        }}
-      >
-        {items.map((item) => (
-          <li key={item} style={{ marginBottom: 6 }}>
-            {item}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
