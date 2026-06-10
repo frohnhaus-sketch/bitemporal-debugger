@@ -16,10 +16,10 @@ export function AdvisorPanel() {
   const [answers, setAnswers] = useState<AdvisorAnswers>({
     reportingGoal: "SNAPSHOT",
     sourceTypes: ["State Records", "Events"],
-    historyCorrected: "UNKNOWN",
-    multipleSystems: "NO",
-    changingRelationships: "NO",
-    historizedDimensions: "SCD2",
+    historyCorrected: "YES",
+    multipleSystems: "YES",
+    changingRelationships: "YES",
+    historizedDimensions: "BITEMPORAL",
   });
 
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -98,7 +98,7 @@ export function AdvisorPanel() {
 
       <p style={{ color: "#475569", marginTop: 0, marginBottom: 24 }}>
         Answer a few questions and get a recommended historical modeling
-        blueprint.
+        strategy.
       </p>
 
       <div style={{ display: "grid", gap: 18 }}>
@@ -231,11 +231,14 @@ export function AdvisorPanel() {
             <option value="NO">No, relationships are mostly stable</option>
           </select>
         </QuestionBlock>
-
         <QuestionBlock
-          title="6. How should descriptive attributes behave in reports?"
-          description="This decides whether dimensions should be current-only, SCD2-style, or fully bitemporal."
-          examples={["Customer segment", "Product category", "Advisor assignment"]}
+          title="6. When looking at a report from last year, which attributes should be shown?"
+          description="Choose how customer, product or relationship attributes should behave in historical reports."
+          examples={[
+            "Customer segment",
+            "Product category",
+            "Advisor assignment",
+          ]}
         >
           <select
             value={answers.historizedDimensions}
@@ -247,12 +250,10 @@ export function AdvisorPanel() {
             }
             style={inputStyle}
           >
-            <option value="NO">No dimensions needed</option>
-            <option value="SCD1">Always show latest attributes</option>
-            <option value="SCD2">Show attributes valid at reporting date</option>
-            <option value="BITEMPORAL">
-              Show attributes known at reporting snapshot
-            </option>
+            <option value="NO">No descriptive attributes are needed</option>
+            <option value="SCD1">Always show today's attributes (SCD1)</option>
+            <option value="SCD2">Show attributes that were valid back then (SCD2)</option>
+            <option value="BITEMPORAL">Show attributes that were known back then (Bitemporal)</option>
           </select>
         </QuestionBlock>
       </div>
@@ -266,7 +267,9 @@ export function AdvisorPanel() {
           border: "1px solid #93c5fd",
         }}
       >
-        <SectionEyebrow color="#1d4ed8">Recommended Architecture</SectionEyebrow>
+        <SectionEyebrow color="#1d4ed8">
+          Recommended Historical Modeling Strategy
+        </SectionEyebrow>
 
         <div
           style={{
@@ -290,9 +293,159 @@ export function AdvisorPanel() {
           Recommended because your selections indicate{" "}
           <strong>{selectedSummary.join(", ")}</strong>.
         </div>
+        {blueprint.patterns.length > 0 && (
+          <div style={{ marginTop: 18 }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 800,
+                color: "#475569",
+                marginBottom: 8,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              Recommended Patterns
+            </div>
+            
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {blueprint.patterns.map((pattern) => (
+                <span
+                  key={pattern}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    color: "#1d4ed8",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {pattern}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {blueprint.communityEvidence.length > 0 && (
+          <div style={{ marginTop: 18 }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 800,
+                color: "#1e40af",
+                marginBottom: 8,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              Community Evidence
+            </div>
+            
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 10,
+              }}
+            >
+              {blueprint.communityEvidence.map((item) => (
+                <div
+                  key={item.pattern}
+                  style={{
+                    padding: 12,
+                    borderRadius: 12,
+                    background: "#ffffff",
+                    border: "1px solid #bfdbfe",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      alignItems: "center",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <strong style={{ color: "#0f172a", fontSize: 13 }}>
+                      {item.pattern}
+                    </strong>
+                  
+                    <span
+                      style={{
+                        padding: "3px 7px",
+                        borderRadius: 999,
+                        background:
+                          item.priority === "HIGH"
+                            ? "#dbeafe"
+                            : item.priority === "MEDIUM"
+                            ? "#e0e7ff"
+                            : "#f1f5f9",
+                        color:
+                          item.priority === "HIGH"
+                            ? "#1d4ed8"
+                            : item.priority === "MEDIUM"
+                            ? "#4338ca"
+                            : "#475569",
+                        fontSize: 10,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {item.priority}
+                    </span>
+                  </div>
+                    
+                  <div
+                    style={{
+                      color: "#475569",
+                      fontSize: 12,
+                      lineHeight: 1.45,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {item.summary}
+                  </div>
+                  <div
+                    style={{
+                      color: "#64748b",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.4,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Common community topics
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    {item.observedIn.slice(0, 3).map((evidence) => (
+                      <span
+                        key={evidence}
+                        style={{
+                          padding: "4px 7px",
+                          borderRadius: 999,
+                          background: "#eff6ff",
+                          border: "1px solid #dbeafe",
+                          color: "#1d4ed8",
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {evidence}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {blueprint.risks.length > 0 && (
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 18 }}>
             <div
               style={{
                 fontSize: 12,
@@ -305,161 +458,22 @@ export function AdvisorPanel() {
             >
               Key Modeling Risks
             </div>
-
-            {blueprint.communityEvidence.length > 0 && (
-              <div style={{ marginTop: 18 }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: "#1e40af",
-                    marginBottom: 8,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Community Evidence
-                </div>
-                
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  {blueprint.communityEvidence.slice(0, 3).map((item) => (
-                    <div
-                      key={item.pattern}
-                      style={{
-                        padding: 12,
-                        borderRadius: 12,
-                        background: "#ffffff",
-                        border: "1px solid #bfdbfe",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 8,
-                          alignItems: "center",
-                          marginBottom: 6,
-                        }}
-                      >
-                        <strong style={{ color: "#0f172a", fontSize: 13 }}>
-                          {item.pattern}
-                        </strong>
-                      
-                        <span
-                          style={{
-                            padding: "3px 7px",
-                            borderRadius: 999,
-                            background:
-                              item.priority === "HIGH"
-                                ? "#dcfce7"
-                                : item.priority === "MEDIUM"
-                                ? "#fef3c7"
-                                : "#f1f5f9",
-                            color:
-                              item.priority === "HIGH"
-                                ? "#166534"
-                                : item.priority === "MEDIUM"
-                                ? "#92400e"
-                                : "#475569",
-                            fontSize: 10,
-                            fontWeight: 800,
-                          }}
-                        >
-                          {item.priority}
-                        </span>
-                      </div>
-                        
-                      <div
-                        style={{
-                          color: "#475569",
-                          fontSize: 12,
-                          lineHeight: 1.45,
-                          marginBottom: 8,
-                        }}
-                      >
-                        {item.summary}
-                      </div>
-                      
-                      <div
-                        style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: 5,
-                        }}
-                      >
-                        {item.observedIn.slice(0, 3).map((evidence) => (
-                          <span
-                            key={evidence}
-                            style={{
-                              padding: "4px 7px",
-                              borderRadius: 999,
-                              background: "#eff6ff",
-                              border: "1px solid #dbeafe",
-                              color: "#1d4ed8",
-                              fontSize: 11,
-                              fontWeight: 700,
-                            }}
-                          >
-                            {evidence}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {blueprint.validationChecks.length > 0 && (
-              <div style={{ marginTop: 18 }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: "#475569",
-                    marginBottom: 8,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Validation Checklist
-                </div>
-                
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 8,
-                  }}
-                >
-                  {blueprint.validationChecks.map((check) => (
-                    <span
-                      key={check}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 999,
-                        background: "#ecfeff",
-                        border: "1px solid #a5f3fc",
-                        color: "#155e75",
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      ✓ {check}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            <p
+              style={{
+                margin: "0 0 10px",
+                color: "#64748b",
+                fontSize: 12,
+                lineHeight: 1.45,
+              }}
+            >
+              These risks are derived from the selected reporting goal, source behavior and
+              historical complexity. They highlight what can break during implementation.
+            </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {blueprint.risks.slice(0, 4).map((risk) => (
+              {blueprint.risks.map((risk) => (
                 <span
                   key={risk}
+                  title={getRiskTooltip(risk)}
                   style={{
                     padding: "6px 10px",
                     borderRadius: 999,
@@ -476,6 +490,53 @@ export function AdvisorPanel() {
             </div>
           </div>
         )}
+
+        {blueprint.validationChecks.length > 0 && (
+          <div style={{ marginTop: 18 }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 800,
+                color: "#475569",
+                marginBottom: 8,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              Validation Checks
+            </div>
+            <p
+              style={{
+                margin: "0 0 10px",
+                color: "#64748b",
+                fontSize: 12,
+                lineHeight: 1.45,
+              }}
+            >
+              These checks should be implemented before publishing the historical model or
+              using it for reporting.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {blueprint.validationChecks.map((check) => (
+                <span
+                  key={check}
+                  title={getValidationCheckTooltip(check)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    background: "#ecfeff",
+                    border: "1px solid #a5f3fc",
+                    color: "#155e75",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  ✓ {check}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div
@@ -487,7 +548,7 @@ export function AdvisorPanel() {
           border: "1px solid #e2e8f0",
         }}
       >
-        <SectionEyebrow>Markdown Blueprint</SectionEyebrow>
+        <SectionEyebrow>Markdown Recommendation</SectionEyebrow>
 
         <p
           style={{
@@ -516,8 +577,8 @@ export function AdvisorPanel() {
           }}
         >
           {copyState === "copied"
-            ? "Copied Markdown Blueprint"
-            : "Copy Markdown Blueprint"}
+            ? "Copied Markdown Recommendation"
+            : "Copy Markdown Recommendation"}
         </button>
 
         <details style={{ marginTop: 14 }}>
@@ -531,21 +592,22 @@ export function AdvisorPanel() {
             Preview Markdown
           </summary>
 
-          <pre
+          <div
             style={{
               marginTop: 12,
-              padding: 14,
+              padding: 16,
               borderRadius: 10,
               background: "#0f172a",
               color: "#e2e8f0",
               overflowX: "auto",
-              whiteSpace: "pre-wrap",
-              fontSize: 12,
-              lineHeight: 1.5,
+              fontSize: 13,
+              lineHeight: 1.6,
+              maxHeight: 520,
+              overflowY: "auto",
             }}
           >
-            {markdown}
-          </pre>
+            {renderMarkdownPreview(markdown)}
+          </div>
         </details>
       </div>
     </section>
@@ -635,6 +697,213 @@ function getDimensionLabel(dimensionNeed: DimensionNeed) {
   if (dimensionNeed === "BITEMPORAL") return "bitemporal dimensions";
 
   return "no dimensions";
+}
+
+function getRiskTooltip(risk: string) {
+  if (risk === "Snapshot drift") {
+    return "Historical reports may change when the same reporting period is rebuilt later.";
+  }
+
+  if (risk === "Missing snapshot coverage") {
+    return "Entities or relationships may disappear from required reporting periods.";
+  }
+
+  if (risk === "Historical overlaps") {
+    return "Multiple records may be valid for the same business key and time period.";
+  }
+
+  if (risk === "Historical gaps") {
+    return "Required historical periods may have no valid record.";
+  }
+
+  if (risk === "Event-to-state mismatch") {
+    return "Events may be attached to the wrong historical state or dimension version.";
+  }
+
+  if (risk === "Identity mismatch") {
+    return "The same business entity may not be matched consistently across systems.";
+  }
+
+  if (risk === "Cross-system timeline drift") {
+    return "Different systems may represent changes at different points in time.";
+  }
+
+  if (risk === "Missing dimension coverage") {
+    return "Fact rows may not find a valid dimension row for the required reporting date.";
+  }
+
+  if (risk === "Duplicate events") {
+    return "The same business event may be counted more than once.";
+  }
+
+  if (risk === "Incorrect event ordering") {
+    return "Events may be interpreted in the wrong sequence.";
+  }
+
+  if (risk === "Lost correction history") {
+    return "Historical corrections may overwrite previous states instead of preserving what was known at the time.";
+  }
+
+  if (risk === "Non-reproducible audit results") {
+    return "Audit results may change when history is corrected or reloaded.";
+  }
+
+  if (risk === "Late arriving dimensions") {
+    return "Dimension records may become available after facts or snapshots were already produced.";
+  }
+
+  if (risk === "Incorrect historical relationships") {
+    return "Relationships may be assigned to the wrong historical period, causing incorrect rollups or ownership reporting.";
+  }
+
+  return "Review this risk during implementation and validation.";
+}
+
+function getValidationCheckTooltip(check: string) {
+  if (check === "Snapshot reproducibility") {
+    return "Verify that historical reports can be reproduced for the same reporting date.";
+  }
+
+  if (check === "One row per entity per snapshot") {
+    return "Check that each entity appears only once for each snapshot date.";
+  }
+
+  if (check === "Snapshot completeness validation") {
+    return "Check that all required entities are present for each reporting snapshot.";
+  }
+
+  if (check === "Late arriving dimension validation") {
+    return "Check whether dimension records arrive after related facts or snapshots.";
+  }
+
+  if (check === "Overlap detection") {
+    return "Detect records that are valid at the same time for the same business key.";
+  }
+
+  if (check === "Gap detection") {
+    return "Detect missing historical periods where a record should exist.";
+  }
+
+  if (check === "Event sequencing") {
+    return "Check that events are ordered correctly within each business entity.";
+  }
+
+  if (check === "Duplicate event detection") {
+    return "Check whether the same business event appears more than once.";
+  }
+
+  if (check === "Event alignment validation") {
+    return "Verify that each event maps to the correct historical state.";
+  }
+
+  if (check === "Visible-time validation") {
+    return "Check that visible_from and visible_to correctly represent when records became known.";
+  }
+
+  if (check === "Historical correction validation") {
+    return "Verify that corrected history preserves previous knowledge instead of overwriting it.";
+  }
+
+  if (check === "Identity resolution validation") {
+    return "Check that the same business entity is matched consistently across systems.";
+  }
+
+  if (check === "Cross-system conformance") {
+    return "Validate that timelines from different systems are aligned consistently.";
+  }
+
+  if (check === "Relationship history validation") {
+    return "Check that changing relationships are valid for the reporting period.";
+  }
+
+  if (check === "Dimension coverage validation") {
+    return "Verify that every fact row finds the correct dimension record for the reporting period.";
+  }
+
+  if (check === "Bitemporal reproducibility validation") {
+    return "Verify that attributes can be reproduced as they were known at the reporting snapshot.";
+  }
+
+  return "Review this validation check during implementation.";
+}
+
+function renderMarkdownPreview(markdown: string) {
+  return markdown.split("\n").map((line, index) => {
+    if (line.startsWith("# ")) {
+      return (
+        <h1
+          key={index}
+          style={{
+            fontSize: 24,
+            margin: "0 0 18px",
+            color: "#ffffff",
+          }}
+        >
+          {line.replace("# ", "")}
+        </h1>
+      );
+    }
+
+    if (line.startsWith("## ")) {
+      return (
+        <h2
+          key={index}
+          style={{
+            fontSize: 18,
+            margin: "22px 0 8px",
+            color: "#bfdbfe",
+          }}
+        >
+          {line.replace("## ", "")}
+        </h2>
+      );
+    }
+
+    if (line.startsWith("### ")) {
+      return (
+        <h3
+          key={index}
+          style={{
+            fontSize: 15,
+            margin: "16px 0 6px",
+            color: "#dbeafe",
+          }}
+        >
+          {line.replace("### ", "")}
+        </h3>
+      );
+    }
+
+    if (line.startsWith("- ")) {
+      return (
+        <div
+          key={index}
+          style={{
+            marginLeft: 14,
+            color: "#cbd5e1",
+          }}
+        >
+          • {line.replace("- ", "")}
+        </div>
+      );
+    }
+
+    if (!line.trim()) {
+      return <div key={index} style={{ height: 8 }} />;
+    }
+
+    return (
+      <p
+        key={index}
+        style={{
+          margin: "0 0 6px",
+          color: "#e2e8f0",
+        }}
+      >
+        {line}
+      </p>
+    );
+  });
 }
 
 const inputStyle = {

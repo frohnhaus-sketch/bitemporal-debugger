@@ -48,6 +48,72 @@ function unique(items: string[]) {
   return Array.from(new Set(items));
 }
 
+function sortByPreferredOrder(items: string[], preferredOrder: string[]) {
+  return [...items].sort((a, b) => {
+    const indexA = preferredOrder.indexOf(a);
+    const indexB = preferredOrder.indexOf(b);
+
+    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+
+    return indexA - indexB;
+  });
+}
+
+const PATTERN_ORDER = [
+  "State Modeling",
+  "Event Modeling",
+  "State ↔ Event Alignment",
+  "Relationship History",
+  "Identity Resolution",
+  "Temporal Conformance",
+  "Historical Correction",
+  "Dimension Completion",
+  "Bitemporal Modeling",
+  "Snapshot Reproducibility",
+  "Event Prioritization",
+  "CDC History Modeling",
+  "SCD1 Dimension Modeling",
+  "Reference Data Conformance",
+];
+
+const RISK_ORDER = [
+  "Historical overlaps",
+  "Historical gaps",
+  "Duplicate events",
+  "Incorrect event ordering",
+  "Event-to-state mismatch",
+  "Missing dimension coverage",
+  "Late arriving dimensions",
+  "Identity mismatch",
+  "Cross-system timeline drift",
+  "Incorrect historical relationships",
+  "Lost correction history",
+  "Non-reproducible audit results",
+  "Snapshot drift",
+  "Missing snapshot coverage",
+];
+
+const VALIDATION_ORDER = [
+  "Overlap detection",
+  "Gap detection",
+  "Event sequencing",
+  "Duplicate event detection",
+  "Event alignment validation",
+  "Dimension coverage validation",
+  "Late arriving dimension validation",
+  "Identity resolution validation",
+  "Cross-system conformance",
+  "Relationship history validation",
+  "Visible-time validation",
+  "Historical correction validation",
+  "Bitemporal reproducibility validation",
+  "Snapshot reproducibility",
+  "Snapshot completeness validation",
+  "One row per entity per snapshot",
+];
+
 const COMMUNITY_EVIDENCE: Record<string, CommunityEvidence> = {
   "Snapshot Reproducibility": {
     pattern: "Snapshot Reproducibility",
@@ -111,6 +177,32 @@ const COMMUNITY_EVIDENCE: Record<string, CommunityEvidence> = {
     summary:
       "Events often need to be mapped to the correct historical state at the time they occurred.",
   },
+
+  "Relationship History": {
+    pattern: "Relationship History",
+    priority: "MEDIUM",
+    observedIn: [
+      "Customer advisor changes",
+      "Ownership changes",
+      "Organizational hierarchies",
+      "Relationship bridges",
+    ],
+    summary:
+      "Business relationships often change over time and require historized relationship models.",
+  },
+
+  "Historical Correction": {
+    pattern: "Historical Correction",
+    priority: "HIGH",
+    observedIn: [
+      "Late arriving data",
+      "Backdated changes",
+      "Audit reporting",
+      "Historical restatements",
+    ],
+    summary:
+      "Historical records may change after reporting periods were already produced.",
+  },
 };
 
 export function generateAdvisorBlueprint(
@@ -143,9 +235,9 @@ export function generateAdvisorBlueprint(
 
   if (answers.reportingGoal === "POINT_IN_TIME") {
     recommendation = "Point-in-Time Historical Model";
-    architecture.push("Point-in-time reproducible historical model");
+    architecture.push("Point-in-time historical query layer");
     operations.push("Apply valid-time and visible-time filtering");
-    patterns.push("Snapshot Reproducibility");
+    patterns.push("State Modeling");
     validationChecklist.push("Validate as-of results for selected reporting dates");
   }
 
@@ -161,16 +253,24 @@ export function generateAdvisorBlueprint(
     notebookStructure.push("07_generate_month_end_snapshots");
     risks.push(
       "Snapshot drift",
-      "Missing snapshot coverage",
-      "Late arriving dimensions"
+      "Missing snapshot coverage"
     );
 
     validationChecks.push(
       "Snapshot reproducibility",
       "One row per entity per snapshot",
-      "Late arriving dimension validation",
       "Snapshot completeness validation"
     );
+  }
+
+  if (
+    answers.reportingGoal === "SNAPSHOT" &&
+    answers.historyCorrected === "YES" &&
+    (answers.historizedDimensions === "SCD2" ||
+      answers.historizedDimensions === "BITEMPORAL")
+  ) {
+    risks.push("Late arriving dimensions");
+    validationChecks.push("Late arriving dimension validation");
   }
 
   if (answers.reportingGoal === "EVENT") {
@@ -205,9 +305,18 @@ export function generateAdvisorBlueprint(
   }
 
   if (answers.sourceTypes.includes("Events")) {
-    operations.push(
-      "Align business events to the relevant state at reporting time"
-    );
+    patterns.push("Event Modeling");
+    operations.push("Model business events as point-in-time records");
+    validationChecklist.push("Check event ordering and duplicate event handling");
+    risks.push("Duplicate events", "Incorrect event ordering");
+    validationChecks.push("Event sequencing", "Duplicate event detection");
+  }
+
+  if (
+    answers.sourceTypes.includes("Events") &&
+    answers.sourceTypes.includes("State Records")
+  ) {
+    operations.push("Align business events to the relevant state at reporting time");
     patterns.push("State ↔ Event Alignment");
     validationChecklist.push("Check that each event maps to the expected state");
     risks.push("Event-to-state mismatch");
@@ -228,7 +337,7 @@ export function generateAdvisorBlueprint(
 
   if (answers.sourceTypes.includes("Business Relationships")) {
     operations.push("Historize relationships between business entities");
-    patterns.push("Temporal Relationship Modeling");
+    patterns.push("Relationship History");
     validationChecklist.push("Check relationship validity over time");
   }
 
@@ -237,6 +346,8 @@ export function generateAdvisorBlueprint(
     operations.push("Track when historical corrections became visible");
     patterns.push("Historical Correction");
     validationChecklist.push("Validate visible_from / visible_to intervals");
+    risks.push("Lost correction history");
+    validationChecks.push("Visible-time validation", "Historical correction validation");
   }
 
   if (answers.multipleSystems === "YES") {
@@ -252,9 +363,12 @@ export function generateAdvisorBlueprint(
   }
 
   if (answers.changingRelationships === "YES") {
+    architecture.push("Historized relationship bridge");
     operations.push("Build historized relationship bridge");
-    patterns.push("Temporal Relationship Modeling");
+    patterns.push("Relationship History");
     validationChecklist.push("Check relationship changes against snapshot dates");
+    risks.push("Incorrect historical relationships");
+    validationChecks.push("Relationship history validation");
   }
 
   if (answers.historizedDimensions === "SCD1") {
@@ -266,40 +380,83 @@ export function generateAdvisorBlueprint(
   if (answers.historizedDimensions === "SCD2") {
     architecture.push("Fact table with SCD2 dimensions");
     operations.push("Join facts to dimensions by business-valid time");
-    patterns.push("Dimension Completion");
     validationChecklist.push("Check dimension coverage for every fact row");
-    risks.push("Missing dimension coverage");
-    validationChecks.push("Dimension coverage validation");
   }
 
   if (
     answers.historizedDimensions === "SCD2" ||
-    answers.historizedDimensions === "BITEMPORAL"
+    (answers.historizedDimensions === "BITEMPORAL" &&
+      answers.reportingGoal !== "AUDIT")
   ) {
     patterns.push("Dimension Completion");
-  
-    operations.push(
-      "Ensure dimension coverage for every reporting interval"
-    );
-  
+    operations.push("Ensure dimension coverage for every reporting interval");
     risks.push("Missing dimension coverage");
+    validationChecks.push("Dimension coverage validation");
   }
 
   if (answers.historizedDimensions === "BITEMPORAL") {
-    architecture.push("Fact table with bitemporal dimensions");
-    operations.push("Join facts to dimensions by valid-time and visible-time");
-    patterns.push("Dimension Completion", "Snapshot Reproducibility");
+    architecture.push("Bitemporal dimension or reporting layer");
+    operations.push("Apply valid-time and visible-time logic to attributes");
+    patterns.push("Bitemporal Modeling", "Snapshot Reproducibility");
     validationChecklist.push(
-      "Check reproducibility of dimension values per as-of date"
+      "Check reproducibility of attribute values per as-of date"
     );
-    risks.push("Missing dimension coverage");
+
+    validationChecks.push("Bitemporal reproducibility validation");
+
+    if (answers.reportingGoal !== "AUDIT") {
+      patterns.push("Dimension Completion");
+      risks.push("Missing dimension coverage");
+      validationChecks.push("Dimension coverage validation");
+    }
+  }
+
+  if (
+    answers.reportingGoal === "SNAPSHOT" &&
+    answers.sourceTypes.includes("State Records") &&
+    answers.sourceTypes.includes("Events") &&
+    answers.historyCorrected === "YES" &&
+    answers.multipleSystems === "YES" &&
+    answers.changingRelationships === "YES" &&
+    answers.historizedDimensions === "BITEMPORAL"
+  ) {
+    patterns.push(
+      "Historical Correction",
+      "Dimension Completion",
+      "Temporal Conformance",
+      "Relationship History",
+      "State ↔ Event Alignment"
+    );
+
+    risks.push(
+      "Late arriving dimensions",
+      "Missing dimension coverage",
+      "Incorrect event ordering",
+      "Event-to-state mismatch",
+      "Lost correction history",
+      "Identity mismatch",
+      "Cross-system timeline drift",
+      "Incorrect historical relationships"
+    );
+
     validationChecks.push(
+      "Late arriving dimension validation",
       "Dimension coverage validation",
-      "Bitemporal dimension reproducibility"
+      "Event sequencing",
+      "Event alignment validation",
+      "Historical correction validation",
+      "Identity resolution validation",
+      "Cross-system conformance",
+      "Relationship history validation"
     );
   }
 
-  const uniquePatterns = unique(patterns);
+  const uniquePatterns = sortByPreferredOrder(unique(patterns), PATTERN_ORDER);
+  const uniqueRisks = sortByPreferredOrder(unique(risks), RISK_ORDER);
+  const uniqueValidationChecks = sortByPreferredOrder(
+    unique(validationChecks),
+    VALIDATION_ORDER
+  );
 
   const communityEvidence = uniquePatterns
     .map((pattern) => COMMUNITY_EVIDENCE[pattern])
@@ -312,8 +469,8 @@ export function generateAdvisorBlueprint(
     patterns: uniquePatterns,
     validationChecklist: unique(validationChecklist),
     notebookStructure: unique(notebookStructure),
-    risks: unique(risks),
-    validationChecks: unique(validationChecks),
+    risks: uniqueRisks,
+    validationChecks: uniqueValidationChecks,
     communityEvidence,
   };
 }
@@ -322,25 +479,25 @@ export function generateAdvisorMarkdown(
   answers: AdvisorAnswers,
   blueprint: AdvisorBlueprint
 ) {
-  return `# Historical Modeling Blueprint
+  return `# Historical Modeling Recommendation
 
 ## Purpose
 
-This blueprint summarizes the recommended historical modeling approach based on the provided requirements.
+This recommendation summarizes the historical modeling strategy derived from the selected reporting requirements and source characteristics.
 
 Use it to:
 
-- design the target model
-- review historical modeling decisions
-- plan implementation work
-- communicate the architecture to other engineers
+- evaluate historical modeling options
+- communicate architecture decisions
+- identify required modeling patterns
+- anticipate implementation risks
 - define validation requirements
 
 ## Modeling Objective
 
 ${generateModelingObjective(answers, blueprint)}
 
-## Recommended Architecture
+## Recommended Historical Modeling Strategy
 
 ${blueprint.recommendation}
 
@@ -354,14 +511,6 @@ This recommendation was generated from the following modeling inputs:
 - Multiple systems involved: ${formatYesNo(answers.multipleSystems)}
 - Time-dependent relationships: ${formatYesNo(answers.changingRelationships)}
 - Dimension behavior: ${formatDimensionNeed(answers.historizedDimensions)}
-
-## Architecture Components
-
-${toMarkdownList(blueprint.architecture)}
-
-## Required Modeling Operations
-
-${generateGroupedOperationsMarkdown(blueprint.operations)}
 
 ## Required Patterns
 
@@ -378,6 +527,14 @@ ${generateRiskMarkdown(blueprint.risks)}
 ## Validation Strategy
 
 ${toMarkdownList(blueprint.validationChecks)}
+
+## Architecture Components
+
+${toMarkdownList(blueprint.architecture)}
+
+## Required Modeling Operations
+
+${generateGroupedOperationsMarkdown(blueprint.operations)}
 
 ## Recommended Implementation Plan
 
@@ -604,6 +761,10 @@ function getRiskExplanation(risk: string) {
 
   if (risk === "Late arriving dimensions") {
     return "Dimension records may become available after facts or snapshots were already produced.";
+  }
+
+  if (risk === "Incorrect historical relationships") {
+    return "Relationships may be assigned to the wrong historical period, causing incorrect rollups or ownership reporting.";
   }
 
   return "Review this risk during implementation and validation.";
