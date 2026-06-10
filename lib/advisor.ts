@@ -25,6 +25,13 @@ export type AdvisorAnswers = {
   historizedDimensions: DimensionNeed;
 };
 
+export type CommunityEvidence = {
+  pattern: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
+  observedIn: string[];
+  summary: string;
+};
+
 export type AdvisorBlueprint = {
   recommendation: string;
   architecture: string[];
@@ -34,11 +41,77 @@ export type AdvisorBlueprint = {
   notebookStructure: string[];
   risks: string[];
   validationChecks: string[];
+  communityEvidence: CommunityEvidence[];
 };
 
 function unique(items: string[]) {
   return Array.from(new Set(items));
 }
+
+const COMMUNITY_EVIDENCE: Record<string, CommunityEvidence> = {
+  "Snapshot Reproducibility": {
+    pattern: "Snapshot Reproducibility",
+    priority: "HIGH",
+    observedIn: [
+      "Snapshot rebuilds",
+      "Point-in-time reporting",
+      "Historical backfills",
+      "Audit reporting",
+    ],
+    summary:
+      "Teams often struggle to reproduce historical reports after snapshots, dimensions or source histories change.",
+  },
+
+  "Dimension Completion": {
+    pattern: "Dimension Completion",
+    priority: "HIGH",
+    observedIn: [
+      "Late arriving dimensions",
+      "Missing foreign keys",
+      "Inferred members",
+      "Missing dimension coverage",
+    ],
+    summary:
+      "Fact rows often require dimension history that is incomplete, delayed or only partially available.",
+  },
+
+  "Temporal Conformance": {
+    pattern: "Temporal Conformance",
+    priority: "MEDIUM",
+    observedIn: [
+      "Multiple source systems",
+      "Golden record modeling",
+      "Cross-system reconciliation",
+    ],
+    summary:
+      "Different systems often describe the same business entity with different timelines.",
+  },
+
+  "Historical Match Ambiguity": {
+    pattern: "Historical Match Ambiguity",
+    priority: "HIGH",
+    observedIn: [
+      "Multiple SCD2 joins",
+      "Temporal joins",
+      "Joining snapshots",
+      "Historized dimensions",
+    ],
+    summary:
+      "Historical joins can produce duplicate or ambiguous matches when multiple valid records overlap.",
+  },
+
+  "State ↔ Event Alignment": {
+    pattern: "State ↔ Event Alignment",
+    priority: "MEDIUM",
+    observedIn: [
+      "Event attribution",
+      "Status history",
+      "Fact-to-state alignment",
+    ],
+    summary:
+      "Events often need to be mapped to the correct historical state at the time they occurred.",
+  },
+};
 
 export function generateAdvisorBlueprint(
   answers: AdvisorAnswers
@@ -226,15 +299,22 @@ export function generateAdvisorBlueprint(
     );
   }
 
+  const uniquePatterns = unique(patterns);
+
+  const communityEvidence = uniquePatterns
+    .map((pattern) => COMMUNITY_EVIDENCE[pattern])
+    .filter(Boolean);
+
   return {
     recommendation,
     architecture: unique(architecture),
     operations: unique(operations),
-    patterns: unique(patterns),
+    patterns: uniquePatterns,
     validationChecklist: unique(validationChecklist),
     notebookStructure: unique(notebookStructure),
     risks: unique(risks),
     validationChecks: unique(validationChecks),
+    communityEvidence,
   };
 }
 
@@ -287,6 +367,10 @@ ${generateGroupedOperationsMarkdown(blueprint.operations)}
 
 ${toMarkdownList(blueprint.patterns)}
 
+## Community Evidence
+
+${generateCommunityEvidenceMarkdown(blueprint.communityEvidence)}
+
 ## Key Modeling Risks
 
 ${generateRiskMarkdown(blueprint.risks)}
@@ -299,6 +383,24 @@ ${toMarkdownList(blueprint.validationChecks)}
 
 ${generateImplementationStructureMarkdown(answers)}
 `;
+}
+
+function generateCommunityEvidenceMarkdown(evidence: CommunityEvidence[]) {
+  if (evidence.length === 0) return "- No community evidence mapped";
+
+  return evidence
+    .map(
+      (item) => `### ${item.pattern}
+
+Priority: ${item.priority}
+
+${item.summary}
+
+Observed in:
+
+${toMarkdownList(item.observedIn)}`
+    )
+    .join("\n\n");
 }
 
 function toMarkdownList(items: string[]) {

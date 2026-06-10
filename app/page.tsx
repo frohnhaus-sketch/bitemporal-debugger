@@ -11,6 +11,55 @@ import { Footer } from "@/components/Footer";
 
 import { track } from "@/lib/analytics";
 
+const COMMON_PROBLEMS = [
+  {
+    title: "Snapshot Reproducibility",
+    text: "Can you reproduce last year's report after history changed?",
+  },
+  {
+    title: "Dimension Completion",
+    text: "Does dimension history fully cover fact history?",
+  },
+  {
+    title: "Historical Match Ambiguity",
+    text: "Can one record match multiple historical versions?",
+  },
+  {
+    title: "Temporal Conformance",
+    text: "Do multiple systems disagree on historical truth?",
+  },
+  {
+    title: "State ↔ Event Alignment",
+    text: "Can events be mapped to the correct historical state?",
+  },
+];
+
+const WORKFLOW_STEPS = [
+  {
+    step: "1",
+    title: "Design the model",
+    text: "Generate a historical modeling blueprint before implementation.",
+  },
+  {
+    step: "2",
+    title: "Review the implementation",
+    text: "Paste SQL, PySpark, dbt or notebook code and detect modeling patterns.",
+  },
+  {
+    step: "3",
+    title: "Validate the result",
+    text: "Check the generated target table for historical modeling risks.",
+  },
+];
+
+const TOPIC_TAGS = [
+  "SCD2",
+  "Snapshots",
+  "Temporal Joins",
+  "Late Arriving Dimensions",
+  "Historical Validation",
+];
+
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -54,7 +103,7 @@ export default function Home() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "1.2fr 0.8fr",
+              gridTemplateColumns: isMobile ? "1fr" : "1.15fr 0.85fr",
               gap: 36,
               alignItems: "center",
             }}
@@ -80,7 +129,7 @@ export default function Home() {
               <h1
                 style={{
                   margin: 0,
-                  maxWidth: 840,
+                  maxWidth: 880,
                   fontSize: isMobile ? 38 : 60,
                   lineHeight: 1.02,
                   letterSpacing: "-0.06em",
@@ -93,7 +142,7 @@ export default function Home() {
               <p
                 style={{
                   margin: "18px 0 0",
-                  maxWidth: 760,
+                  maxWidth: 780,
                   fontSize: isMobile ? 17 : 21,
                   lineHeight: 1.5,
                   color: "#dbeafe",
@@ -112,13 +161,7 @@ export default function Home() {
                   marginTop: 22,
                 }}
               >
-                {[
-                  "SCD2",
-                  "Snapshots",
-                  "Temporal Joins",
-                  "Late Arriving Dimensions",
-                  "Historical Validation",
-                ].map((item) => (
+                {TOPIC_TAGS.map((item) => (
                   <span
                     key={item}
                     style={{
@@ -161,32 +204,16 @@ export default function Home() {
                 Workflow
               </div>
 
-              {[
-                {
-                  step: "1",
-                  title: "Design the model",
-                  text: "Generate a historical modeling blueprint before implementation.",
-                },
-                {
-                  step: "2",
-                  title: "Review the implementation",
-                  text: "Paste SQL, PySpark, dbt or notebook code and detect modeling patterns.",
-                },
-                {
-                  step: "3",
-                  title: "Validate the result",
-                  text: "Check the generated target table for historical modeling risks.",
-                },
-              ].map((item, index) => (
+              {WORKFLOW_STEPS.map((item, index) => (
                 <div
                   key={item.step}
                   style={{
                     display: "flex",
                     gap: 14,
-                    paddingBottom: index === 2 ? 0 : 16,
-                    marginBottom: index === 2 ? 0 : 16,
+                    paddingBottom: index === WORKFLOW_STEPS.length - 1 ? 0 : 16,
+                    marginBottom: index === WORKFLOW_STEPS.length - 1 ? 0 : 16,
                     borderBottom:
-                      index === 2
+                      index === WORKFLOW_STEPS.length - 1
                         ? "none"
                         : "1px solid rgba(148, 163, 184, 0.22)",
                   }}
@@ -235,6 +262,114 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginBottom: 18,
+            padding: isMobile ? 16 : 20,
+            borderRadius: 18,
+            background: "rgba(15, 23, 42, 0.56)",
+            border: "1px solid rgba(148, 163, 184, 0.28)",
+            boxShadow: "0 18px 50px rgba(0,0,0,0.22)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 18,
+              alignItems: isMobile ? "flex-start" : "flex-end",
+              flexDirection: isMobile ? "column" : "row",
+              marginBottom: 14,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 900,
+                  color: "#93c5fd",
+                  letterSpacing: 0.8,
+                  textTransform: "uppercase",
+                  marginBottom: 6,
+                }}
+              >
+                Common historical modeling problems
+              </div>
+
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#ffffff",
+                  fontSize: isMobile ? 24 : 30,
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                The same issues appear across SCD2, snapshots and temporal
+                joins.
+              </h2>
+            </div>
+
+            <div
+              style={{
+                maxWidth: 420,
+                color: "#cbd5e1",
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              The Advisor uses recurring historical modeling patterns to
+              recommend an architecture and validation strategy before
+              implementation.
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile
+                ? "1fr"
+                : "repeat(5, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {COMMON_PROBLEMS.map((problem) => (
+              <div
+                key={problem.title}
+                style={{
+                  padding: 14,
+                  borderRadius: 14,
+                  background: "rgba(2, 6, 23, 0.58)",
+                  border: "1px solid rgba(148, 163, 184, 0.22)",
+                  minHeight: 118,
+                }}
+              >
+                <div
+                  style={{
+                    color: "#ffffff",
+                    fontWeight: 900,
+                    fontSize: 14,
+                    lineHeight: 1.25,
+                    marginBottom: 8,
+                  }}
+                >
+                  {problem.title}
+                </div>
+
+                <div
+                  style={{
+                    color: "#cbd5e1",
+                    fontSize: 12,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {problem.text}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 

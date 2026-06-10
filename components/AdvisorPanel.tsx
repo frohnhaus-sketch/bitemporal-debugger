@@ -68,6 +68,7 @@ export function AdvisorPanel() {
       historizedDimensions: answers.historizedDimensions,
       riskCount: blueprint.risks.length,
       validationCheckCount: blueprint.validationChecks.length,
+      communityEvidenceCount: blueprint.communityEvidence.length,
     });
   
     await navigator.clipboard.writeText(markdown);
@@ -305,6 +306,156 @@ export function AdvisorPanel() {
               Key Modeling Risks
             </div>
 
+            {blueprint.communityEvidence.length > 0 && (
+              <div style={{ marginTop: 18 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: "#1e40af",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Community Evidence
+                </div>
+                
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {blueprint.communityEvidence.slice(0, 3).map((item) => (
+                    <div
+                      key={item.pattern}
+                      style={{
+                        padding: 12,
+                        borderRadius: 12,
+                        background: "#ffffff",
+                        border: "1px solid #bfdbfe",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 8,
+                          alignItems: "center",
+                          marginBottom: 6,
+                        }}
+                      >
+                        <strong style={{ color: "#0f172a", fontSize: 13 }}>
+                          {item.pattern}
+                        </strong>
+                      
+                        <span
+                          style={{
+                            padding: "3px 7px",
+                            borderRadius: 999,
+                            background:
+                              item.priority === "HIGH"
+                                ? "#dcfce7"
+                                : item.priority === "MEDIUM"
+                                ? "#fef3c7"
+                                : "#f1f5f9",
+                            color:
+                              item.priority === "HIGH"
+                                ? "#166534"
+                                : item.priority === "MEDIUM"
+                                ? "#92400e"
+                                : "#475569",
+                            fontSize: 10,
+                            fontWeight: 800,
+                          }}
+                        >
+                          {item.priority}
+                        </span>
+                      </div>
+                        
+                      <div
+                        style={{
+                          color: "#475569",
+                          fontSize: 12,
+                          lineHeight: 1.45,
+                          marginBottom: 8,
+                        }}
+                      >
+                        {item.summary}
+                      </div>
+                      
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 5,
+                        }}
+                      >
+                        {item.observedIn.slice(0, 3).map((evidence) => (
+                          <span
+                            key={evidence}
+                            style={{
+                              padding: "4px 7px",
+                              borderRadius: 999,
+                              background: "#eff6ff",
+                              border: "1px solid #dbeafe",
+                              color: "#1d4ed8",
+                              fontSize: 11,
+                              fontWeight: 700,
+                            }}
+                          >
+                            {evidence}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {blueprint.validationChecks.length > 0 && (
+              <div style={{ marginTop: 18 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: "#475569",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Validation Checklist
+                </div>
+                
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  {blueprint.validationChecks.map((check) => (
+                    <span
+                      key={check}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: 999,
+                        background: "#ecfeff",
+                        border: "1px solid #a5f3fc",
+                        color: "#155e75",
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      ✓ {check}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {blueprint.risks.slice(0, 4).map((risk) => (
                 <span

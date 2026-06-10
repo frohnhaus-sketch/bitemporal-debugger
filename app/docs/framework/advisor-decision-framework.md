@@ -2,168 +2,333 @@
 
 ## Purpose
 
-The purpose of the Historical Modeling Advisor is to transform reporting requirements and source system characteristics into a recommended historical modeling strategy.
+The Historical Modeling Advisor converts reporting requirements, source system characteristics and historical behavior into an implementation-ready historical modeling blueprint.
 
-The Advisor does not start with data.
+The Advisor does not start with tables.
 
-The Advisor starts with business requirements.
+It starts with business questions.
+
+The goal is to identify:
+
+* Required modeling patterns
+* Required historical operations
+* Architecture implications
+* Validation risks
+* Industry-proven problem areas
+
+before implementation begins.
 
 ---
 
 # Core Principle
 
-Historical modeling decisions can be derived from:
+Historical reporting architectures are usually combinations of a small set of recurring modeling patterns.
+
+The Advisor derives these patterns from:
 
 ```text
+Reporting Goal
++
 Source Types
 +
-Reporting Requirements
-+
 Historical Behavior
++
+Reporting Requirements
 ↓
 Required Operations
 ↓
-Required Modeling Patterns
+Required Patterns
 ↓
 Recommended Architecture
+↓
+Validation Risks
 ```
 
 ---
 
-# Inputs
+# Modeling Operations
 
-## Source Types
+The Advisor reasons in terms of historical operations.
 
-Possible source types:
+## Relate
 
-* State
-* Event
-* Journal
-* Reference
-* Relationship
+Connect historical entities.
 
----
+Examples:
 
-## Reporting Requirements
-
-Possible reporting goals:
-
-* Current State Reporting
-* Point-In-Time Reporting
-* Snapshot Reporting
-* Trend Analysis
-* Event Reporting
-* Audit Reporting
+```text
+Contract ↔ Customer
+Customer ↔ Segment
+Policy ↔ Broker
+```
 
 ---
 
-## Historical Behavior
+## Align
 
-Questions include:
+Align histories across time.
 
-* Can history be corrected later?
-* Can multiple systems describe the same entity?
-* Do relationships change over time?
-* Are dimensions historized?
-* Can events arrive late?
+Examples:
+
+```text
+State ↔ State
+State ↔ Event
+Multi-source history
+```
+
+---
+
+## Prioritize
+
+Select a winner from multiple candidates.
+
+Examples:
+
+```text
+Preferred Address
+Winning Event
+Preferred Policyholder
+```
+
+---
+
+## Reduce
+
+Transform technical history into reporting history.
+
+Examples:
+
+```text
+Workflow States
+Status Transitions
+Event Streams
+```
+
+---
+
+## Complete
+
+Extend missing historical coverage.
+
+Examples:
+
+```text
+Dimension Completion
+Late Arriving Dimensions
+Backfilled History
+```
+
+---
+
+## Reconstruct
+
+Build history that did not previously exist.
+
+Examples:
+
+```text
+CDC Replay
+Historical Backfill
+Snapshot Reconstruction
+```
 
 ---
 
 # Decision Logic
 
-## State + Current State Reporting
+## Current State Reporting
 
-Recommended Operations:
+### Recommended Operations
 
 * Relate
 
-Recommended Patterns:
+### Recommended Patterns
 
 * State Modeling
 
-Recommended Architecture:
+### Recommended Architecture
 
-* Current State Model
-* SCD1 or Current-State Views
+* Current-State Tables
+* SCD1 Dimensions
+* Current-State Views
+
+### Typical Risks
+
+* Minimal historical complexity
 
 ---
 
-## State + Point-In-Time Reporting
+## Point-In-Time Reporting
 
-Recommended Operations:
+### Recommended Operations
 
 * Relate
 * Snapshot
 
-Recommended Patterns:
+### Recommended Patterns
 
 * State Modeling
 * Snapshot Reproducibility
 
-Recommended Architecture:
+### Recommended Architecture
 
 * Historized State Tables
 * As-Of Query Layer
 
+### Typical Risks
+
+* Historical drift
+* Incorrect point-in-time reconstruction
+
 ---
 
-## State + Event + Snapshot Reporting
+## Snapshot Reporting
 
-Recommended Operations:
+### Recommended Operations
+
+* Align
+* Snapshot
+
+### Recommended Patterns
+
+* Snapshot Reproducibility
+* Dimension Completion
+
+### Recommended Architecture
+
+* Snapshot Fact
+* Historical Dimensions
+
+### Typical Risks
+
+* Missing dimension coverage
+* Non-reproducible snapshots
+
+### Industry Evidence
+
+Frequently discussed in dbt, data warehouse and analytics engineering communities.
+
+---
+
+## Event Reporting
+
+### Recommended Operations
 
 * Align
 * Prioritize
+
+### Recommended Patterns
+
+* Event Modeling
+* Event Prioritization
+
+### Recommended Architecture
+
+* Event Layer
+* Event Reduction Layer
+
+### Typical Risks
+
+* Duplicate events
+* Event ordering problems
+
+---
+
+## Audit Reporting
+
+### Recommended Operations
+
+* Reconstruct
 * Snapshot
 
-Recommended Patterns:
+### Recommended Patterns
 
-* State ↔ Event Alignment
-* Event Prioritization
-* Snapshot Reproducibility
+* Bitemporal Modeling
+* Historical Correction
 
-Recommended Architecture:
+### Recommended Architecture
 
-* Core State Layer
-* Core Event Layer
-* Snapshot Fact
-* Historical Dimensions
+* Bitemporal Core Layer
+
+### Typical Risks
+
+* Retroactive corrections
+* Visibility inconsistencies
 
 ---
 
 ## Multiple Source Systems
 
-Recommended Operations:
+### Recommended Operations
 
 * Align
 * Resolve
 
-Recommended Patterns:
+### Recommended Patterns
 
 * Temporal Conformance
 * Identity Resolution
 
-Recommended Architecture:
+### Recommended Architecture
 
 * Reconciliation Layer
 * Unified Business Entities
 
+### Typical Risks
+
+* Competing timelines
+* Conflicting business truth
+
 ---
 
-## Historical Corrections
+## Historized Dimensions
 
-Recommended Operations:
+### Recommended Operations
 
+* Relate
+* Complete
+
+### Recommended Patterns
+
+* State ↔ State Alignment
+* Dimension Completion
+
+### Typical Risks
+
+* Missing historical joins
+* Surrogate key instability
+
+### Industry Evidence
+
+One of the most common historical modeling challenges discussed publicly.
+
+---
+
+## Late Arriving Data
+
+### Recommended Operations
+
+* Complete
 * Reconstruct
-* Snapshot
 
-Recommended Patterns:
+### Recommended Patterns
 
 * Historical Correction
-* Bitemporal Modeling
+* Dimension Completion
 
-Recommended Architecture:
+### Typical Risks
 
-* Bitemporal Core Layer
+* Missing foreign keys
+* Rebuild requirements
+* Snapshot drift
+
+### Industry Evidence
+
+Frequently discussed as:
+
+* Late Arriving Dimensions
+* Inferred Members
+* Missing Dimension Coverage
 
 ---
 
@@ -172,9 +337,11 @@ Recommended Architecture:
 The Advisor produces:
 
 * Recommended Architecture
-* Required Modeling Operations
-* Required Modeling Patterns
-* Typical Risks
+* Recommended Operations
+* Recommended Modeling Patterns
+* Pattern Explanations
+* Industry Evidence
+* Validation Risks
 * Validation Checklist
 * Suggested Notebook Structure
 
@@ -182,4 +349,12 @@ The Advisor produces:
 
 # Long-Term Vision
 
-The Advisor becomes a decision engine that converts historical reporting requirements into implementation-ready historical modeling blueprints.
+The Advisor becomes a historical modeling decision engine.
+
+Instead of recommending technologies, it recommends:
+
+* historical modeling strategies
+* architectural patterns
+* validation requirements
+
+before implementation effort is invested.

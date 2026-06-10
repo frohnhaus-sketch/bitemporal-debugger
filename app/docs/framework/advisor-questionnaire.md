@@ -2,7 +2,17 @@
 
 ## Purpose
 
-The questionnaire captures the information required to recommend a historical modeling strategy.
+The questionnaire captures the minimum information required to generate a historical modeling blueprint.
+
+The questionnaire is intentionally short.
+
+The goal is to identify the modeling patterns that are most likely required.
+
+Estimated completion time:
+
+```text
+Less than 5 minutes
+```
 
 ---
 
@@ -11,6 +21,8 @@ The questionnaire captures the information required to recommend a historical mo
 ## Question 1
 
 What are you trying to build?
+
+Select the primary reporting goal.
 
 Options:
 
@@ -27,7 +39,7 @@ Options:
 
 ## Question 2
 
-Which source types are available?
+Which source types exist?
 
 Select all that apply.
 
@@ -35,7 +47,8 @@ Options:
 
 * State Tables
 * Event Tables
-* Journal / CDC Tables
+* Journal Tables
+* CDC Tables
 * Reference Tables
 * Relationship Tables
 
@@ -43,33 +56,38 @@ Options:
 
 ## Question 3
 
-Which source type is the primary business driver?
+Which source type drives reporting?
 
 Options:
 
 * State
 * Event
-* Journal
+* Journal / CDC
 
 ---
 
-# Section 3 — Historical Behavior
+# Section 3 — Historical Complexity
 
 ## Question 4
 
-Can historical information be corrected later?
+Can historical records be corrected after they were originally loaded?
 
 Options:
 
 * Yes
 * No
 * Unknown
+
+Potential Pattern Impact:
+
+* Historical Correction
+* Bitemporal Modeling
 
 ---
 
 ## Question 5
 
-Can events arrive after they actually happened?
+Can events arrive after they actually occurred?
 
 Options:
 
@@ -77,16 +95,36 @@ Options:
 * No
 * Unknown
 
+Potential Pattern Impact:
+
+* Historical Correction
+* State ↔ Event Alignment
+
 ---
 
 ## Question 6
 
-Do multiple source systems describe the same business entity?
+Do multiple systems describe the same business entity?
+
+Examples:
+
+```text
+CRM + ERP
+
+Policy System + Partner System
+
+Customer Master + Sales Platform
+```
 
 Options:
 
 * Yes
 * No
+
+Potential Pattern Impact:
+
+* Temporal Conformance
+* Identity Resolution
 
 ---
 
@@ -96,14 +134,22 @@ Do relationships change over time?
 
 Examples:
 
-* Customer ↔ Segment
-* Policy ↔ Broker
-* Employee ↔ Manager
+```text
+Customer ↔ Segment
+
+Employee ↔ Manager
+
+Policy ↔ Broker
+```
 
 Options:
 
 * Yes
 * No
+
+Potential Pattern Impact:
+
+* Relationship History
 
 ---
 
@@ -118,11 +164,19 @@ Options:
 * Yes
 * No
 
+Potential Pattern Impact:
+
+* Snapshot Reproducibility
+
+Industry Evidence:
+
+One of the most frequently discussed historical reporting challenges.
+
 ---
 
 ## Question 9
 
-Do dimensions need historical behavior?
+Do dimensions require historical behavior?
 
 Options:
 
@@ -131,16 +185,78 @@ Options:
 * SCD2
 * Bitemporal
 
+Potential Pattern Impact:
+
+* State ↔ State Alignment
+* Dimension Completion
+
+Industry Evidence:
+
+Historized dimensions are among the most common sources of historical reporting complexity.
+
 ---
 
 ## Question 10
 
-Do you need to explain historical reporting results?
+Can facts exist before dimensions become available?
+
+Examples:
+
+```text
+Late arriving dimensions
+
+Delayed master data
+
+Missing customer records
+
+Missing policyholder history
+```
 
 Options:
 
 * Yes
 * No
+* Unknown
+
+Potential Pattern Impact:
+
+* Dimension Completion
+* Historical Backfill
+
+Industry Evidence:
+
+Frequently discussed as:
+
+* Late Arriving Dimensions
+* Inferred Members
+* Missing Dimension Coverage
+
+---
+
+## Question 11
+
+Do historical reporting results need to be explainable?
+
+Examples:
+
+```text
+Audit reporting
+
+Regulatory reporting
+
+Business reconciliation
+
+Management reporting
+```
+
+Options:
+
+* Yes
+* No
+
+Potential Pattern Impact:
+
+* Temporal Decision Lineage
 
 ---
 
@@ -148,19 +264,34 @@ Options:
 
 Based on the answers, the Advisor may recommend:
 
+* State Modeling
+* Event Modeling
 * State ↔ State Alignment
 * State ↔ Event Alignment
 * Event Prioritization
 * Winner Selection
+* State Reduction
 * Temporal Conformance
-* Dimension Completion
 * Relationship History
-* Historical Correction
-* Snapshot Reproducibility
 * Identity Resolution
+* Dimension Completion
+* Snapshot Reproducibility
+* Historical Backfill
+* Historical Correction
+* Bitemporal Modeling
+* Temporal Decision Lineage
 
 ---
 
-# Goal
+# Advisor Goal
 
-The questionnaire should be completable in under five minutes while still producing a useful modeling blueprint.
+Generate a historical modeling blueprint that explains:
+
+* What should be built
+* Why it should be built
+* Which risks exist
+* Which validation checks should be implemented
+
+before implementation begins.
+
+The Advisor should help Data Engineers make historical modeling decisions before implementation effort is invested.
