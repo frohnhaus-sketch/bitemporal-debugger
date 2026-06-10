@@ -325,6 +325,16 @@ export default function Home() {
               recommend an architecture and validation strategy before
               implementation.
             </div>
+            <a
+              href="/patterns"
+              style={{
+                color: "#1d4ed8",
+                fontWeight: 900,
+                textDecoration: "none",
+              }}
+            >
+              View Pattern Catalog →
+            </a>
           </div>
 
           <div

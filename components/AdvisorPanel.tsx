@@ -126,11 +126,13 @@ export function AdvisorPanel() {
 
         <QuestionBlock
           title="2. What kind of source data do you have?"
-          description="Select the historical behavior of your input sources."
+          description="Select all source behaviors that exist in your historical model."
           examples={[
             "State = valid intervals",
             "Event = point-in-time changes",
             "Journal / CDC = change log",
+            "Reference Data = product, region or category lookups",
+            "Business Relationships = customer ↔ advisor, contract ↔ owner",
           ]}
         >
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
