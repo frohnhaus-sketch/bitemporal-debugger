@@ -1,57 +1,154 @@
-export function track(event: string, data?: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
+type AnalyticsData = Record<string, unknown>;
 
-  console.log("track called", event, window.location.hostname);
+const PRODUCTION_HOST = "bitemporal-debugger.vercel.app";
+const IGNORE_ANALYTICS_KEY = "ignoreAnalytics";
+const DEBUG_ANALYTICS_KEY = "debugAnalytics";
+
+function isBrowser() {
+  return typeof window !== "undefined";
+}
+
+function isDebugEnabled() {
+  if (!isBrowser()) return false;
+
+  const params = new URLSearchParams(window.location.search);
+
+  return (
+    params.get("debugAnalytics") === "true" ||
+    localStorage.getItem(DEBUG_ANALYTICS_KEY) === "true"
+  );
+}
+
+function debugLog(...args: unknown[]) {
+  if (!isDebugEnabled()) return;
+  console.log("[analytics]", ...args);
+}
+
+function shouldIgnoreAnalytics() {
+  if (!isBrowser()) return true;
 
   const params = new URLSearchParams(window.location.search);
 
   if (params.get("ignoreAnalytics") === "true") {
-    console.log("tracking skipped: ignoreAnalytics param");
-    localStorage.setItem("ignoreAnalytics", "true");
-    return;
+    localStorage.setItem(IGNORE_ANALYTICS_KEY, "true");
+    debugLog("skipped: ignoreAnalytics query param");
+    return true;
   }
 
-  if (localStorage.getItem("ignoreAnalytics") === "true") {
-    console.log("tracking skipped: ignoreAnalytics localStorage");
-    return;
+  if (localStorage.getItem(IGNORE_ANALYTICS_KEY) === "true") {
+    debugLog("skipped: ignoreAnalytics localStorage");
+    return true;
   }
 
-  if (window.location.hostname !== "bitemporal-debugger.vercel.app") {
-    console.log("tracking skipped: wrong hostname", window.location.hostname);
-    return;
+  return false;
+}
+
+function isProductionHost() {
+  if (!isBrowser()) return false;
+
+  const isProduction = window.location.hostname === PRODUCTION_HOST;
+
+  if (!isProduction) {
+    debugLog("skipped: non-production host", window.location.hostname);
   }
 
-  const ua = navigator.userAgent;
-  const uaLower = ua.toLowerCase();
+  return isProduction;
+}
 
-  if (
-    ua.includes("HeadlessChrome") ||
-    uaLower.includes("bot") ||
-    uaLower.includes("crawler") ||
-    uaLower.includes("spider")
-  ) {
-    console.log("tracking skipped: bot user agent", ua);
-    return;
+function isLikelyBot() {
+  if (!isBrowser()) return false;
+
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  const botSignals = [
+    "headlesschrome",
+    "bot",
+    "crawler",
+    "spider",
+    "preview",
+    "facebookexternalhit",
+    "linkedinbot",
+    "slackbot",
+    "twitterbot",
+    "whatsapp",
+  ];
+
+  const detected = botSignals.some((signal) => userAgent.includes(signal));
+
+  if (detected) {
+    debugLog("skipped: bot-like user agent", navigator.userAgent);
   }
 
-  console.log("sending analytics event", event);
+  return detected;
+}
+
+function sanitizeAnalyticsData(data?: AnalyticsData) {
+  if (!data) return undefined;
+
+  const sanitized: AnalyticsData = {};
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (value === undefined) return;
+
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      value === null
+    ) {
+      sanitized[key] = value;
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      sanitized[key] = value
+        .slice(0, 20)
+        .map((item) =>
+          typeof item === "string" ||
+          typeof item === "number" ||
+          typeof item === "boolean"
+            ? item
+            : String(item)
+        );
+      return;
+    }
+
+    sanitized[key] = String(value);
+  });
+
+  return sanitized;
+}
+
+export function track(event: string, data?: AnalyticsData) {
+  if (!isBrowser()) return;
+
+  if (shouldIgnoreAnalytics()) return;
+  if (!isProductionHost()) return;
+  if (isLikelyBot()) return;
+
+  const payload = {
+    event,
+    data: sanitizeAnalyticsData(data),
+    page: window.location.pathname,
+    search: window.location.search,
+    referrer: document.referrer,
+    timestamp: new Date().toISOString(),
+  };
+
+  debugLog("sending", payload);
 
   fetch("/api/capture", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      event,
-      data,
-      page: window.location.pathname,
-      referrer: document.referrer,
-    }),
+    body: JSON.stringify(payload),
+    keepalive: true,
   })
     .then((response) => {
-      console.log("analytics response", event, response.status);
+      debugLog("response", event, response.status);
     })
     .catch((error) => {
-      console.error("Tracking failed", error);
+      debugLog("failed", event, error);
     });
 }

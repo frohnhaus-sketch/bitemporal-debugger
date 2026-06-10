@@ -39,6 +39,38 @@ function MetricCard({
   );
 }
 
+function MetricSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section style={{ marginBottom: 22 }}>
+      <h2
+        style={{
+          margin: "0 0 10px",
+          color: "#ffffff",
+          fontSize: 16,
+        }}
+      >
+        {title}
+      </h2>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          gap: 8,
+        }}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
 function formatEventName(event: string) {
   return event
     .replaceAll("_", " ")
@@ -158,15 +190,46 @@ export default async function EventsPage() {
     (counts["debug_report_copied"] ?? 0) +
     (counts["Debug Report Copied"] ?? 0);
 
+  const advisorBlueprintsCopied =
+    counts["advisor_blueprint_copied"] ?? 0;
+
+  const modelReviewsCompleted =
+    counts["model_review_completed"] ?? 0;
+
+  const modelReviewReportsCopied =
+    counts["model_review_report_copied"] ?? 0;
+
+  const targetValidationsCompleted =
+    counts["target_validation_completed"] ?? 0;
+
+  const workflowInteractions =
+    advisorBlueprintsCopied +
+    modelReviewsCompleted +
+    targetValidationsCompleted;
+
+  const workflowRate = pageViews
+    ? Math.round((workflowInteractions / pageViews) * 100)
+    : 0;
+
   const interactions = events.filter((e) => e.event !== "page_view").length;
 
   const uniqueVisitors = new Set(
     events.map((e) => e.ip_hash).filter(Boolean)
   ).size;
 
-  const copyRate = analysisRuns
-    ? Math.round((reportsCopied / analysisRuns) * 100)
-    : 0;
+  const totalReportsCopied =
+    reportsCopied +
+    advisorBlueprintsCopied +
+    modelReviewReportsCopied;
+
+  const copyRate =
+    workflowInteractions + analysisRuns > 0
+      ? Math.round(
+          (totalReportsCopied /
+            (workflowInteractions + analysisRuns)) *
+            100
+        )
+      : 0;
 
   const sourceCounts = events.reduce<Record<string, number>>((acc, event) => {
     const source = getTrafficSource(event.referer ?? event.referrer);
@@ -216,34 +279,46 @@ export default async function EventsPage() {
             Track page views, interactions, demo loads, analysis runs, SQL
             generation, and copied reports.
           </p>
-        </div>
+          </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: 8,
-            marginBottom: 28,
-          }}
-        >
-          <MetricCard label="All events" value={events.length} />
-          <MetricCard label="Unique visitors" value={uniqueVisitors} />
-          <MetricCard label="Page views" value={pageViews} />
-          <MetricCard label="Interactions" value={interactions} />
-          <MetricCard label="Analysis runs" value={analysisRuns} />
-          <MetricCard label="Analyze rate" value={`${analyzeRate}%`} />
-          <MetricCard label="CSV uploads" value={csvUploads} />
-          <MetricCard label="Upload rate" value={`${uploadRate}%`} />
-          <MetricCard label="Issues opened" value={issueSelections} />
-          <MetricCard label="Examples loaded" value={examplesLoaded} />
-          <MetricCard label="SQL generated" value={sqlGenerated} />
-          <MetricCard label="Reports copied" value={reportsCopied} />
-          <MetricCard label="Copy rate" value={`${copyRate}%`} />
-          <MetricCard label="Timeline clicks" value={timelineInteractions} />
-          <MetricCard label="Timeline issues" value={timelineIssueClicks} />
-          <MetricCard label="Timeline gaps" value={timelineGapClicks} />
-          <MetricCard label="Timeline overlaps" value={timelineOverlapClicks} />
-        </div>
+          <div style={{ marginBottom: 28 }}>
+            <MetricSection title="Acquisition">
+              <MetricCard label="Unique Visitors" value={uniqueVisitors} />
+              <MetricCard label="Page Views" value={pageViews} />
+            </MetricSection>
+                    
+            <MetricSection title="Product Usage">
+              <MetricCard label="Advisor Copies" value={advisorBlueprintsCopied} />
+              <MetricCard label="Model Reviews" value={modelReviewsCompleted} />
+              <MetricCard label="Target Validations" value={targetValidationsCompleted} />
+              <MetricCard label="Workflow Actions" value={workflowInteractions} />
+              <MetricCard label="Workflow Rate" value={`${workflowRate}%`} />
+            </MetricSection>
+                    
+            <MetricSection title="Historical Validation">
+              <MetricCard label="Analysis Runs" value={analysisRuns} />
+              <MetricCard label="Examples Loaded" value={examplesLoaded} />
+              <MetricCard label="CSV Uploads" value={csvUploads} />
+              <MetricCard label="Analyze Rate" value={`${analyzeRate}%`} />
+              <MetricCard label="Upload Rate" value={`${uploadRate}%`} />
+            </MetricSection>
+                    
+            <MetricSection title="Engagement">
+              <MetricCard label="Interactions" value={interactions} />
+              <MetricCard label="Reports Copied" value={reportsCopied} />
+              <MetricCard label="Copy Rate" value={`${copyRate}%`} />
+              <MetricCard label="Issues Opened" value={issueSelections} />
+              <MetricCard label="Timeline Clicks" value={timelineInteractions} />
+              <MetricCard label="SQL Generated" value={sqlGenerated} />
+            </MetricSection>
+                    
+            <MetricSection title="Diagnostics">
+              <MetricCard label="Timeline Issues" value={timelineIssueClicks} />
+              <MetricCard label="Timeline Gaps" value={timelineGapClicks} />
+              <MetricCard label="Timeline Overlaps" value={timelineOverlapClicks} />
+              <MetricCard label="All Events" value={events.length} />
+            </MetricSection>
+          </div>
 
         <section
           style={{

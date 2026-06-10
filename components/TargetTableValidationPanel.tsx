@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { track } from "@/lib/analytics";
+import { useEffect, useMemo, useState } from "react";
 import { parseCSV } from "@/lib/parser";
 
 type TargetFinding = {
@@ -39,6 +40,26 @@ export function TargetTableValidationPanel() {
     if (!input.trim()) return null;
     return validateTargetTable(input);
   }, [input]);
+
+  useEffect(() => {
+    if (!result) return;
+  
+    track("target_validation_completed", {
+      rowCount: result.rowCount,
+      columnCount: result.columns.length,
+      findingCount: result.findings.length,
+      highRiskCount: result.findings.filter((f) => f.severity === "high").length,
+      mediumRiskCount: result.findings.filter((f) => f.severity === "medium").length,
+      hasBusinessKey: Boolean(result.detectedColumns.businessKey),
+      hasValidTime: Boolean(
+        result.detectedColumns.validFrom && result.detectedColumns.validTo
+      ),
+      hasVisibleTime: Boolean(
+        result.detectedColumns.visibleFrom && result.detectedColumns.visibleTo
+      ),
+      hasSnapshotDate: Boolean(result.detectedColumns.snapshotDate),
+    });
+  }, [result]);
 
   return (
     <section
@@ -421,28 +442,34 @@ function buildResult(
   findings: TargetFinding[]
 ): TargetValidationResult {
   const uniqueFindings = uniqueFindingsById(findings);
-  const highCount = uniqueFindings.filter((finding) => finding.severity === "high").length;
-  const mediumCount = uniqueFindings.filter((finding) => finding.severity === "medium").length;
+
+  const highCount = uniqueFindings.filter(
+    (finding) => finding.severity === "high"
+  ).length;
+
+  const mediumCount = uniqueFindings.filter(
+    (finding) => finding.severity === "medium"
+  ).length;
 
   const qualitySummary =
     highCount > 0
       ? {
-          label: "High-risk target table issues detected",
+          label: "Historical modeling risks detected",
           description:
-            "Review these findings before treating the generated table as production-ready.",
+            "Review these issues before treating the generated historical table as production-ready.",
           severity: "danger" as const,
         }
       : mediumCount > 0
       ? {
-          label: "Potential modeling issues detected",
+          label: "Historical assumptions should be reviewed",
           description:
-            "The table is parseable, but some historical assumptions should be reviewed.",
+            "The table is parseable, but some modeling assumptions may affect reporting correctness.",
           severity: "warning" as const,
         }
       : {
-          label: "No major target table issues detected",
+          label: "Historical table structure looks consistent",
           description:
-            "The pasted sample has a consistent historical structure based on the available checks.",
+            "The pasted sample has a stable grain and consistent historical structure based on the available checks.",
           severity: "success" as const,
         };
 

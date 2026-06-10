@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { track } from "@/lib/analytics";
+import { useEffect, useMemo, useState } from "react";
 import { reviewModelText } from "@/lib/modelReview";
 
 export function ModelReviewPanel() {
@@ -12,12 +13,30 @@ export function ModelReviewPanel() {
     return reviewModelText(input);
   }, [input]);
 
-  async function copyReport() {
+  useEffect(() => {
     if (!review) return;
 
+    track("model_review_completed", {
+      patternCount: review.detectedPatterns.length,
+      decisionCount: review.detectedDecisions.length,
+      findingCount: review.findings.length,
+      recommendation: review.architectureSummary.outputType,
+      complexity: review.architectureSummary.complexity,
+      inputLength: input.length,
+    });
+  }, [review, input.length]);
+
+  async function copyReport() {
+    if (!review) return;
+  
+    track("model_review_report_copied", {
+      findingCount: review.findings.length,
+      patternCount: review.detectedPatterns.length,
+    });
+  
     await navigator.clipboard.writeText(review.markdownReport);
     setCopyState("copied");
-
+  
     window.setTimeout(() => {
       setCopyState("idle");
     }, 2000);

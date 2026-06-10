@@ -77,16 +77,26 @@ export function generateAdvisorBlueprint(
   }
 
   if (answers.reportingGoal === "SNAPSHOT") {
-    recommendation = "Snapshot Fact Architecture";
-    architecture.push("Periodic snapshot fact table");
+    recommendation = "Snapshot Reporting Model with Historized Dimensions";
+    architecture.push("Historized Core Layer");
+    architecture.push("Periodic Snapshot Fact Table");
+    architecture.push("SCD2 Reporting Dimensions");
+    architecture.push("Reporting Consumption Layer");
     operations.push("Generate reporting snapshots at defined cut-off dates");
     patterns.push("Snapshot Reproducibility");
     validationChecklist.push("Check one row per entity and snapshot date");
     notebookStructure.push("07_generate_month_end_snapshots");
-    risks.push("Snapshot drift", "Missing snapshot coverage");
+    risks.push(
+      "Snapshot drift",
+      "Missing snapshot coverage",
+      "Late arriving dimensions"
+    );
+
     validationChecks.push(
       "Snapshot reproducibility",
-      "One row per entity per snapshot"
+      "One row per entity per snapshot",
+      "Late arriving dimension validation",
+      "Snapshot completeness validation"
     );
   }
 
@@ -187,6 +197,19 @@ export function generateAdvisorBlueprint(
     validationChecklist.push("Check dimension coverage for every fact row");
     risks.push("Missing dimension coverage");
     validationChecks.push("Dimension coverage validation");
+  }
+
+  if (
+    answers.historizedDimensions === "SCD2" ||
+    answers.historizedDimensions === "BITEMPORAL"
+  ) {
+    patterns.push("Dimension Completion");
+  
+    operations.push(
+      "Ensure dimension coverage for every reporting interval"
+    );
+  
+    risks.push("Missing dimension coverage");
   }
 
   if (answers.historizedDimensions === "BITEMPORAL") {
@@ -477,6 +500,10 @@ function getRiskExplanation(risk: string) {
     return "Audit results may change when history is corrected or reloaded.";
   }
 
+  if (risk === "Late arriving dimensions") {
+    return "Dimension records may become available after facts or snapshots were already produced.";
+  }
+
   return "Review this risk during implementation and validation.";
 }
 
@@ -572,14 +599,14 @@ Recommended checks:
     sections.push(
       `### 8. Generate reporting snapshots
 
-Create reproducible snapshots for the required reporting dates.
+  Create reproducible snapshots for the required reporting dates.
 
-Document:
-- snapshot date calendar
-- month-end or business cut-off logic
-- late-arriving data handling
-- rerun behavior
-- expected row count per snapshot`
+  Document:
+  - snapshot date calendar
+  - month-end or business cut-off logic
+  - late-arriving data handling
+  - rerun behavior
+  - expected row count per snapshot`
     );
   }
 

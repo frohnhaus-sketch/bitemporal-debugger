@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useMemo, useState } from "react";
 import {
   AdvisorAnswers,
@@ -57,9 +58,21 @@ export function AdvisorPanel() {
   }
 
   async function copyMarkdownBlueprint() {
+    track("advisor_blueprint_copied", {
+      recommendation: blueprint.recommendation,
+      reportingGoal: answers.reportingGoal,
+      sourceTypes: answers.sourceTypes.join(","),
+      historyCorrected: answers.historyCorrected,
+      multipleSystems: answers.multipleSystems,
+      changingRelationships: answers.changingRelationships,
+      historizedDimensions: answers.historizedDimensions,
+      riskCount: blueprint.risks.length,
+      validationCheckCount: blueprint.validationChecks.length,
+    });
+  
     await navigator.clipboard.writeText(markdown);
     setCopyState("copied");
-
+  
     window.setTimeout(() => {
       setCopyState("idle");
     }, 2000);
