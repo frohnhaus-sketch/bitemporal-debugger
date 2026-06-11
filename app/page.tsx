@@ -327,6 +327,11 @@ export default function Home() {
             </div>
             <a
               href="/patterns"
+              onClick={() => {
+                track("patterns_link_clicked", {
+                  source: "home_common_problems",
+                });
+              }}
               style={{
                 color: "#1d4ed8",
                 fontWeight: 900,

@@ -1,5 +1,6 @@
 import type React from "react";
 import { createClient } from "@supabase/supabase-js";
+
 export const dynamic = "force-dynamic";
 
 type EventRow = {
@@ -16,9 +17,11 @@ type EventRow = {
 function MetricCard({
   label,
   value,
+  hint,
 }: {
   label: string;
   value: string | number;
+  hint?: string;
 }) {
   return (
     <div
@@ -32,9 +35,16 @@ function MetricCard({
       <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 8 }}>
         {label}
       </div>
+
       <div style={{ color: "#ffffff", fontSize: 28, fontWeight: 800 }}>
         {value}
       </div>
+
+      {hint && (
+        <div style={{ color: "#64748b", fontSize: 11, marginTop: 6 }}>
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
@@ -71,6 +81,32 @@ function MetricSection({
   );
 }
 
+function Panel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      style={{
+        background: "#020617",
+        border: "1px solid #1e293b",
+        borderRadius: 14,
+        padding: 18,
+        marginBottom: 28,
+      }}
+    >
+      <h2 style={{ margin: "0 0 14px", fontSize: 18, color: "#ffffff" }}>
+        {title}
+      </h2>
+
+      {children}
+    </section>
+  );
+}
+
 function formatEventName(event: string) {
   return event
     .replaceAll("_", " ")
@@ -93,6 +129,90 @@ function getTrafficSource(referer?: string | null) {
   } catch {
     return "Direct / unknown";
   }
+}
+
+function getDataValue(event: EventRow, key: string) {
+  const value = event.data?.[key];
+
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  if (typeof value === "boolean") return String(value);
+
+  return null;
+}
+
+function countBy<T extends string>(
+  items: EventRow[],
+  getKey: (event: EventRow) => T | null
+) {
+  return items.reduce<Record<string, number>>((acc, item) => {
+    const key = getKey(item);
+    if (!key) return acc;
+
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+}
+
+function TopList({
+  rows,
+  emptyText,
+}: {
+  rows: [string, number][];
+  emptyText: string;
+}) {
+  const max = Math.max(1, ...rows.map(([, count]) => count));
+
+  if (rows.length === 0) {
+    return <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>{emptyText}</p>;
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 10 }}>
+      {rows.map(([label, count]) => (
+        <div
+          key={label}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "220px 1fr 48px",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <div style={{ color: "#cbd5e1", fontSize: 13 }}>{label}</div>
+
+          <div
+            style={{
+              height: 8,
+              borderRadius: 999,
+              background: "#1e293b",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${Math.max(8, (count / max) * 100)}%`,
+                height: "100%",
+                borderRadius: 999,
+                background: "#3b82f6",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 700,
+              textAlign: "right",
+            }}
+          >
+            {count}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const thStyle: React.CSSProperties = {
@@ -126,7 +246,7 @@ export default async function EventsPage() {
     .from("events")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(250);
+    .limit(500);
 
   if (error) {
     return (
@@ -151,85 +271,91 @@ export default async function EventsPage() {
     return acc;
   }, {});
 
-  const timelineIssueClicks = counts["timeline_issue_selected"] ?? 0;
-  const timelineGapClicks = counts["timeline_gap_selected"] ?? 0;
-  const timelineOverlapClicks = counts["timeline_overlap_selected"] ?? 0;
-  const timelineInteractions = timelineIssueClicks + timelineGapClicks + timelineOverlapClicks;
-
   const pageViews = counts["page_view"] ?? 0;
+  const uniqueVisitors = new Set(events.map((e) => e.ip_hash).filter(Boolean)).size;
+  const interactions = events.filter((e) => e.event !== "page_view").length;
+
+  const advisorOpened = counts["advisor_opened"] ?? 0;
+  const advisorQuestionChanges = counts["advisor_question_changed"] ?? 0;
+  const advisorBlueprintsCopied = counts["advisor_blueprint_copied"] ?? 0;
+
+  const patternsPageOpened = counts["patterns_page_opened"] ?? 0;
+  const patternOpened = counts["pattern_opened"] ?? 0;
+  const scrollDepthEvents = counts["scroll_depth"] ?? 0;
+
+  const modelReviewsCompleted = counts["model_review_completed"] ?? 0;
+  const modelReviewReportsCopied = counts["model_review_report_copied"] ?? 0;
+
+  const targetValidationsCompleted = counts["target_validation_completed"] ?? 0;
 
   const analysisRuns = counts["analysis_completed"] ?? 0;
 
   const examplesLoaded =
     (counts["example_loaded"] ?? 0) +
     (counts["temporal_join_demo_loaded"] ?? 0);
-  const csvUploads = events.filter(
-    (e) => e.event === "csv_uploaded"
-  ).length;
 
-  const uploadRate = pageViews
-    ? Math.round((csvUploads / pageViews) * 100)
-    : 0;
+  const csvUploads = counts["csv_uploaded"] ?? 0;
 
   const sqlGenerated =
     (counts["sql_generated"] ?? 0) +
     (counts["query_generated"] ?? 0);
 
-  const analyzeRate = pageViews
-    ? Math.round((analysisRuns / pageViews) * 100)
-    : 0;
+  const issueSelections =
+    (counts["issue_selected"] ?? 0) +
+    (counts["join_issue_selected"] ?? 0);
 
-  const issueSelections = events.filter(
-    (e) =>
-      e.event === "issue_selected" ||
-      e.event === "join_issue_selected"
-  ).length;
+  const timelineIssueClicks = counts["timeline_issue_selected"] ?? 0;
+  const timelineGapClicks = counts["timeline_gap_selected"] ?? 0;
+  const timelineOverlapClicks = counts["timeline_overlap_selected"] ?? 0;
+
+  const timelineInteractions =
+    timelineIssueClicks + timelineGapClicks + timelineOverlapClicks;
 
   const reportsCopied =
     (counts["modeling_report_copied"] ?? 0) +
     (counts["debug_report_copied"] ?? 0) +
     (counts["Debug Report Copied"] ?? 0);
 
-  const advisorBlueprintsCopied =
-    counts["advisor_blueprint_copied"] ?? 0;
+  const totalReportsCopied =
+    reportsCopied + advisorBlueprintsCopied + modelReviewReportsCopied;
 
-  const modelReviewsCompleted =
-    counts["model_review_completed"] ?? 0;
-
-  const modelReviewReportsCopied =
-    counts["model_review_report_copied"] ?? 0;
-
-  const targetValidationsCompleted =
-    counts["target_validation_completed"] ?? 0;
-
-  const workflowInteractions =
+  const workflowActions =
     advisorBlueprintsCopied +
     modelReviewsCompleted +
-    targetValidationsCompleted;
+    targetValidationsCompleted +
+    analysisRuns;
 
-  const workflowRate = pageViews
-    ? Math.round((workflowInteractions / pageViews) * 100)
+  const advisorStartRate = pageViews
+    ? Math.round((advisorOpened / pageViews) * 100)
     : 0;
 
-  const interactions = events.filter((e) => e.event !== "page_view").length;
+  const advisorCopyRate = advisorOpened
+    ? Math.round((advisorBlueprintsCopied / advisorOpened) * 100)
+    : 0;
 
-  const uniqueVisitors = new Set(
-    events.map((e) => e.ip_hash).filter(Boolean)
-  ).size;
+  const patternCatalogRate = pageViews
+    ? Math.round((patternsPageOpened / pageViews) * 100)
+    : 0;
 
-  const totalReportsCopied =
-    reportsCopied +
-    advisorBlueprintsCopied +
-    modelReviewReportsCopied;
+  const patternOpenRate = patternsPageOpened
+    ? Math.round((patternOpened / patternsPageOpened) * 100)
+    : 0;
 
-  const copyRate =
-    workflowInteractions + analysisRuns > 0
-      ? Math.round(
-          (totalReportsCopied /
-            (workflowInteractions + analysisRuns)) *
-            100
-        )
-      : 0;
+  const workflowRate = pageViews
+    ? Math.round((workflowActions / pageViews) * 100)
+    : 0;
+
+  const analyzeRate = pageViews
+    ? Math.round((analysisRuns / pageViews) * 100)
+    : 0;
+
+  const uploadRate = pageViews
+    ? Math.round((csvUploads / pageViews) * 100)
+    : 0;
+
+  const copyRate = workflowActions
+    ? Math.round((totalReportsCopied / workflowActions) * 100)
+    : 0;
 
   const sourceCounts = events.reduce<Record<string, number>>((acc, event) => {
     const source = getTrafficSource(event.referer ?? event.referrer);
@@ -242,6 +368,58 @@ export default async function EventsPage() {
     .slice(0, 8);
 
   const eventTypeRows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  const topAdvisorQuestions = Object.entries(
+    countBy(events, (event) =>
+      event.event === "advisor_question_changed"
+        ? getDataValue(event, "question")
+        : null
+    )
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
+
+  const topAdvisorValues = Object.entries(
+    countBy(events, (event) =>
+      event.event === "advisor_question_changed"
+        ? `${getDataValue(event, "question")}: ${getDataValue(event, "value")}`
+        : null
+    )
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  const topPatterns = Object.entries(
+    countBy(events, (event) =>
+      event.event === "pattern_opened" ? getDataValue(event, "pattern") : null
+    )
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  const topPatternGroups = Object.entries(
+    countBy(events, (event) =>
+      event.event === "pattern_opened" ? getDataValue(event, "group") : null
+    )
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
+
+  const scrollDepthRows = Object.entries(
+    countBy(events, (event) =>
+      event.event === "scroll_depth"
+        ? `${getDataValue(event, "page") ?? "unknown"}: ${getDataValue(
+            event,
+            "percent"
+          )}%`
+        : null
+    )
+  )
+    .sort((a, b) => {
+      const aNum = Number(a[0].match(/(\d+)%/)?.[1] ?? 0);
+      const bNum = Number(b[0].match(/(\d+)%/)?.[1] ?? 0);
+      return aNum - bNum;
+    });
 
   return (
     <main
@@ -276,190 +454,93 @@ export default async function EventsPage() {
           </h1>
 
           <p style={{ marginTop: 8, color: "#94a3b8", fontSize: 14 }}>
-            Track page views, interactions, demo loads, analysis runs, SQL
-            generation, and copied reports.
+            Tracks acquisition, Advisor usage, Pattern Catalog interest,
+            validation workflows and high-intent copy actions.
           </p>
-          </div>
+        </div>
 
-          <div style={{ marginBottom: 28 }}>
-            <MetricSection title="Acquisition">
-              <MetricCard label="Unique Visitors" value={uniqueVisitors} />
-              <MetricCard label="Page Views" value={pageViews} />
-            </MetricSection>
-                    
-            <MetricSection title="Product Usage">
-              <MetricCard label="Advisor Copies" value={advisorBlueprintsCopied} />
-              <MetricCard label="Model Reviews" value={modelReviewsCompleted} />
-              <MetricCard label="Target Validations" value={targetValidationsCompleted} />
-              <MetricCard label="Workflow Actions" value={workflowInteractions} />
-              <MetricCard label="Workflow Rate" value={`${workflowRate}%`} />
-            </MetricSection>
-                    
-            <MetricSection title="Historical Validation">
-              <MetricCard label="Analysis Runs" value={analysisRuns} />
-              <MetricCard label="Examples Loaded" value={examplesLoaded} />
-              <MetricCard label="CSV Uploads" value={csvUploads} />
-              <MetricCard label="Analyze Rate" value={`${analyzeRate}%`} />
-              <MetricCard label="Upload Rate" value={`${uploadRate}%`} />
-            </MetricSection>
-                    
-            <MetricSection title="Engagement">
-              <MetricCard label="Interactions" value={interactions} />
-              <MetricCard label="Reports Copied" value={reportsCopied} />
-              <MetricCard label="Copy Rate" value={`${copyRate}%`} />
-              <MetricCard label="Issues Opened" value={issueSelections} />
-              <MetricCard label="Timeline Clicks" value={timelineInteractions} />
-              <MetricCard label="SQL Generated" value={sqlGenerated} />
-            </MetricSection>
-                    
-            <MetricSection title="Diagnostics">
-              <MetricCard label="Timeline Issues" value={timelineIssueClicks} />
-              <MetricCard label="Timeline Gaps" value={timelineGapClicks} />
-              <MetricCard label="Timeline Overlaps" value={timelineOverlapClicks} />
-              <MetricCard label="All Events" value={events.length} />
-            </MetricSection>
-          </div>
+        <div style={{ marginBottom: 28 }}>
+          <MetricSection title="Acquisition">
+            <MetricCard label="Unique Visitors" value={uniqueVisitors} />
+            <MetricCard label="Page Views" value={pageViews} />
+            <MetricCard label="Interactions" value={interactions} />
+          </MetricSection>
 
-        <section
-          style={{
-            background: "#020617",
-            border: "1px solid #1e293b",
-            borderRadius: 14,
-            padding: 18,
-            marginBottom: 28,
-          }}
-        >
-          <h2 style={{ margin: "0 0 14px", fontSize: 18, color: "#ffffff" }}>
-            Event types
-          </h2>
+          <MetricSection title="Advisor Funnel">
+            <MetricCard label="Advisor Opened" value={advisorOpened} />
+            <MetricCard label="Question Changes" value={advisorQuestionChanges} />
+            <MetricCard label="Blueprint Copies" value={advisorBlueprintsCopied} />
+            <MetricCard label="Advisor Start Rate" value={`${advisorStartRate}%`} />
+            <MetricCard label="Advisor Copy Rate" value={`${advisorCopyRate}%`} />
+          </MetricSection>
 
-          {eventTypeRows.length === 0 ? (
-            <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>
-              No events yet.
-            </p>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              {eventTypeRows.map(([eventName, count]) => (
-                <div
-                  key={eventName}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "220px 1fr 48px",
-                    gap: 12,
-                    alignItems: "center",
-                  }}
-                >
-                  <div style={{ color: "#cbd5e1", fontSize: 13 }}>
-                    {formatEventName(eventName)}
-                  </div>
+          <MetricSection title="Pattern Catalog">
+            <MetricCard label="Catalog Opens" value={patternsPageOpened} />
+            <MetricCard label="Pattern Opens" value={patternOpened} />
+            <MetricCard label="Scroll Events" value={scrollDepthEvents} />
+            <MetricCard label="Catalog Rate" value={`${patternCatalogRate}%`} />
+            <MetricCard label="Pattern Open Rate" value={`${patternOpenRate}%`} />
+          </MetricSection>
 
-                  <div
-                    style={{
-                      height: 8,
-                      borderRadius: 999,
-                      background: "#1e293b",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${Math.max(
-                          8,
-                          (count /
-                            Math.max(...eventTypeRows.map(([, c]) => c))) *
-                            100
-                        )}%`,
-                        height: "100%",
-                        borderRadius: 999,
-                        background: "#3b82f6",
-                      }}
-                    />
-                  </div>
+          <MetricSection title="Product Workflows">
+            <MetricCard label="Model Reviews" value={modelReviewsCompleted} />
+            <MetricCard label="Target Validations" value={targetValidationsCompleted} />
+            <MetricCard label="Analysis Runs" value={analysisRuns} />
+            <MetricCard label="Workflow Actions" value={workflowActions} />
+            <MetricCard label="Workflow Rate" value={`${workflowRate}%`} />
+          </MetricSection>
 
-                  <div
-                    style={{
-                      color: "#ffffff",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      textAlign: "right",
-                    }}
-                  >
-                    {count}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+          <MetricSection title="Historical Validation">
+            <MetricCard label="Examples Loaded" value={examplesLoaded} />
+            <MetricCard label="CSV Uploads" value={csvUploads} />
+            <MetricCard label="Analyze Rate" value={`${analyzeRate}%`} />
+            <MetricCard label="Upload Rate" value={`${uploadRate}%`} />
+          </MetricSection>
 
-        <section
-          style={{
-            background: "#020617",
-            border: "1px solid #1e293b",
-            borderRadius: 14,
-            padding: 18,
-            marginBottom: 28,
-          }}
-        >
-          <h2 style={{ margin: "0 0 14px", fontSize: 18, color: "#ffffff" }}>
-            Top sources
-          </h2>
+          <MetricSection title="High Intent">
+            <MetricCard label="Reports Copied" value={reportsCopied} />
+            <MetricCard label="Total Copies" value={totalReportsCopied} />
+            <MetricCard label="Copy Rate" value={`${copyRate}%`} />
+            <MetricCard label="SQL Generated" value={sqlGenerated} />
+          </MetricSection>
 
-          {topSources.length === 0 ? (
-            <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>
-              No source data yet.
-            </p>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              {topSources.map(([source, count]) => (
-                <div
-                  key={source}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "160px 1fr 48px",
-                    gap: 12,
-                    alignItems: "center",
-                  }}
-                >
-                  <div style={{ color: "#cbd5e1", fontSize: 13 }}>{source}</div>
+          <MetricSection title="Diagnostics">
+            <MetricCard label="Issues Opened" value={issueSelections} />
+            <MetricCard label="Timeline Clicks" value={timelineInteractions} />
+            <MetricCard label="Timeline Issues" value={timelineIssueClicks} />
+            <MetricCard label="Timeline Gaps" value={timelineGapClicks} />
+            <MetricCard label="Timeline Overlaps" value={timelineOverlapClicks} />
+            <MetricCard label="All Events" value={events.length} />
+          </MetricSection>
+        </div>
 
-                  <div
-                    style={{
-                      height: 8,
-                      borderRadius: 999,
-                      background: "#1e293b",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${Math.max(
-                          8,
-                          (count / Math.max(...topSources.map(([, c]) => c))) *
-                            100
-                        )}%`,
-                        height: "100%",
-                        borderRadius: 999,
-                        background: "#3b82f6",
-                      }}
-                    />
-                  </div>
+        <Panel title="Top Advisor Questions">
+          <TopList rows={topAdvisorQuestions} emptyText="No Advisor question data yet." />
+        </Panel>
 
-                  <div
-                    style={{
-                      color: "#ffffff",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      textAlign: "right",
-                    }}
-                  >
-                    {count}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <Panel title="Top Advisor Answers">
+          <TopList rows={topAdvisorValues} emptyText="No Advisor answer data yet." />
+        </Panel>
+
+        <Panel title="Top Patterns">
+          <TopList rows={topPatterns} emptyText="No pattern data yet." />
+        </Panel>
+
+        <Panel title="Top Pattern Groups">
+          <TopList rows={topPatternGroups} emptyText="No pattern group data yet." />
+        </Panel>
+
+        <Panel title="Scroll Depth">
+          <TopList rows={scrollDepthRows} emptyText="No scroll depth data yet." />
+        </Panel>
+
+        <Panel title="Event Types">
+          <TopList rows={eventTypeRows} emptyText="No events yet." />
+        </Panel>
+
+        <Panel title="Top Sources">
+          <TopList rows={topSources} emptyText="No source data yet." />
+        </Panel>
 
         <section
           style={{
@@ -476,7 +557,7 @@ export default async function EventsPage() {
             }}
           >
             <h2 style={{ margin: 0, fontSize: 18, color: "#ffffff" }}>
-              Recent events
+              Recent Events
             </h2>
           </div>
 
@@ -492,13 +573,14 @@ export default async function EventsPage() {
                 <tr style={{ background: "#0f172a", color: "#94a3b8" }}>
                   <th style={thStyle}>Time</th>
                   <th style={thStyle}>Event</th>
+                  <th style={thStyle}>Visitor</th>
                   <th style={thStyle}>Source</th>
                   <th style={thStyle}>Data</th>
                 </tr>
               </thead>
 
               <tbody>
-                {events.slice(0, 80).map((event, index) => (
+                {events.slice(0, 100).map((event, index) => (
                   <tr
                     key={event.id ?? index}
                     style={{
@@ -506,7 +588,7 @@ export default async function EventsPage() {
                     }}
                   >
                     <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
-                      {new Date(event.created_at).toLocaleString()}
+                      {new Date(event.created_at).toLocaleString("de-CH")}
                     </td>
 
                     <td style={tdStyle}>
@@ -522,6 +604,12 @@ export default async function EventsPage() {
                         }}
                       >
                         {formatEventName(event.event)}
+                      </span>
+                    </td>
+
+                    <td style={tdStyle}>
+                      <span style={{ color: "#94a3b8", fontSize: 12 }}>
+                        {event.ip_hash ? String(event.ip_hash).slice(0, 10) : "unknown"}
                       </span>
                     </td>
 

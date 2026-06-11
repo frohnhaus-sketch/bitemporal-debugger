@@ -1,7 +1,7 @@
 "use client";
 
 import { track } from "@/lib/analytics";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AdvisorAnswers,
   DimensionNeed,
@@ -13,6 +13,23 @@ import {
 } from "@/lib/advisor";
 
 export function AdvisorPanel() {
+  const hasTrackedAdvisorOpened = useRef(false);
+
+  useEffect(() => {
+    if (hasTrackedAdvisorOpened.current) return;
+
+    hasTrackedAdvisorOpened.current = true;
+
+    track("advisor_opened", {
+      defaultReportingGoal: "SNAPSHOT",
+      defaultSourceTypes: "State Records,Events",
+      defaultHistoryCorrected: "YES",
+      defaultMultipleSystems: "YES",
+      defaultChangingRelationships: "YES",
+      defaultHistorizedDimensions: "BITEMPORAL",
+    });
+  }, []);
+
   const [answers, setAnswers] = useState<AdvisorAnswers>({
     reportingGoal: "SNAPSHOT",
     sourceTypes: ["State Records", "Events"],
@@ -48,13 +65,37 @@ export function AdvisorPanel() {
     setAnswers((prev) => {
       const exists = prev.sourceTypes.includes(sourceType);
 
+      const nextSourceTypes = exists
+        ? prev.sourceTypes.filter((s) => s !== sourceType)
+        : [...prev.sourceTypes, sourceType];
+
+      track("advisor_question_changed", {
+        question: "sourceTypes",
+        value: nextSourceTypes.join(","),
+        changedOption: sourceType,
+        active: !exists,
+      });
+
       return {
         ...prev,
-        sourceTypes: exists
-          ? prev.sourceTypes.filter((s) => s !== sourceType)
-          : [...prev.sourceTypes, sourceType],
+        sourceTypes: nextSourceTypes,
       };
     });
+  }
+
+  function updateAnswer<K extends keyof AdvisorAnswers>(
+    question: K,
+    value: AdvisorAnswers[K]
+  ) {
+    track("advisor_question_changed", {
+      question,
+      value: Array.isArray(value) ? value.join(",") : String(value),
+    });
+
+    setAnswers((prev) => ({
+      ...prev,
+      [question]: value,
+    }));
   }
 
   async function copyMarkdownBlueprint() {
@@ -109,10 +150,7 @@ export function AdvisorPanel() {
           <select
             value={answers.reportingGoal}
             onChange={(e) =>
-              setAnswers({
-                ...answers,
-                reportingGoal: e.target.value as ReportingGoal,
-              })
+              updateAnswer("reportingGoal", e.target.value as ReportingGoal)
             }
             style={inputStyle}
           >
@@ -173,10 +211,7 @@ export function AdvisorPanel() {
           <select
             value={answers.historyCorrected}
             onChange={(e) =>
-              setAnswers({
-                ...answers,
-                historyCorrected: e.target.value as YesNoUnknown,
-              })
+              updateAnswer("historyCorrected", e.target.value as YesNoUnknown)
             }
             style={inputStyle}
           >
@@ -198,10 +233,7 @@ export function AdvisorPanel() {
           <select
             value={answers.multipleSystems}
             onChange={(e) =>
-              setAnswers({
-                ...answers,
-                multipleSystems: e.target.value as "YES" | "NO",
-              })
+              updateAnswer("multipleSystems", e.target.value as "YES" | "NO")
             }
             style={inputStyle}
           >
@@ -222,10 +254,7 @@ export function AdvisorPanel() {
           <select
             value={answers.changingRelationships}
             onChange={(e) =>
-              setAnswers({
-                ...answers,
-                changingRelationships: e.target.value as "YES" | "NO",
-              })
+              updateAnswer("changingRelationships", e.target.value as "YES" | "NO")
             }
             style={inputStyle}
           >
@@ -245,10 +274,7 @@ export function AdvisorPanel() {
           <select
             value={answers.historizedDimensions}
             onChange={(e) =>
-              setAnswers({
-                ...answers,
-                historizedDimensions: e.target.value as DimensionNeed,
-              })
+              updateAnswer("historizedDimensions", e.target.value as DimensionNeed)
             }
             style={inputStyle}
           >

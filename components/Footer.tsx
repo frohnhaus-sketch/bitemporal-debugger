@@ -36,18 +36,6 @@ export function Footer() {
         </a>
 
         <a
-          href="/events"
-          target="_blank"
-          style={{
-            color: "#60a5fa",
-            textDecoration: "none",
-            fontWeight: 700,
-          }}
-        >
-          Analytics
-        </a>
-
-        <a
           href="https://www.linkedin.com/in/jakob-frohnhaus/"
           target="_blank"
           rel="noopener noreferrer"
