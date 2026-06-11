@@ -296,6 +296,31 @@ export default async function EventsPage() {
   const patternOpened = counts["pattern_opened"] ?? 0;
   const scrollDepthEvents = counts["scroll_depth"] ?? 0;
 
+  const exampleModelOpened = counts["example_model_opened"] ?? 0;
+  const activationCtaClicks = counts["activation_cta_clicked"] ?? 0;
+  const exampleModelCtaClicks = counts["example_model_cta_clicked"] ?? 0;
+
+  const reviewMyModelClicks = events.filter(
+    (event) =>
+      (event.event === "activation_cta_clicked" ||
+        event.event === "example_model_cta_clicked") &&
+      event.data?.cta === "review_my_model"
+  ).length;
+
+  const exploreMorePatternsClicks = events.filter(
+    (event) =>
+      event.event === "example_model_cta_clicked" &&
+      event.data?.cta === "explore_more_patterns"
+  ).length;
+
+  const exampleOpenRate = advisorViewed
+    ? Math.round((exampleModelOpened / advisorViewed) * 100)
+    : 0;
+
+  const reviewClickRate = exampleModelOpened
+    ? Math.round((reviewMyModelClicks / exampleModelOpened) * 100)
+    : 0;
+
   const modelReviewsCompleted = counts["model_review_completed"] ?? 0;
   const modelReviewReportsCopied = counts["model_review_report_copied"] ?? 0;
 
@@ -434,6 +459,17 @@ export default async function EventsPage() {
       return aNum - bNum;
     });
 
+  const activationCtaRows = Object.entries(
+    countBy(events, (event) =>
+      event.event === "activation_cta_clicked" ||
+      event.event === "example_model_cta_clicked"
+        ? `${event.event}: ${getDataValue(event, "cta")}`
+        : null
+    )
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
   return (
     <main
       style={{
@@ -488,6 +524,16 @@ export default async function EventsPage() {
             <MetricCard label="Blueprint Copies" value={advisorBlueprintsCopied} />
             <MetricCard label="Advisor Start Rate" value={`${advisorStartRate}%`} />
             <MetricCard label="Advisor Copy Rate" value={`${advisorCopyRate}%`} />
+          </MetricSection>
+
+          <MetricSection title="Activation Funnel">
+            <MetricCard label="Example Models Opened" value={exampleModelOpened} />
+            <MetricCard label="Activation CTA Clicks" value={activationCtaClicks} />
+            <MetricCard label="Example CTA Clicks" value={exampleModelCtaClicks} />
+            <MetricCard label="Review My Model Clicks" value={reviewMyModelClicks} />
+            <MetricCard label="Explore Pattern Clicks" value={exploreMorePatternsClicks} />
+            <MetricCard label="Example Open Rate" value={`${exampleOpenRate}%`} />
+            <MetricCard label="Review Click Rate" value={`${reviewClickRate}%`} />
           </MetricSection>
 
           <MetricSection title="Pattern Catalog">
@@ -548,6 +594,10 @@ export default async function EventsPage() {
 
         <Panel title="Scroll Depth">
           <TopList rows={scrollDepthRows} emptyText="No scroll depth data yet." />
+        </Panel>
+
+        <Panel title="Activation CTAs">
+          <TopList rows={activationCtaRows} emptyText="No activation CTA data yet." />
         </Panel>
 
         <Panel title="Event Types">
