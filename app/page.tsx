@@ -76,7 +76,7 @@ export default function Home() {
                   marginBottom: 16,
                 }}
               >
-                HISTORICAL DATA MODELING WORKBENCH
+                HISTORICAL DATA ENGINEERING TOOLKIT
               </div>
 
               <h1
@@ -89,7 +89,7 @@ export default function Home() {
                   color: "#ffffff",
                 }}
               >
-                Design, review and validate historical data models.
+                Historical data engineering for snapshots, SCD2 and temporal joins.
               </h1>
 
               <p
