@@ -358,22 +358,24 @@ export function AdvisorPanel() {
         )}
 
         {blueprint.communityEvidence.length > 0 && (
-          <div style={{ marginTop: 18 }}>
-            <div
+          <details style={{ marginTop: 18 }}>
+            <summary
               style={{
+                cursor: "pointer",
                 fontSize: 12,
                 fontWeight: 800,
                 color: "#1e40af",
-                marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
+                marginBottom: 8,
               }}
             >
               Community Evidence
-            </div>
+            </summary>
             
             <div
               style={{
+                marginTop: 10,
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                 gap: 10,
@@ -436,6 +438,7 @@ export function AdvisorPanel() {
                   >
                     {item.summary}
                   </div>
+                  
                   <div
                     style={{
                       color: "#64748b",
@@ -448,6 +451,7 @@ export function AdvisorPanel() {
                   >
                     Common community topics
                   </div>
+                  
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                     {item.observedIn.slice(0, 3).map((evidence) => (
                       <span
@@ -469,7 +473,7 @@ export function AdvisorPanel() {
                 </div>
               ))}
             </div>
-          </div>
+          </details>
         )}
 
         {blueprint.risks.length > 0 && (
@@ -520,30 +524,33 @@ export function AdvisorPanel() {
         )}
 
         {blueprint.validationChecks.length > 0 && (
-          <div style={{ marginTop: 18 }}>
-            <div
+          <details style={{ marginTop: 18 }}>
+            <summary
               style={{
+                cursor: "pointer",
                 fontSize: 12,
                 fontWeight: 800,
                 color: "#475569",
-                marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
+                marginBottom: 8,
               }}
             >
               Validation Checks
-            </div>
+            </summary>
+            
             <p
               style={{
-                margin: "0 0 10px",
+                margin: "10px 0",
                 color: "#64748b",
                 fontSize: 12,
                 lineHeight: 1.45,
               }}
             >
-              These checks should be implemented before publishing the historical model or
-              using it for reporting.
+              These checks should be implemented before publishing the historical model
+              or using it for reporting.
             </p>
+            
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {blueprint.validationChecks.map((check) => (
                 <span
@@ -563,7 +570,7 @@ export function AdvisorPanel() {
                 </span>
               ))}
             </div>
-          </div>
+          </details>
         )}
       </div>
 

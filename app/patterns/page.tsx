@@ -1,3 +1,8 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { track } from "@/lib/analytics";
+
 const PATTERN_GROUPS = [
   {
     title: "Foundations",
@@ -107,6 +112,46 @@ const PATTERN_GROUPS = [
 ];
 
 export default function PatternsPage() {
+  const trackedDepths = useRef(new Set<number>());
+
+  useEffect(() => {
+    track("patterns_page_opened", {
+      path: window.location.pathname,
+      referrer: document.referrer,
+      url: window.location.href,
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+
+      if (docHeight <= 0) return;
+
+      const percent = Math.round((window.scrollY / docHeight) * 100);
+
+      [25, 50, 75, 100].forEach((threshold) => {
+        if (
+          percent >= threshold &&
+          !trackedDepths.current.has(threshold)
+        ) {
+          trackedDepths.current.add(threshold);
+
+          track("scroll_depth", {
+            page: "patterns",
+            percent: threshold,
+          });
+        }
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <main
       style={{
@@ -152,7 +197,7 @@ export default function PatternsPage() {
             style={{
               margin: 0,
               maxWidth: 900,
-              fontSize: 54,
+              fontSize: "clamp(34px, 10vw, 54px)",
               lineHeight: 1.02,
               letterSpacing: "-0.05em",
               color: "#ffffff",
@@ -222,12 +267,19 @@ export default function PatternsPage() {
                 {group.patterns.map((pattern) => (
                   <article
                     key={pattern.name}
+                    onClick={() => {
+                      track("pattern_opened", {
+                        pattern: pattern.name,
+                        group: group.title,
+                      });
+                    }}
                     style={{
                       background: "#ffffff",
                       color: "#0f172a",
                       borderRadius: 14,
                       padding: 16,
                       border: "1px solid #dbeafe",
+                      cursor: "pointer",
                     }}
                   >
                     <h3
