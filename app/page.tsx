@@ -89,7 +89,7 @@ export default function Home() {
                   color: "#ffffff",
                 }}
               >
-                Historical data engineering for snapshots, SCD2 and temporal joins.
+                Build reliable historized and snapshot reporting models.
               </h1>
 
               <p
