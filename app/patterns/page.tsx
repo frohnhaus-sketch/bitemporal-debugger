@@ -320,6 +320,28 @@ export default function PatternsPage() {
                         </span>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        track("pattern_opened", {
+                          pattern: pattern.name,
+                          group: group.title,
+                        });
+                      }}
+                      style={{
+                        marginTop: 12,
+                        padding: "8px 10px",
+                        borderRadius: 10,
+                        border: "1px solid #bfdbfe",
+                        background: "#eff6ff",
+                        color: "#1d4ed8",
+                        fontSize: 12,
+                        fontWeight: 900,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Mark as interesting
+                    </button>
                   </article>
                 ))}
               </div>
