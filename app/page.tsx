@@ -83,7 +83,7 @@ export default function Home() {
                 style={{
                   margin: 0,
                   maxWidth: 880,
-                  fontSize: isMobile ? 34 : 60,
+                  fontSize: isMobile ? 32 : 60,
                   lineHeight: 1.02,
                   letterSpacing: isMobile ? "-0.045em" : "-0.06em",
                   color: "#ffffff",

@@ -275,7 +275,20 @@ export default async function EventsPage() {
   const uniqueVisitors = new Set(events.map((e) => e.ip_hash).filter(Boolean)).size;
   const interactions = events.filter((e) => e.event !== "page_view").length;
 
-  const advisorOpened = counts["advisor_viewed"] ?? 0;
+  const advisorViewed = counts["advisor_viewed"] ?? 0;
+  const advisorToggled = counts["advisor_toggled"] ?? 0;
+
+  const advisorExpanded = events.filter(
+    (event) =>
+      event.event === "advisor_toggled" &&
+      event.data?.open === true
+  ).length;
+
+  const advisorCollapsed = events.filter(
+    (event) =>
+      event.event === "advisor_toggled" &&
+      event.data?.open === false
+  ).length;
   const advisorQuestionChanges = counts["advisor_question_changed"] ?? 0;
   const advisorBlueprintsCopied = counts["advisor_blueprint_copied"] ?? 0;
 
@@ -326,11 +339,11 @@ export default async function EventsPage() {
     analysisRuns;
 
   const advisorStartRate = pageViews
-    ? Math.round((advisorOpened / pageViews) * 100)
+    ? Math.round((advisorViewed / pageViews) * 100)
     : 0;
 
-  const advisorCopyRate = advisorOpened
-    ? Math.round((advisorBlueprintsCopied / advisorOpened) * 100)
+  const advisorCopyRate = advisorViewed
+    ? Math.round((advisorBlueprintsCopied / advisorViewed) * 100)
     : 0;
 
   const patternCatalogRate = pageViews
@@ -467,7 +480,10 @@ export default async function EventsPage() {
           </MetricSection>
 
           <MetricSection title="Advisor Funnel">
-            <MetricCard label="Advisor Opened" value={advisorOpened} />
+            <MetricCard label="Advisor Viewed" value={advisorViewed} />
+            <MetricCard label="Advisor Toggles" value={advisorToggled} />
+            <MetricCard label="Expanded" value={advisorExpanded} />
+            <MetricCard label="Collapsed" value={advisorCollapsed} />
             <MetricCard label="Question Changes" value={advisorQuestionChanges} />
             <MetricCard label="Blueprint Copies" value={advisorBlueprintsCopied} />
             <MetricCard label="Advisor Start Rate" value={`${advisorStartRate}%`} />
