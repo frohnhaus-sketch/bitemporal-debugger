@@ -267,19 +267,12 @@ export default function PatternsPage() {
                 {group.patterns.map((pattern) => (
                   <article
                     key={pattern.name}
-                    onClick={() => {
-                      track("pattern_opened", {
-                        pattern: pattern.name,
-                        group: group.title,
-                      });
-                    }}
                     style={{
                       background: "#ffffff",
                       color: "#0f172a",
                       borderRadius: 14,
                       padding: 16,
                       border: "1px solid #dbeafe",
-                      cursor: "pointer",
                     }}
                   >
                     <h3

@@ -531,9 +531,7 @@ function InfoBox({ title, items }: { title: string; items: string[] }) {
                 cta: "explore_more_patterns",
               });
             
-              document
-                .getElementById("advisor-section")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              window.location.href = "/patterns";
             }}
             style={{
               border: "1px solid #cbd5e1",

@@ -121,7 +121,13 @@ export function AdvisorPanel() {
   }
 
   return (
-    <section
+    <details
+      open
+      onToggle={(event) => {
+        track("advisor_toggled", {
+          open: event.currentTarget.open,
+        });
+      }}
       style={{
         background: "#ffffff",
         color: "#0f172a",
@@ -131,18 +137,24 @@ export function AdvisorPanel() {
         boxShadow: "0 4px 16px rgba(15, 23, 42, 0.08)",
       }}
     >
-      <SectionEyebrow>Historical Modeling Advisor</SectionEyebrow>
+      <summary
+        style={{
+          cursor: "pointer",
+          listStylePosition: "inside",
+        }}
+      >
+        <SectionEyebrow>Historical Modeling Advisor</SectionEyebrow>
+      
+        <h2 style={{ margin: "0 0 8px", fontSize: 26 }}>
+          Design the model before implementation
+        </h2>
+      
+        <p style={{ color: "#475569", marginTop: 0, marginBottom: 0 }}>
+          Answer a few questions and get a recommended historical modeling strategy.
+        </p>
+      </summary>
 
-      <h2 style={{ margin: "0 0 8px", fontSize: 26 }}>
-        Design the model before implementation
-      </h2>
-
-      <p style={{ color: "#475569", marginTop: 0, marginBottom: 24 }}>
-        Answer a few questions and get a recommended historical modeling
-        strategy.
-      </p>
-
-      <div style={{ display: "grid", gap: 18 }}>
+      <div style={{ display: "grid", gap: 18, marginTop: 24 }}>
         <QuestionBlock
           title="1. What should the final reporting model support?"
           description="Choose the main reporting behavior the historical model needs to produce."
@@ -337,7 +349,7 @@ export function AdvisorPanel() {
             </div>
             
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {blueprint.patterns.slice(0, 5).map((pattern) => (
+              {blueprint.patterns.slice(0, 4).map((pattern) => (
                 <span
                   key={pattern}
                   style={{
@@ -518,7 +530,7 @@ export function AdvisorPanel() {
               historical complexity. They highlight what can break during implementation.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {blueprint.risks.slice(0, 8).map((risk) => (
+              {blueprint.risks.slice(0, 5).map((risk) => (
                 <span
                   key={risk}
                   title={getRiskTooltip(risk)}
@@ -676,7 +688,7 @@ export function AdvisorPanel() {
           </div>
         </details>
       </div>
-    </section>
+    </details>
   );
 }
 
