@@ -49,7 +49,7 @@ page_view
 
 Du brauchst zusätzlich:
 
- advisor_opened
+ advisor_viewed
  advisor_question_changed
  advisor_blueprint_copied
  patterns_page_opened

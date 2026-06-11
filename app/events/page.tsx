@@ -275,7 +275,7 @@ export default async function EventsPage() {
   const uniqueVisitors = new Set(events.map((e) => e.ip_hash).filter(Boolean)).size;
   const interactions = events.filter((e) => e.event !== "page_view").length;
 
-  const advisorOpened = counts["advisor_opened"] ?? 0;
+  const advisorOpened = counts["advisor_viewed"] ?? 0;
   const advisorQuestionChanges = counts["advisor_question_changed"] ?? 0;
   const advisorBlueprintsCopied = counts["advisor_blueprint_copied"] ?? 0;
 

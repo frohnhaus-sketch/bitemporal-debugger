@@ -20,7 +20,7 @@ export function AdvisorPanel() {
 
     hasTrackedAdvisorOpened.current = true;
 
-    track("advisor_opened", {
+    track("advisor_viewed", {
       defaultReportingGoal: "SNAPSHOT",
       defaultSourceTypes: "State Records,Events",
       defaultHistoryCorrected: "YES",
@@ -301,7 +301,7 @@ export function AdvisorPanel() {
 
         <div
           style={{
-            fontSize: 28,
+            fontSize: "clamp(24px, 8vw, 28px)",
             fontWeight: 900,
             color: "#0f172a",
             lineHeight: 1.2,
@@ -337,7 +337,7 @@ export function AdvisorPanel() {
             </div>
             
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {blueprint.patterns.map((pattern) => (
+              {blueprint.patterns.slice(0, 5).map((pattern) => (
                 <span
                   key={pattern}
                   style={{
@@ -353,6 +353,22 @@ export function AdvisorPanel() {
                   {pattern}
                 </span>
               ))}
+
+              {blueprint.patterns.length > 5 && (
+                <span
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    background: "#dbeafe",
+                    border: "1px solid #bfdbfe",
+                    color: "#1d4ed8",
+                    fontSize: 12,
+                    fontWeight: 800,
+                  }}
+                >
+                  +{blueprint.patterns.length - 5} more
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -502,7 +518,7 @@ export function AdvisorPanel() {
               historical complexity. They highlight what can break during implementation.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {blueprint.risks.map((risk) => (
+              {blueprint.risks.slice(0, 8).map((risk) => (
                 <span
                   key={risk}
                   title={getRiskTooltip(risk)}
@@ -519,6 +535,21 @@ export function AdvisorPanel() {
                   {risk}
                 </span>
               ))}
+              {blueprint.risks.length > 8 && (
+                <span
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    background: "#fff7ed",
+                    border: "1px solid #fed7aa",
+                    color: "#9a3412",
+                    fontSize: 12,
+                    fontWeight: 800,
+                  }}
+                >
+                  +{blueprint.risks.length - 8} more
+                </span>
+              )}
             </div>
           </div>
         )}

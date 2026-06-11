@@ -830,32 +830,26 @@ WHERE ${sqlParts.join(" AND ")};`);
       <summary
         style={{
           cursor: "pointer",
-          color: "#e2e8f0",
+          color: "#ffffff",
           fontWeight: 900,
           fontSize: 18,
           listStylePosition: "inside",
         }}
       >
-        Optional · Compare two historized sources
-      </summary>
-
-      <div style={{ margin: "28px 0 14px" }}>
-        <h2 style={{ margin: 0, color: "#ffffff", fontSize: 26 }}>
-          Compare source and target histories
-        </h2>
-
-        <p
+        Advanced Historical Source Comparison
+        <div
           style={{
-            margin: "8px 0 0",
-            color: "#cbd5e1",
-            fontSize: 15,
-            lineHeight: 1.5,
+            marginTop: 6,
+            color: "#94a3b8",
+            fontSize: 13,
+            fontWeight: 500,
+            lineHeight: 1.45,
           }}
         >
-          Use this when you want to compare two historized sources, for example
-          source vs target, state vs event, or two SCD2-style histories.
-        </p>
-      </div>
+          Compare two historized sources when you need row-level timeline evidence,
+          temporal joins or overlap diagnostics.
+        </div>
+      </summary>
 
       <TwoSourceInputPanel
         fileNameA={fileNameA}
