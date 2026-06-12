@@ -72,19 +72,33 @@ const PATTERN_GROUPS = [
     description: "Patterns for reproducible historical reporting.",
     patterns: [
       {
+        name: "Snapshot Fact Modeling",
+        text: "Builds reproducible reporting facts for periodic snapshots.",
+        examples: [
+          "Month-end portfolio",
+          "Active contracts",
+          "Customer balances",
+        ],
+      },
+      {
         name: "Snapshot Reproducibility",
         text: "Ensures reports can be reproduced for the same reporting date.",
         examples: ["Month-end snapshots", "Audit reports"],
       },
       {
-        name: "Historical Backfill",
-        text: "Reconstructs history after data already exists.",
-        examples: ["CDC replay", "Historical reload"],
+        name: "As-Known Reporting",
+        text: "Answers historical questions using only the information known at the reporting time.",
+        examples: ["Visible time", "Audit reports", "As-of knowledge"],
       },
       {
         name: "Historical Correction",
         text: "Preserves corrected history without losing what was known before.",
-        examples: ["Backdated changes", "Restatements"],
+        examples: ["Backdated changes", "Retroactive corrections", "Restatements"],
+      },
+      {
+        name: "Historical Backfill",
+        text: "Reconstructs history after data already exists.",
+        examples: ["CDC replay", "Historical reload"],
       },
     ],
   },
@@ -94,8 +108,8 @@ const PATTERN_GROUPS = [
     patterns: [
       {
         name: "Historical Match Ambiguity",
-        text: "Occurs when multiple historical records satisfy the same join.",
-        examples: ["Duplicate fact rows", "Join explosion"],
+        text: "Occurs when multiple historical records satisfy the same temporal join.",
+        examples: ["Duplicate fact rows", "Join explosion", "Multiple valid matches"],
       },
       {
         name: "Historical Coverage Gap",
@@ -106,6 +120,36 @@ const PATTERN_GROUPS = [
         name: "Historical Overlap",
         text: "Occurs when multiple records are active at the same time.",
         examples: ["Overlapping SCD2 rows", "Ambiguous current state"],
+      },
+    ],
+  },
+  {
+    title: "Advanced Patterns",
+    description: "Advanced historical modeling techniques.",
+    patterns: [
+      {
+        name: "Rectangle Decomposition",
+        text: "Combines multiple historical timelines into stable reporting intervals.",
+        examples: [
+          "Coverage timelines",
+          "Risk attributes",
+          "Contract projections",
+        ],
+      },
+      {
+        name: "Event Prioritization",
+        text: "Selects business-relevant events from noisy operational event streams.",
+        examples: ["Status changes", "Workflow events", "Event ranking"],
+      },
+      {
+        name: "State Reduction",
+        text: "Removes irrelevant or redundant historical state changes before reporting.",
+        examples: ["Status cleanup", "Noise reduction", "Reporting states"],
+      },
+      {
+        name: "Event-to-State Projection",
+        text: "Derives valid state intervals from ordered business events.",
+        examples: ["Event streams", "Status history", "Snapshot derivation"],
       },
     ],
   },
@@ -327,7 +371,6 @@ export default function PatternsPage() {
                         group={group.title}
                       />
                     )}
-                    
                     {pattern.name === "Snapshot Reproducibility" && (
                       <LearnMoreLink
                         href="/learn/snapshot-reproducibility"
@@ -335,7 +378,6 @@ export default function PatternsPage() {
                         group={group.title}
                       />
                     )}
-
                     {pattern.name === "State ↔ Event Alignment" && (
                       <LearnMoreLink
                         href="/learn/state-event-alignment"
@@ -343,7 +385,6 @@ export default function PatternsPage() {
                         group={group.title}
                       />
                     )}
-
                     {pattern.name === "State ↔ State Alignment" && (
                       <LearnMoreLink
                         href="/learn/state-state-alignment"
@@ -351,7 +392,6 @@ export default function PatternsPage() {
                         group={group.title}
                       />
                     )}
-
                     {pattern.name === "Relationship History" && (
                       <LearnMoreLink
                         href="/learn/relationship-history"
@@ -359,7 +399,6 @@ export default function PatternsPage() {
                         group={group.title}
                       />
                     )}
-
                     {pattern.name === "Historical Coverage Gap" && (
                       <LearnMoreLink
                         href="/learn/historical-coverage-gap"
@@ -367,10 +406,107 @@ export default function PatternsPage() {
                         group={group.title}
                       />
                     )}
-
-                    {pattern.name === "State ↔ State Alignment" && (
+                    {pattern.name === "Historical Overlap" && (
                       <LearnMoreLink
-                        href="/learn/state-state-alignment"
+                        href="/learn/historical-overlap"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Historical Match Ambiguity" && (
+                      <LearnMoreLink
+                        href="/learn/historical-match-ambiguity"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Temporal Conformance" && (
+                      <LearnMoreLink
+                        href="/learn/temporal-conformance"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Historical Correction" && (
+                      <LearnMoreLink
+                        href="/learn/historical-correction"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Identity Resolution" && (
+                      <LearnMoreLink
+                        href="/learn/identity-resolution"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Historical Backfill" && (
+                      <LearnMoreLink
+                        href="/learn/historical-backfill"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Bitemporal Modeling" && (
+                      <LearnMoreLink
+                        href="/learn/bitemporal-modeling"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "State Modeling" && (
+                      <LearnMoreLink
+                        href="/learn/state-modeling"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Event Modeling" && (
+                      <LearnMoreLink
+                        href="/learn/event-modeling"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Rectangle Decomposition" && (
+                      <LearnMoreLink
+                        href="/learn/rectangle-decomposition"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Event Prioritization" && (
+                      <LearnMoreLink
+                        href="/learn/event-prioritization"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "State Reduction" && (
+                      <LearnMoreLink
+                        href="/learn/state-reduction"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Event-to-State Projection" && (
+                      <LearnMoreLink
+                        href="/learn/event-to-state-projection"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "Snapshot Fact Modeling" && (
+                      <LearnMoreLink
+                        href="/learn/snapshot-fact-modeling"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "As-Known Reporting" && (
+                      <LearnMoreLink
+                        href="/learn/as-known-reporting"
                         pattern={pattern.name}
                         group={group.title}
                       />
