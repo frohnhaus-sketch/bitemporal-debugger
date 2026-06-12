@@ -401,6 +401,8 @@ export default function SnapshotReproducibilityPage() {
           </div>
         </section>
 
+    <RelatedPatterns current="snapshot_reproducibility" />
+
         <section
           style={{
             background: "#dbeafe",
@@ -531,5 +533,98 @@ function TimelineRow({
         <span style={{ fontWeight: 900 }}>{right}</span>
       </div>
     </div>
+  );
+}
+
+function RelatedPatterns({
+  current,
+}: {
+  current: string;
+}) {
+  const patterns = [
+    {
+      title: "Dimension Completion",
+      href: "/learn/dimension-completion",
+      key: "dimension_completion",
+    },
+    {
+      title: "Snapshot Reproducibility",
+      href: "/learn/snapshot-reproducibility",
+      key: "snapshot_reproducibility",
+    },
+    {
+      title: "State ↔ Event Alignment",
+      href: "/learn/state-event-alignment",
+      key: "state_event_alignment",
+    },
+    {
+      title: "Relationship History",
+      href: "/learn/relationship-history",
+      key: "relationship_history",
+    },
+    {
+      title: "Historical Coverage Gap",
+      href: "/learn/historical-coverage-gap",
+      key: "historical_coverage_gap",
+    },
+    {
+      title: "State ↔ State Alignment",
+      href: "/learn/state-state-alignment",
+      key: "state_state_alignment",
+    },
+  ];
+
+  return (
+    <section
+      style={{
+        marginTop: 30,
+        padding: 24,
+        borderRadius: 22,
+        background: "rgba(15, 23, 42, 0.72)",
+        border: "1px solid rgba(148, 163, 184, 0.32)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 900,
+          color: "#93c5fd",
+          textTransform: "uppercase",
+          letterSpacing: 0.7,
+          marginBottom: 10,
+        }}
+      >
+        Related Patterns
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+        {patterns
+          .filter((pattern) => pattern.key !== current)
+          .map((pattern) => (
+            <a
+              key={pattern.key}
+              href={pattern.href}
+              onClick={() => {
+                track("related_pattern_clicked", {
+                  from: current,
+                  to: pattern.key,
+                });
+              }}
+              style={{
+                display: "inline-flex",
+                padding: "9px 12px",
+                borderRadius: 999,
+                background: "#ffffff",
+                color: "#1d4ed8",
+                textDecoration: "none",
+                fontSize: 13,
+                fontWeight: 900,
+              }}
+            >
+              {pattern.title}
+            </a>
+          ))}
+      </div>
+    </section>
   );
 }

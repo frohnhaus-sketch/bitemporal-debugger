@@ -31,8 +31,8 @@ const PATTERN_GROUPS = [
     patterns: [
       {
         name: "State ↔ State Alignment",
-        text: "Joins two historized state sources across overlapping time intervals.",
-        examples: ["Contract ↔ Customer", "Product ↔ Price"],
+        text: "Aligns two historized state sources across overlapping validity periods.",
+        examples: ["Contract ↔ Customer", "Policy ↔ Broker", "Product ↔ Price"],
       },
       {
         name: "State ↔ Event Alignment",
@@ -331,6 +331,46 @@ export default function PatternsPage() {
                     {pattern.name === "Snapshot Reproducibility" && (
                       <LearnMoreLink
                         href="/learn/snapshot-reproducibility"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+
+                    {pattern.name === "State ↔ Event Alignment" && (
+                      <LearnMoreLink
+                        href="/learn/state-event-alignment"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+
+                    {pattern.name === "State ↔ State Alignment" && (
+                      <LearnMoreLink
+                        href="/learn/state-state-alignment"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+
+                    {pattern.name === "Relationship History" && (
+                      <LearnMoreLink
+                        href="/learn/relationship-history"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+
+                    {pattern.name === "Historical Coverage Gap" && (
+                      <LearnMoreLink
+                        href="/learn/historical-coverage-gap"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+
+                    {pattern.name === "State ↔ State Alignment" && (
+                      <LearnMoreLink
+                        href="/learn/state-state-alignment"
                         pattern={pattern.name}
                         group={group.title}
                       />
