@@ -319,29 +319,22 @@ export default function PatternsPage() {
                           {example}
                         </span>
                       ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        track("pattern_opened", {
-                          pattern: pattern.name,
-                          group: group.title,
-                        });
-                      }}
-                      style={{
-                        marginTop: 12,
-                        padding: "8px 10px",
-                        borderRadius: 10,
-                        border: "1px solid #bfdbfe",
-                        background: "#eff6ff",
-                        color: "#1d4ed8",
-                        fontSize: 12,
-                        fontWeight: 900,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Mark as interesting
-                    </button>
+                    </div>                    
+                    {pattern.name === "Dimension Completion" && (
+                      <LearnMoreLink
+                        href="/learn/dimension-completion"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    
+                    {pattern.name === "Snapshot Reproducibility" && (
+                      <LearnMoreLink
+                        href="/learn/snapshot-reproducibility"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
                   </article>
                 ))}
               </div>
@@ -350,5 +343,40 @@ export default function PatternsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function LearnMoreLink({
+  href,
+  pattern,
+  group,
+}: {
+  href: string;
+  pattern: string;
+  group: string;
+}) {
+  return (
+    <a
+      href={href}
+      onClick={() => {
+        track("pattern_learn_more_clicked", {
+          pattern,
+          group,
+        });
+      }}
+      style={{
+        display: "inline-flex",
+        marginTop: 12,
+        padding: "9px 12px",
+        borderRadius: 10,
+        background: "#2563eb",
+        color: "#ffffff",
+        textDecoration: "none",
+        fontSize: 12,
+        fontWeight: 900,
+      }}
+    >
+      Learn More →
+    </a>
   );
 }
