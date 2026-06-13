@@ -1,4 +1,10 @@
 export function Footer() {
+  const linkStyle = {
+    color: "#60a5fa",
+    textDecoration: "none",
+    fontWeight: 600,
+  };
+
   return (
     <div
       style={{
@@ -11,8 +17,8 @@ export function Footer() {
       }}
     >
       <div style={{ marginBottom: 12 }}>
-        Built for historical source integration, temporal analysis and
-        historical data modeling.
+        Built for historical data modeling, temporal joins,
+        snapshot reporting and historized data validation.
       </div>
 
       <div
@@ -24,14 +30,7 @@ export function Footer() {
           marginBottom: 12,
         }}
       >
-        <a
-          href="/patterns"
-          style={{
-            color: "#60a5fa",
-            textDecoration: "none",
-            fontWeight: 700,
-          }}
-        >
+        <a href="/patterns" style={linkStyle}>
           Pattern Catalog
         </a>
 
@@ -39,11 +38,7 @@ export function Footer() {
           href="https://www.linkedin.com/in/jakob-frohnhaus/"
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            color: "#60a5fa",
-            textDecoration: "none",
-            fontWeight: 700,
-          }}
+          style={linkStyle}
         >
           LinkedIn
         </a>
@@ -55,13 +50,17 @@ export function Footer() {
           href="https://www.linkedin.com/in/jakob-frohnhaus/"
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            color: "#60a5fa",
-            textDecoration: "none",
-            fontWeight: 600,
-          }}
+          style={linkStyle}
         >
           Jakob Frohnhaus
+        </a>
+        {" · "}
+        <a href="/imprint" style={linkStyle}>
+          Imprint
+        </a>
+        {" · "}
+        <a href="/privacy" style={linkStyle}>
+          Privacy
         </a>
       </div>
 

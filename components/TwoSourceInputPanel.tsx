@@ -160,8 +160,9 @@ export function TwoSourceInputPanel({
           lineHeight: 1.5,
         }}
       >
-        <strong style={{ color: "#cbd5e1" }}>🔒 Local session only.</strong>{" "}
-        Uploaded datasets remain in your browser session and are not stored.
+        <strong style={{ color: "#cbd5e1" }}>
+          🔒 Uploaded datasets are processed locally in your browser and are not stored on our servers.
+        </strong>
       </div>
 
       <div
