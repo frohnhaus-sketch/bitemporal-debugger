@@ -67,6 +67,23 @@ const WRONG_ROWS = [
   ["Reason", "No valid customer row exists in February"],
 ];
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function update() {
+      setIsMobile(window.innerWidth < 760);
+    }
+
+    update();
+    window.addEventListener("resize", update);
+
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return isMobile;
+}
+
 export default function DimensionCompletionPage() {
   useEffect(() => {
   track("learn_page_opened", {
@@ -292,6 +309,8 @@ export default function DimensionCompletionPage() {
 }
 
 function DarkExampleCard() {
+  const isMobile = useIsMobile();
+
   return (
     <section style={darkCardStyle}>
       <div style={darkEyebrowStyle}>Example</div>
@@ -301,9 +320,9 @@ function DarkExampleCard() {
       </h2>
 
       <div style={visualTimelineStyle}>
-        <MonthAxis />
+        {!isMobile && <MonthAxis />}
 
-        <div style={snapshotMarkerStyle}>
+        <div style={isMobile ? mobileSnapshotMarkerStyle : snapshotMarkerStyle}>
           <div style={snapshotLabelStyle}>February snapshot</div>
           <div style={snapshotTriangleStyle}>▼</div>
           <div style={snapshotLineStyle} />
@@ -317,6 +336,7 @@ function DarkExampleCard() {
           width="100%"
           color="#bfdbfe"
           border="#93c5fd"
+          mobile={isMobile}
         />
 
         <VisualTimelineRow
@@ -327,6 +347,7 @@ function DarkExampleCard() {
           width="75%"
           color="#ffedd5"
           border="#fdba74"
+          mobile={isMobile}
         />
 
         <div style={questionCardStyle}>
@@ -515,6 +536,7 @@ function VisualTimelineRow({
   width,
   color,
   border,
+  mobile = false,
 }: {
   label: string;
   startLabel: string;
@@ -523,17 +545,18 @@ function VisualTimelineRow({
   width: string;
   color: string;
   border: string;
+  mobile?: boolean;
 }) {
   return (
-    <div style={visualTimelineRowStyle}>
+    <div style={mobile ? mobileVisualTimelineRowStyle : visualTimelineRowStyle}>
       <div style={visualTimelineLabelStyle}>{label}</div>
 
-      <div style={timelineTrackStyle}>
+      <div style={mobile ? mobileTimelineTrackStyle : timelineTrackStyle}>
         <div
           style={{
             ...timelineSegmentStyle,
-            left,
-            width,
+            left: mobile ? "0%" : left,
+            width: mobile ? "100%" : width,
             background: color,
             border: `1px solid ${border}`,
           }}
@@ -894,7 +917,7 @@ const darkEyebrowStyle: CSSProperties = {
 const darkTitleStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 16,
-  fontSize: "clamp(24px, 6vw, 28px)",
+  fontSize: "clamp(22px, 5vw, 34px)",
   lineHeight: 1.15,
   color: "#ffffff",
   letterSpacing: "-0.03em",
@@ -1392,4 +1415,27 @@ const testCaseButtonStyle: CSSProperties = {
   color: "#ffffff",
   textDecoration: "none",
   fontWeight: 900,
+};
+
+const mobileVisualTimelineRowStyle: CSSProperties = {
+  display: "grid",
+  gap: 8,
+};
+
+const mobileTimelineTrackStyle: CSSProperties = {
+  position: "relative",
+  height: 54,
+  borderRadius: 18,
+  background: "rgba(15, 23, 42, 0.56)",
+  overflow: "hidden",
+};
+
+const mobileSnapshotMarkerStyle: CSSProperties = {
+  position: "absolute",
+  left: "50%",
+  top: 18,
+  width: 1,
+  height: 188,
+  zIndex: 5,
+  pointerEvents: "none",
 };
