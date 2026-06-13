@@ -55,13 +55,13 @@ export default function SnapshotReproducibilityPage() {
           <h1 style={h1Style}>Snapshot Reproducibility</h1>
 
           <p style={heroTextStyle}>
-            Snapshot Reproducibility ensures that historical reports can be
-            rebuilt later and still produce the same result for the same
-            reporting period.
+            Snapshot Reproducibility answers a simple question: if you rebuild last
+            month’s report today, should it produce the same result or the corrected
+            result?
           </p>
         </header>
 
-        <section style={{ display: "grid", gap: 24 }}>
+        <section style={{ display: "grid", gap: 24, minWidth: 0 }}>
           <WhiteCard
             eyebrow="Problem"
             title="The same month-end report produces different numbers when rebuilt later."
@@ -298,12 +298,13 @@ function TryItCard() {
         onClick={() => {
           track("learn_cta_clicked", {
             page: "snapshot_reproducibility",
-            cta: "open_workbench",
+            cta: "explore_snapshot_reproducibility",
+            source: "bottom_cta",
           });
         }}
         style={tryItButtonStyle}
       >
-        Open Historical Modeling Workbench →
+        Explore Snapshot Reproducibility →
       </a>
     </section>
   );
@@ -483,12 +484,17 @@ const riskChipStyle: CSSProperties = {
 };
 
 const darkCardStyle: CSSProperties = {
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  overflow: "hidden",
   padding: "clamp(20px, 5vw, 28px)",
   borderRadius: 24,
   background:
     "linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92))",
   border: "1px solid rgba(148, 163, 184, 0.35)",
   boxShadow: "0 24px 70px rgba(2, 6, 23, 0.35)",
+  boxSizing: "border-box",
 };
 
 const darkEyebrowStyle: CSSProperties = {

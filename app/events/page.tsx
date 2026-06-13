@@ -290,10 +290,14 @@ export default async function EventsPage() {
       event.data?.open === false
   ).length;
   const advisorQuestionChanges = counts["advisor_question_changed"] ?? 0;
+  const advisorCompleted = counts["advisor_completed"] ?? 0;
+  const advisorRecommendations = counts["advisor_recommendation_generated"] ?? 0;
   const advisorBlueprintsCopied = counts["advisor_blueprint_copied"] ?? 0;
 
   const patternsPageOpened = counts["patterns_page_opened"] ?? 0;
-  const patternOpened = counts["pattern_opened"] ?? 0;
+  const patternCardClicks = counts["pattern_card_clicked"] ?? 0;
+  const patternLearnMoreClicks = counts["pattern_learn_more_clicked"] ?? 0;
+  const patternCategoryViews = counts["pattern_category_viewed"] ?? 0;
   const scrollDepthEvents = counts["scroll_depth"] ?? 0;
 
   const exampleModelOpened = counts["example_model_opened"] ?? 0;
@@ -358,6 +362,8 @@ export default async function EventsPage() {
     reportsCopied + advisorBlueprintsCopied + modelReviewReportsCopied;
 
   const workflowActions =
+    advisorCompleted +
+    advisorRecommendations +
     advisorBlueprintsCopied +
     modelReviewsCompleted +
     targetValidationsCompleted +
@@ -376,7 +382,7 @@ export default async function EventsPage() {
     : 0;
 
   const patternOpenRate = patternsPageOpened
-    ? Math.round((patternOpened / patternsPageOpened) * 100)
+    ? Math.round((patternLearnMoreClicks / patternsPageOpened) * 100)
     : 0;
 
   const workflowRate = pageViews
@@ -429,7 +435,10 @@ export default async function EventsPage() {
 
   const topPatterns = Object.entries(
     countBy(events, (event) =>
-      event.event === "pattern_opened" ? getDataValue(event, "pattern") : null
+      event.event === "pattern_learn_more_clicked" ||
+      event.event === "pattern_card_clicked"
+        ? getDataValue(event, "pattern")
+        : null
     )
   )
     .sort((a, b) => b[1] - a[1])
@@ -437,7 +446,10 @@ export default async function EventsPage() {
 
   const topPatternGroups = Object.entries(
     countBy(events, (event) =>
-      event.event === "pattern_opened" ? getDataValue(event, "group") : null
+      event.event === "pattern_learn_more_clicked" ||
+      event.event === "pattern_card_clicked"
+        ? getDataValue(event, "group")
+        : null
     )
   )
     .sort((a, b) => b[1] - a[1])
@@ -464,6 +476,16 @@ export default async function EventsPage() {
       event.event === "activation_cta_clicked" ||
       event.event === "example_model_cta_clicked"
         ? `${event.event}: ${getDataValue(event, "cta")}`
+        : null
+    )
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  const topAdvisorRecommendations = Object.entries(
+    countBy(events, (event) =>
+      event.event === "advisor_recommendation_generated"
+        ? getDataValue(event, "recommendation")
         : null
     )
   )
@@ -524,6 +546,8 @@ export default async function EventsPage() {
             <MetricCard label="Blueprint Copies" value={advisorBlueprintsCopied} />
             <MetricCard label="Advisor Start Rate" value={`${advisorStartRate}%`} />
             <MetricCard label="Advisor Copy Rate" value={`${advisorCopyRate}%`} />
+            <MetricCard label="Completed" value={advisorCompleted} />
+            <MetricCard label="Recommendations" value={advisorRecommendations} />
           </MetricSection>
 
           <MetricSection title="Activation Funnel">
@@ -538,7 +562,9 @@ export default async function EventsPage() {
 
           <MetricSection title="Pattern Catalog">
             <MetricCard label="Catalog Opens" value={patternsPageOpened} />
-            <MetricCard label="Pattern Opens" value={patternOpened} />
+            <MetricCard label="Category Views" value={patternCategoryViews} />
+            <MetricCard label="Card Clicks" value={patternCardClicks} />
+            <MetricCard label="Learn More Clicks" value={patternLearnMoreClicks} />
             <MetricCard label="Scroll Events" value={scrollDepthEvents} />
             <MetricCard label="Catalog Rate" value={`${patternCatalogRate}%`} />
             <MetricCard label="Pattern Open Rate" value={`${patternOpenRate}%`} />
@@ -582,6 +608,13 @@ export default async function EventsPage() {
 
         <Panel title="Top Advisor Answers">
           <TopList rows={topAdvisorValues} emptyText="No Advisor answer data yet." />
+        </Panel>
+
+        <Panel title="Top Advisor Recommendations">
+          <TopList
+            rows={topAdvisorRecommendations}
+            emptyText="No Advisor recommendation data yet."
+          />
         </Panel>
 
         <Panel title="Top Patterns">

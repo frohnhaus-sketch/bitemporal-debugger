@@ -162,6 +162,7 @@ const PATTERN_GROUPS = [
 
 export default function PatternsPage() {
   const trackedDepths = useRef(new Set<number>());
+  const trackedVisibleGroups = useRef(new Set<string>());
 
   useEffect(() => {
     track("patterns_page_opened", {
@@ -199,6 +200,35 @@ export default function PatternsPage() {
     handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleCategoryVisibility = () => {
+      const sections = document.querySelectorAll("[data-pattern-group]");
+
+      sections.forEach((section) => {
+        const group = section.getAttribute("data-pattern-group");
+        if (!group || trackedVisibleGroups.current.has(group)) return;
+
+        const rect = section.getBoundingClientRect();
+        const isVisible =
+          rect.top < window.innerHeight * 0.75 && rect.bottom > 0;
+
+        if (!isVisible) return;
+
+        trackedVisibleGroups.current.add(group);
+
+        track("pattern_category_viewed", {
+          category: group,
+        });
+      });
+    };
+
+    window.addEventListener("scroll", handleCategoryVisibility);
+    handleCategoryVisibility();
+
+    return () =>
+      window.removeEventListener("scroll", handleCategoryVisibility);
   }, []);
 
   return (
@@ -274,6 +304,7 @@ export default function PatternsPage() {
           {PATTERN_GROUPS.map((group) => (
             <section
               key={group.title}
+              data-pattern-group={group.title}
               style={{
                 background: "rgba(15, 23, 42, 0.58)",
                 border: "1px solid rgba(148, 163, 184, 0.3)",
@@ -316,6 +347,12 @@ export default function PatternsPage() {
                 {group.patterns.map((pattern) => (
                   <article
                     key={pattern.name}
+                    onClick={() => {
+                      track("pattern_card_clicked", {
+                        group: group.title,
+                        pattern: pattern.name,
+                      });
+                    }}
                     style={{
                       background: "#ffffff",
                       color: "#0f172a",
@@ -546,10 +583,13 @@ function LearnMoreLink({
   return (
     <a
       href={href}
-      onClick={() => {
+      onClick={(event) => {
+        event.stopPropagation();
+      
         track("pattern_learn_more_clicked", {
           pattern,
           group,
+          href,
         });
       }}
       style={{
