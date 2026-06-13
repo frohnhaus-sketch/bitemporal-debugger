@@ -23,6 +23,11 @@ const PATTERN_GROUPS = [
         text: "Separates business-valid time from system-visible time.",
         examples: ["Corrected history", "Audit reporting", "As-known reporting"],
       },
+      {
+        name: "SCD2 vs Bitemporal Modeling",
+        text: "Compares valid-time-only history with models that also preserve when information became known.",
+        examples: ["SCD2 dimensions", "Visible time", "Corrected history"],
+      },
     ],
   },
   {
@@ -507,6 +512,13 @@ export default function PatternsPage() {
                     {pattern.name === "As-Known Reporting" && (
                       <LearnMoreLink
                         href="/learn/as-known-reporting"
+                        pattern={pattern.name}
+                        group={group.title}
+                      />
+                    )}
+                    {pattern.name === "SCD2 vs Bitemporal Modeling" && (
+                      <LearnMoreLink
+                        href="/learn/scd2-vs-bitemporal"
                         pattern={pattern.name}
                         group={group.title}
                       />

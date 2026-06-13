@@ -21,6 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/learn/historical-match-ambiguity",
     "/learn/state-reduction",
     "/learn/rectangle-decomposition",
+    "/learn/scd2-vs-bitemporal",
   ];
 
   return routes.map((route) => ({
