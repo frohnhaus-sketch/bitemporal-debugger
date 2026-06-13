@@ -396,7 +396,7 @@ const pageStyle: CSSProperties = {
   maxWidth: 980,
   marginLeft: "auto",
   marginRight: "auto",
-  boxSizing: "border-box",
+  minWidth: 0,
 };
 
 const backLinkStyle: CSSProperties = {
@@ -445,6 +445,9 @@ const whiteCardStyle: CSSProperties = {
   border: "1px solid rgba(226, 232, 240, 0.9)",
   boxShadow: "0 24px 70px rgba(15, 23, 42, 0.18)",
   color: "#0f172a",
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
 };
 
 const eyebrowStyle: CSSProperties = {
@@ -471,6 +474,7 @@ const paragraphStyle: CSSProperties = {
   fontSize: 16,
   lineHeight: 1.8,
   color: "#334155",
+  overflowWrap: "break-word",
 };
 
 const chipRowStyle: CSSProperties = {

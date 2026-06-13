@@ -19,7 +19,7 @@ export default function AsKnownReportingPage() {
         minHeight: "100vh",
         background:
           "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
-        padding: "48px 24px",
+        padding: "clamp(24px, 5vw, 48px) clamp(14px, 4vw, 24px)",
         fontFamily: "Inter, Arial, sans-serif",
         color: "#e2e8f0",
       }}

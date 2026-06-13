@@ -497,7 +497,7 @@ const eventListStyle: CSSProperties = {
 
 const eventRowStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "96px 1fr",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
   gap: 14,
   padding: 14,
   borderRadius: 16,
