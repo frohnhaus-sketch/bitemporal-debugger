@@ -5,16 +5,18 @@ import { Analytics } from "@vercel/analytics/next";
 import { track } from "@/lib/analytics";
 
 const VALIDATION_CHECKS = [
-  "Dimension coverage validation",
+  "Every fact period has a dimension match",
+  "No silent fact loss during historical joins",
+  "Completed history is marked or explainable",
+  "Backfilled values are business-approved",
   "Snapshot completeness validation",
-  "Historical gap detection",
   "Late arriving dimension validation",
 ];
 
 const SOLUTIONS = [
   {
-    title: "Backfill",
-    text: "Create missing historical dimension records so every required reporting period can find a valid dimension row.",
+    title: "Earliest Known Value Backfill",
+    text: "Extend the earliest known dimension version backwards when the business assumption is that the value already applied before it was first observed.",
   },
   {
     title: "Carry Forward",
@@ -55,8 +57,9 @@ export default function DimensionCompletionPage() {
           <h1 style={h1Style}>Dimension Completion</h1>
 
           <p style={heroTextStyle}>
-            Dimension Completion ensures that dimension history covers all
-            required reporting periods of the fact model.
+            SCD2 dimensions preserve recorded history. Dimension Completion solves the
+            missing coverage problem when facts exist for periods where no valid
+            dimension row exists yet.
           </p>
         </header>
 
@@ -72,6 +75,12 @@ export default function DimensionCompletionPage() {
               same period.
             </p>
 
+            <p style={paragraphStyle}>
+              A dimension can be technically valid and still be incomplete for reporting.
+              SCD2 stores the changes that were captured, but it does not automatically
+              create the missing historical coverage needed by snapshot facts.
+            </p>
+
             <ChipRow
               chips={[
                 "Missing attributes",
@@ -83,6 +92,23 @@ export default function DimensionCompletionPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <WhiteCard
+            eyebrow="Key idea"
+            title="SCD2 preserves history. Dimension Completion creates missing reporting coverage."
+          >
+            <p style={paragraphStyle}>
+              Many teams assume that historized dimensions are enough for historical
+              reporting. But a perfectly modeled SCD2 dimension can still fail if its
+              valid-time intervals do not cover the periods required by the fact table.
+            </p>
+
+            <p style={paragraphStyle}>
+              Dimension Completion extends, reconstructs or explicitly marks missing
+              dimension history so every relevant fact period has a deterministic
+              dimensional context.
+            </p>
+          </WhiteCard>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -97,6 +123,30 @@ export default function DimensionCompletionPage() {
                 "Snapshot reporting requirements",
               ]}
             />
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Where it appears"
+            title="Dimension Completion often appears when fact history is older than dimension history."
+          >
+            <div style={solutionGridStyle}>
+              <MiniCard
+                title="Insurance"
+                text="A policy exists since 2018, but customer ownership history only starts in 2021."
+              />
+              <MiniCard
+                title="Sales reporting"
+                text="Revenue history exists before territory, account or sales hierarchy history was tracked."
+              />
+              <MiniCard
+                title="Product reporting"
+                text="Sales facts exist before product categories or risk attributes were historized."
+              />
+              <MiniCard
+                title="Lakehouse migrations"
+                text="A new gold model requires historical dimensions that were never fully available in the source."
+              />
+            </div>
           </WhiteCard>
 
           <WhiteCard
@@ -120,6 +170,25 @@ export default function DimensionCompletionPage() {
           >
             <CheckChipRow checks={VALIDATION_CHECKS} />
           </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Why it matters"
+            title="Without Dimension Completion, snapshot facts can be correct but historically unusable."
+          >
+            <p style={paragraphStyle}>
+              The fact table may contain one row per entity and snapshot date, but
+              downstream reporting still fails when the dimension join cannot resolve a
+              valid historical context.
+            </p>
+                      
+            <p style={paragraphStyle}>
+              Dimension Completion makes the assumption explicit: either history is
+              backfilled, reconstructed, carried forward or assigned to an unknown member.
+              The important part is that missing coverage is handled deliberately rather
+              than silently losing facts or attributes.
+            </p>
+          </WhiteCard>
+
         </section>
 
         <RelatedPatterns current="dimension_completion" />
