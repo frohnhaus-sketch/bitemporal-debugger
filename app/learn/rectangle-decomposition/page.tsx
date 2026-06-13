@@ -33,7 +33,7 @@ export default function RectangleDecompositionPage() {
           </p>
         </header>
 
-        <section style={{ display: "grid", gap: 24 }}>
+        <section style={{ display: "grid", gap: 24, minWidth: 0 }}>
           <WhiteCard
             eyebrow="Problem"
             title="Multiple bitemporal attributes cannot be safely projected into one row without alignment."
@@ -692,7 +692,8 @@ const paragraphStyle: CSSProperties = {
   fontSize: 16,
   lineHeight: 1.8,
   color: "#334155",
-  overflowWrap: "break-word",
+  overflowWrap: "anywhere",
+  wordBreak: "normal",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -714,12 +715,17 @@ const riskChipStyle: CSSProperties = {
 };
 
 const darkCardStyle: CSSProperties = {
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  overflow: "hidden",
   padding: "clamp(20px, 5vw, 28px)",
   borderRadius: 24,
   background:
     "linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92))",
   border: "1px solid rgba(148, 163, 184, 0.35)",
   boxShadow: "0 24px 70px rgba(2, 6, 23, 0.35)",
+  boxSizing: "border-box",
 };
 
 const darkEyebrowStyle: CSSProperties = {
@@ -746,7 +752,10 @@ const graphicCardStyle: CSSProperties = {
   borderRadius: 18,
   background: "rgba(2, 6, 23, 0.72)",
   border: "1px solid rgba(148, 163, 184, 0.32)",
-  overflowX: "auto",
+  overflowX: "hidden",
+  maxWidth: "100%",
+  minWidth: 0,
+  boxSizing: "border-box",
 };
 
 const graphicTitleStyle: CSSProperties = {
@@ -759,7 +768,7 @@ const graphicTitleStyle: CSSProperties = {
 const svgStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  minWidth: 860,
+  maxWidth: "100%",
   height: "auto",
 };
 

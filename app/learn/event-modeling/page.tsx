@@ -33,7 +33,7 @@ export default function EventModelingPage() {
           </p>
         </header>
 
-        <section style={{ display: "grid", gap: 24 }}>
+        <section style={{ display: "grid", gap: 24, minWidth: 0 }}>
           <WhiteCard
             eyebrow="Problem"
             title="Not every historical fact is a state."
@@ -368,6 +368,8 @@ const pageStyle: CSSProperties = {
   marginLeft: "auto",
   marginRight: "auto",
   boxSizing: "border-box",
+  overflowX: "hidden",
+  minWidth: 0,
 };
 
 const backLinkStyle: CSSProperties = {
@@ -410,12 +412,17 @@ const heroTextStyle: CSSProperties = {
 };
 
 const whiteCardStyle: CSSProperties = {
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  overflow: "hidden",
   padding: "clamp(20px, 5vw, 28px)",
   borderRadius: 24,
   background: "rgba(255, 255, 255, 0.96)",
   border: "1px solid rgba(226, 232, 240, 0.9)",
   boxShadow: "0 24px 70px rgba(15, 23, 42, 0.18)",
   color: "#0f172a",
+  boxSizing: "border-box",
 };
 
 const eyebrowStyle: CSSProperties = {
@@ -439,9 +446,11 @@ const cardTitleStyle: CSSProperties = {
 const paragraphStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 12,
-  fontSize: 16,
+  fontSize: "clamp(15px, 4vw, 16px)",
   lineHeight: 1.8,
   color: "#334155",
+  overflowWrap: "anywhere",
+  wordBreak: "normal",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -449,10 +458,13 @@ const chipRowStyle: CSSProperties = {
   flexWrap: "wrap",
   gap: 10,
   marginTop: 18,
+  maxWidth: "100%",
+  overflow: "hidden",
 };
 
 const riskChipStyle: CSSProperties = {
   display: "inline-flex",
+  maxWidth: "100%",
   padding: "8px 11px",
   borderRadius: 999,
   background: "#eff6ff",
@@ -460,6 +472,8 @@ const riskChipStyle: CSSProperties = {
   fontSize: 13,
   fontWeight: 900,
   border: "1px solid #bfdbfe",
+  whiteSpace: "normal",
+  overflowWrap: "anywhere",
 };
 
 const darkCardStyle: CSSProperties = {
