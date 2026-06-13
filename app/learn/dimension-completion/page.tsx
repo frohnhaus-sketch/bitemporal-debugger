@@ -180,13 +180,52 @@ export default function DimensionCompletionPage() {
               downstream reporting still fails when the dimension join cannot resolve a
               valid historical context.
             </p>
-                      
+
             <p style={paragraphStyle}>
               Dimension Completion makes the assumption explicit: either history is
               backfilled, reconstructed, carried forward or assigned to an unknown member.
               The important part is that missing coverage is handled deliberately rather
               than silently losing facts or attributes.
             </p>
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Related Concepts"
+            title="Dimension Completion is closely related to several historical modeling concepts."
+          >
+            <div style={solutionGridStyle}>
+              <a href="/learn/snapshot-reproducibility" style={relatedConceptStyle}>
+                <strong>Snapshot Reproducibility</strong>
+                <div>
+                  Historical snapshots remain reproducible only if dimensions provide
+                  consistent coverage for every reporting period.
+                </div>
+              </a>
+
+              <a href="/learn/historical-coverage-gap" style={relatedConceptStyle}>
+                <strong>Historical Coverage Gap</strong>
+                <div>
+                  Dimension Completion is often required when historical coverage gaps
+                  exist between facts and dimensions.
+                </div>
+              </a>
+
+              <a href="/learn/state-state-alignment" style={relatedConceptStyle}>
+                <strong>State ↔ State Alignment</strong>
+                <div>
+                  Historical joins become unstable when aligned states do not cover the
+                  same time periods.
+                </div>
+              </a>
+
+              <a href="/learn/state-modeling" style={relatedConceptStyle}>
+                <strong>SCD2 Dimensions</strong>
+                <div>
+                  SCD2 preserves captured history, but does not automatically create the
+                  historical coverage required by snapshot reporting.
+                </div>
+              </a>
+            </div>
           </WhiteCard>
 
         </section>
@@ -724,4 +763,15 @@ const tryItButtonStyle: CSSProperties = {
   color: "#ffffff",
   textDecoration: "none",
   fontWeight: 900,
+};
+
+const relatedConceptStyle: CSSProperties = {
+  display: "block",
+  padding: 18,
+  borderRadius: 18,
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  textDecoration: "none",
+  color: "#334155",
+  lineHeight: 1.6,
 };
