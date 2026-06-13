@@ -19,6 +19,7 @@ type DetectedColumns = {
   visibleFrom: string | null;
   visibleTo: string | null;
   snapshotDate: string | null;
+  dimensionColumns: string[];
 };
 
 type TargetValidationResult = {
@@ -63,7 +64,9 @@ export function TargetTableValidationPanel() {
 
   return (
     <section
+      id="target-table-validation"
       style={{
+        scrollMarginTop: 24,
         background: "#ffffff",
         color: "#0f172a",
         padding: 24,
@@ -163,6 +166,14 @@ export function TargetTableValidationPanel() {
               <ColumnCard
                 label="Snapshot date"
                 value={result.detectedColumns.snapshotDate}
+              />
+              <ColumnCard
+                label="Dimension columns"
+                value={
+                  result.detectedColumns.dimensionColumns.length > 0
+                    ? result.detectedColumns.dimensionColumns.join(", ")
+                    : null
+                }
               />
             </div>
           </div>
@@ -289,6 +300,7 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
       "as_of_date",
       "stichtag",
     ]),
+    dimensionColumns: detectDimensionColumns(columns),
   };
 
   const findings: TargetFinding[] = [];
@@ -368,14 +380,16 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
       )
     );
 
-    findings.push(
-      ...detectValidTimeGaps(
-        rows,
-        detectedColumns.businessKey,
-        detectedColumns.validFrom,
-        detectedColumns.validTo
-      )
-    );
+    if (!detectedColumns.snapshotDate) {
+      findings.push(
+        ...detectValidTimeGaps(
+          rows,
+          detectedColumns.businessKey,
+          detectedColumns.validFrom,
+          detectedColumns.validTo
+        )
+      );
+    }
   }
 
   if (detectedColumns.snapshotDate && detectedColumns.businessKey) {
@@ -393,6 +407,18 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
         detectedColumns.businessKey,
         detectedColumns.snapshotDate
       )
+    );
+  }
+
+  if (detectedColumns.dimensionColumns.length > 0) {
+    findings.push(
+      ...detectMissingDimensionValues(rows, detectedColumns.dimensionColumns)
+    );
+  }
+
+  if (detectedColumns.dimensionColumns.length > 0) {
+    findings.push(
+      ...detectMissingDimensionValues(rows, detectedColumns.dimensionColumns)
     );
   }
 
@@ -587,6 +613,128 @@ function detectMissingSnapshotCoverage(
         "Check whether every required business key should appear in every reporting snapshot. If not, document the expected sparsity.",
     },
   ];
+}
+
+function detectDimensionColumns(columns: string[]) {
+  const excluded = new Set([
+    "business_key",
+    "entity_id",
+    "id",
+    "contract_id",
+    "policy_id",
+    "police_id",
+    "police_nummer",
+    "vnr",
+    "bk_contract",
+    "bk_policy",
+    "bk_police",
+    "fk__police",
+    "valid_from",
+    "bk_valid_from",
+    "effective_from",
+    "effective_start",
+    "start_date",
+    "gueltig_ab",
+    "valid_to",
+    "bk_valid_to",
+    "effective_to",
+    "effective_end",
+    "end_date",
+    "gueltig_bis",
+    "visible_from",
+    "bk_visible_from",
+    "loaded_from",
+    "system_from",
+    "technical_from",
+    "visible_to",
+    "bk_visible_to",
+    "loaded_to",
+    "system_to",
+    "technical_to",
+    "snapshot_date",
+    "reference_date",
+    "reporting_date",
+    "bk_reference_date",
+    "month_end",
+    "as_of_date",
+    "stichtag",
+    "completion_method",
+  ]);
+
+  return columns.filter((column) => {
+    if (excluded.has(column)) return false;
+
+    return (
+      column.endsWith("_key") ||
+      column.endsWith("_code") ||
+      column.endsWith("_number") ||
+      column.startsWith("customer") ||
+      column.startsWith("broker") ||
+      column.startsWith("product") ||
+      column.startsWith("agent") ||
+      column.startsWith("sales") ||
+      column.startsWith("territory") ||
+      column.startsWith("risk") ||
+      column.startsWith("coverage")
+    );
+  });
+}
+
+function detectMissingDimensionValues(
+  rows: any[],
+  dimensionColumns: string[]
+): TargetFinding[] {
+  const findings: TargetFinding[] = [];
+
+  dimensionColumns.forEach((column) => {
+    const missingRows = rows.filter((row) => isMissingValue(row[column]));
+
+    if (missingRows.length === 0) return;
+
+    const examplePeriods = missingRows
+      .slice(0, 3)
+      .map(
+        (row) =>
+          row.snapshot_date ??
+          row.reference_date ??
+          row.reporting_date ??
+          row.valid_from ??
+          "unknown period"
+      )
+      .join(", ");
+
+    findings.push({
+      id: `missing-dimension-values-${column}`,
+      title: `Missing dimension values detected in ${column}`,
+      severity: "high",
+      evidence: [
+        `${missingRows.length} row${
+          missingRows.length === 1 ? "" : "s"
+        } have no value for ${column}.`,
+        `Example affected periods: ${examplePeriods}.`,
+      ],
+      recommendation:
+        "Check whether these missing dimension values are expected. If the fact exists but the dimension is missing, apply Dimension Completion, an Unknown Member or document the expected sparsity.",
+    });
+  });
+
+  return findings;
+}
+
+function isMissingValue(value: unknown) {
+  if (value === null || value === undefined) return true;
+
+  const text = String(value).trim().toLowerCase();
+
+  return (
+    text === "" ||
+    text === "null" ||
+    text === "none" ||
+    text === "undefined" ||
+    text === "n/a" ||
+    text === "na" ||
+    text === "-"
+  );
 }
 
 function detectInvalidIntervals(
