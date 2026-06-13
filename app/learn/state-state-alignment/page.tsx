@@ -1,12 +1,49 @@
 "use client";
 
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
+
+const EXPECTED_ROWS = [
+  ["C-1001", "2024-03-01 → 2024-06-30", "Active", "Customer A"],
+  ["C-1001", "2024-07-01 → 2024-09-30", "Changed", "Customer A"],
+  ["C-1001", "2024-10-01 → 2024-12-31", "Changed", "Customer B"],
+];
+
+const WRONG_ROWS = [
+  ["C-1001", "2024-03-01 → 2024-06-30", "Active", "Customer A"],
+  ["C-1001", "2024-07-01 → 2024-12-31", "Changed", "Customer B"],
+];
+
+const ALIGNED_TARGET_TABLE = `contract_id,customer_key,contract_status,snapshot_date,valid_from,valid_to,alignment_method
+C-1001,Customer A,Active,2024-03-31,2024-03-01,2024-03-31,interval_split
+C-1001,Customer A,Active,2024-04-30,2024-04-01,2024-04-30,interval_split
+C-1001,Customer A,Active,2024-05-31,2024-05-01,2024-05-31,interval_split
+C-1001,Customer A,Active,2024-06-30,2024-06-01,2024-06-30,interval_split
+C-1001,Customer A,Changed,2024-07-31,2024-07-01,2024-07-31,interval_split
+C-1001,Customer A,Changed,2024-08-31,2024-08-01,2024-08-31,interval_split
+C-1001,Customer A,Changed,2024-09-30,2024-09-01,2024-09-30,interval_split
+C-1001,Customer B,Changed,2024-10-31,2024-10-01,2024-10-31,interval_split
+C-1001,Customer B,Changed,2024-11-30,2024-11-01,2024-11-30,interval_split
+C-1001,Customer B,Changed,2024-12-31,2024-12-01,2024-12-31,interval_split`;
+
+const WRONG_TARGET_TABLE = `contract_id,customer_key,contract_status,snapshot_date,valid_from,valid_to,alignment_method
+C-1001,Customer A,Active,2024-03-31,2024-03-01,2024-03-31,overlap_join_only
+C-1001,Customer A,Active,2024-04-30,2024-04-01,2024-04-30,overlap_join_only
+C-1001,Customer A,Active,2024-05-31,2024-05-01,2024-05-31,overlap_join_only
+C-1001,Customer A,Active,2024-06-30,2024-06-01,2024-06-30,overlap_join_only
+C-1001,Customer B,Changed,2024-07-31,2024-07-01,2024-07-31,overlap_join_only
+C-1001,Customer B,Changed,2024-08-31,2024-08-01,2024-08-31,overlap_join_only
+C-1001,Customer B,Changed,2024-09-30,2024-09-01,2024-09-30,overlap_join_only
+C-1001,Customer B,Changed,2024-10-31,2024-10-01,2024-10-31,overlap_join_only
+C-1001,Customer B,Changed,2024-11-30,2024-11-01,2024-11-30,overlap_join_only
+C-1001,Customer B,Changed,2024-12-31,2024-12-01,2024-12-31,overlap_join_only`;
 
 export default function StateStateAlignmentPage() {
   useEffect(() => {
     track("learn_page_opened", {
       page: "state_state_alignment",
+      page_type: "interactive_example",
+      example: "state_state_alignment",
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
@@ -64,6 +101,8 @@ export default function StateStateAlignmentPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <PatternTestCaseCard />
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -178,22 +217,74 @@ function DarkExampleCard() {
       <div style={darkEyebrowStyle}>Example</div>
 
       <h2 style={darkTitleStyle}>
-        A May report must align the active contract state with the premium
-        customer state.
+        Contract state and customer state change on different dates.
       </h2>
 
-      <div style={alignmentGridStyle}>
-        <StateCard label="Contract history" value="Active" range="Jan – Jun" />
-        <StateCard label="Customer history" value="Retail" range="Jan – Mar" />
-        <StateCard label="Customer history" value="Premium" range="Apr – Dec" />
+      <div style={stateTimelineStyle}>
+        <TimelineLane
+          label="Contract state"
+          segments={[
+            {
+              text: "Active",
+              left: "0%",
+              width: "50%",
+              background: "#bfdbfe",
+              border: "#93c5fd",
+            },
+            {
+              text: "Changed",
+              left: "50%",
+              width: "50%",
+              background: "#dbeafe",
+              border: "#60a5fa",
+            },
+          ]}
+        />
+
+        <TimelineLane
+          label="Customer state"
+          segments={[
+            {
+              text: "Customer A",
+              left: "16.66%",
+              width: "58.33%",
+              background: "#ffedd5",
+              border: "#fdba74",
+            },
+            {
+              text: "Customer B",
+              left: "75%",
+              width: "25%",
+              background: "#fed7aa",
+              border: "#fb923c",
+            },
+          ]}
+        />
+      </div>
+
+      <div style={questionCardStyle}>
+        <div style={questionIconStyle}>?</div>
+
+        <div>
+          <div style={questionBadgeStyle}>Reporting question</div>
+          <div style={questionTextStyle}>
+            What should the joined history look like when either side changes?
+            A correct model must split the result at every relevant state boundary.
+          </div>
+        </div>
+      </div>
+
+      <div style={comparisonGridStyle}>
+        <ResultCard title="Expected Result (Recommended)" rows={EXPECTED_ROWS} tone="good" />
+        <ResultCard title="Common Wrong Result (Risk)" rows={WRONG_ROWS} tone="bad" />
       </div>
 
       <div style={exampleNoteStyle}>
-        <div style={exampleNoteLabelStyle}>Reporting date: May</div>
+        <div style={exampleNoteLabelStyle}>Key idea</div>
 
         <p style={exampleNoteTextStyle}>
-          The active contract version and the premium customer version overlap
-          in May. A correct temporal join must resolve to that combination.
+          The joined table should only contain periods where both source states
+          are stable. If one side changes, the joined interval must split.
         </p>
       </div>
     </section>
@@ -214,6 +305,219 @@ function StateCard({
       <div style={cardLabelStyle}>{label}</div>
       <div style={cardValueStyle}>{value}</div>
       <div style={cardRangeStyle}>Valid: {range}</div>
+    </div>
+  );
+}
+
+function TimelineLane({
+  label,
+  segments,
+}: {
+  label: string;
+  segments: {
+    text: string;
+    left: string;
+    width: string;
+    background: string;
+    border: string;
+  }[];
+}) {
+  return (
+    <div style={timelineLaneStyle}>
+      <div style={timelineLaneLabelStyle}>{label}</div>
+
+      <div style={timelineTrackStyle}>
+        {segments.map((segment) => (
+          <div
+            key={`${label}-${segment.text}-${segment.left}`}
+            style={{
+              ...timelineSegmentStyle,
+              left: segment.left,
+              width: segment.width,
+              background: segment.background,
+              border: `1px solid ${segment.border}`,
+            }}
+          >
+            {segment.text}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResultCard({
+  title,
+  rows,
+  tone,
+}: {
+  title: string;
+  rows: string[][];
+  tone: "good" | "bad";
+}) {
+  const isGood = tone === "good";
+
+  return (
+    <section
+      style={{
+        ...resultCardStyle,
+        border: isGood ? "1px solid #86efac" : "1px solid #fecaca",
+        background: isGood ? "#f0fdf4" : "#fef2f2",
+      }}
+    >
+      <div style={resultHeaderStyle}>
+        <div
+          style={{
+            ...resultIconStyle,
+            background: isGood ? "#15803d" : "#b91c1c",
+          }}
+        >
+          {isGood ? "✓" : "×"}
+        </div>
+
+        <h3
+          style={{
+            ...resultTitleStyle,
+            color: isGood ? "#166534" : "#991b1b",
+          }}
+        >
+          {title}
+        </h3>
+      </div>
+
+      <div style={resultTableStyle}>
+        {rows.map(([contract, period, status, customer]) => (
+          <div key={`${contract}-${period}-${status}-${customer}`} style={resultRowStyle}>
+            <div>
+              <div style={resultPeriodStyle}>{period}</div>
+              <div style={resultMetaStyle}>{contract}</div>
+            </div>
+            <div style={resultValueStyle}>
+              {status} / {customer}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PatternTestCaseCard() {
+  return (
+    <section style={testCaseCardStyle}>
+      <div style={testCaseEyebrowStyle}>Test case</div>
+
+      <h2 style={testCaseTitleStyle}>
+        Try this State ↔ State Alignment case in Target Table Validation
+      </h2>
+
+      <p style={testCaseTextStyle}>
+        Copy the generated joined target table and paste it into Target Table
+        Validation. The aligned table splits the result when either source state
+        changes. The wrong table keeps the customer assignment too coarse.
+      </p>
+
+      <div style={testCaseGridStyle}>
+        <CopyTableCard
+          title="Aligned target table"
+          description="Expected output after interval splitting."
+          tableName="aligned_target"
+          value={ALIGNED_TARGET_TABLE}
+          tone="good"
+        />
+
+        <CopyTableCard
+          title="Wrong target table"
+          description="Common output when the join does not split at all state boundaries."
+          tableName="wrong_target"
+          value={WRONG_TARGET_TABLE}
+          tone="bad"
+        />
+      </div>
+
+      <a
+        href="/#target-table-validation"
+        onClick={() => {
+          track("example_model_cta_clicked", {
+            example: "state_state_alignment",
+            cta: "open_target_validation",
+            source: "test_case_card",
+            page_type: "interactive_example",
+          });
+        }}
+        style={testCaseButtonStyle}
+      >
+        Open Target Table Validation →
+      </a>
+    </section>
+  );
+}
+
+function CopyTableCard({
+  title,
+  description,
+  tableName,
+  value,
+  tone,
+}: {
+  title: string;
+  description: string;
+  tableName: "aligned_target" | "wrong_target";
+  value: string;
+  tone: "good" | "bad";
+}) {
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const isGood = tone === "good";
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(value);
+
+    setCopied(true);
+
+    track("example_table_copied", {
+      example: "state_state_alignment",
+      table: tableName,
+    });
+
+    window.setTimeout(() => {
+      setCopied(false);
+    }, 1800);
+  }
+
+  return (
+    <div
+      style={{
+        ...copyTableCardStyle,
+        border: isGood ? "1px solid #86efac" : "1px solid #fecaca",
+        background: isGood ? "#f0fdf4" : "#fef2f2",
+      }}
+    >
+      <div style={copyTableTitleStyle}>{title}</div>
+      <p style={copyTableDescriptionStyle}>{description}</p>
+
+      <pre style={copyTablePreviewStyle}>{value}</pre>
+
+      <button
+        type="button"
+        onClick={handleCopy}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          ...copyTableButtonStyle,
+          background: copied
+            ? "#16a34a"
+            : isGood
+            ? "#15803d"
+            : "#b91c1c",
+          transform: hovered ? "translateY(-1px)" : "translateY(0)",
+          boxShadow: hovered
+            ? "0 10px 22px rgba(15, 23, 42, 0.22)"
+            : "none",
+        }}
+      >
+        {copied ? "✓ Copied" : "Copy table"}
+      </button>
     </div>
   );
 }
@@ -738,6 +1042,255 @@ const tryItTextStyle: CSSProperties = {
 
 const tryItButtonStyle: CSSProperties = {
   display: "inline-flex",
+  padding: "12px 18px",
+  borderRadius: 14,
+  background: "#2563eb",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: 900,
+};
+
+const stateTimelineStyle: CSSProperties = {
+  display: "grid",
+  gap: 18,
+  marginTop: 22,
+};
+
+const timelineLaneStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: 14,
+  alignItems: "center",
+};
+
+const timelineLaneLabelStyle: CSSProperties = {
+  color: "#cbd5e1",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const timelineTrackStyle: CSSProperties = {
+  position: "relative",
+  height: 56,
+  borderRadius: 18,
+  background: "rgba(15, 23, 42, 0.56)",
+  overflow: "hidden",
+};
+
+const timelineSegmentStyle: CSSProperties = {
+  position: "absolute",
+  top: 9,
+  height: 38,
+  borderRadius: 999,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0 12px",
+  color: "#0f172a",
+  fontSize: 14,
+  fontWeight: 900,
+  boxSizing: "border-box",
+  whiteSpace: "nowrap",
+};
+
+const questionCardStyle: CSSProperties = {
+  marginTop: 22,
+  display: "flex",
+  gap: 18,
+  alignItems: "center",
+  padding: "20px 22px",
+  borderRadius: 16,
+  background: "rgba(250, 204, 21, 0.1)",
+  border: "1px solid rgba(250, 204, 21, 0.55)",
+};
+
+const questionIconStyle: CSSProperties = {
+  width: 46,
+  height: 46,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  flexShrink: 0,
+  border: "2px solid #fde047",
+  color: "#fde047",
+  fontSize: 28,
+  fontWeight: 900,
+};
+
+const questionBadgeStyle: CSSProperties = {
+  color: "#fde047",
+  fontWeight: 900,
+  fontSize: 14,
+  marginBottom: 6,
+};
+
+const questionTextStyle: CSSProperties = {
+  color: "#f8fafc",
+  fontSize: 15,
+  lineHeight: 1.55,
+};
+
+const comparisonGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
+  marginTop: 22,
+};
+
+const resultCardStyle: CSSProperties = {
+  padding: "clamp(18px, 4vw, 24px)",
+  borderRadius: 16,
+  color: "#0f172a",
+  boxShadow: "0 18px 40px rgba(2, 6, 23, 0.22)",
+};
+
+const resultHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  marginBottom: 14,
+};
+
+const resultIconStyle: CSSProperties = {
+  width: 34,
+  height: 34,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  color: "#ffffff",
+  fontSize: 22,
+  fontWeight: 900,
+  flexShrink: 0,
+};
+
+const resultTitleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 16,
+  lineHeight: 1.2,
+  fontWeight: 900,
+};
+
+const resultTableStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+};
+
+const resultRowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 14,
+  padding: "10px 0",
+  borderBottom: "1px solid rgba(15, 23, 42, 0.14)",
+};
+
+const resultPeriodStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#0f172a",
+};
+
+const resultMetaStyle: CSSProperties = {
+  marginTop: 3,
+  fontSize: 12,
+  color: "#64748b",
+  fontWeight: 800,
+};
+
+const resultValueStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#0f172a",
+  textAlign: "right",
+};
+
+const testCaseCardStyle: CSSProperties = {
+  padding: "clamp(20px, 5vw, 28px)",
+  borderRadius: 24,
+  background: "rgba(255, 255, 255, 0.96)",
+  border: "1px solid rgba(226, 232, 240, 0.9)",
+  boxShadow: "0 24px 70px rgba(15, 23, 42, 0.18)",
+  color: "#0f172a",
+};
+
+const testCaseEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const testCaseTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  fontSize: "clamp(24px, 6vw, 28px)",
+  lineHeight: 1.15,
+  color: "#0f172a",
+  letterSpacing: "-0.03em",
+};
+
+const testCaseTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  fontSize: 16,
+  lineHeight: 1.7,
+  color: "#334155",
+};
+
+const testCaseGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 16,
+};
+
+const copyTableCardStyle: CSSProperties = {
+  padding: 16,
+  borderRadius: 18,
+  overflow: "hidden",
+};
+
+const copyTableTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  fontSize: 16,
+  color: "#0f172a",
+  marginBottom: 6,
+};
+
+const copyTableDescriptionStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  color: "#475569",
+  fontSize: 14,
+  lineHeight: 1.5,
+};
+
+const copyTablePreviewStyle: CSSProperties = {
+  maxHeight: 180,
+  overflow: "auto",
+  padding: 12,
+  borderRadius: 12,
+  background: "#020617",
+  color: "#e2e8f0",
+  fontSize: 12,
+  lineHeight: 1.5,
+  whiteSpace: "pre",
+};
+
+const copyTableButtonStyle: CSSProperties = {
+  marginTop: 12,
+  border: 0,
+  borderRadius: 12,
+  padding: "10px 14px",
+  color: "#ffffff",
+  fontWeight: 900,
+  cursor: "pointer",
+  transition: "all 160ms ease",
+};
+
+const testCaseButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  marginTop: 18,
   padding: "12px 18px",
   borderRadius: 14,
   background: "#2563eb",

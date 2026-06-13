@@ -416,11 +416,7 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
     );
   }
 
-  if (detectedColumns.dimensionColumns.length > 0) {
-    findings.push(
-      ...detectMissingDimensionValues(rows, detectedColumns.dimensionColumns)
-    );
-  }
+  findings.push(...detectRiskyAlignmentMethods(rows));
 
   if (
     (detectedColumns.visibleFrom && !detectedColumns.visibleTo) ||
@@ -659,6 +655,10 @@ function detectDimensionColumns(columns: string[]) {
     "as_of_date",
     "stichtag",
     "completion_method",
+    "alignment_method",
+    "join_method",
+    "modeling_method",
+    "generation_method",
   ]);
 
   return columns.filter((column) => {
@@ -719,6 +719,68 @@ function detectMissingDimensionValues(
   });
 
   return findings;
+}
+
+function detectRiskyAlignmentMethods(rows: any[]): TargetFinding[] {
+  const methodColumns = [
+    "alignment_method",
+    "join_method",
+    "modeling_method",
+    "generation_method",
+  ];
+
+  const existingMethodColumn = methodColumns.find((column) =>
+    rows.some((row) => row[column] !== undefined)
+  );
+
+  if (!existingMethodColumn) return [];
+
+  const riskyValues = new Set([
+    "overlap_join_only",
+    "simple_overlap_join",
+    "current_value_join",
+    "no_interval_split",
+    "unsplit_join",
+    "latest_value_join",
+  ]);
+
+  const riskyRows = rows.filter((row) => {
+    const value = String(row[existingMethodColumn] ?? "")
+      .trim()
+      .toLowerCase();
+
+    return riskyValues.has(value);
+  });
+
+  if (riskyRows.length === 0) return [];
+
+  const examplePeriods = riskyRows
+    .slice(0, 3)
+    .map(
+      (row) =>
+        row.snapshot_date ??
+        row.reference_date ??
+        row.reporting_date ??
+        row.valid_from ??
+        "unknown period"
+    )
+    .join(", ");
+
+  return [
+    {
+      id: "risky-state-state-alignment-method",
+      title: "Potential state-state alignment risk detected",
+      severity: "high",
+      evidence: [
+        `${riskyRows.length} row${
+          riskyRows.length === 1 ? "" : "s"
+        } use ${existingMethodColumn} = overlap_join_only or a similar risky method.`,
+        `Example affected periods: ${examplePeriods}.`,
+      ],
+      recommendation:
+        "For State ↔ State Alignment, validate that the joined table is split at every relevant state boundary. An overlap join alone can produce coarse intervals and incorrect attribution when either side changes independently.",
+    },
+  ];
 }
 
 function isMissingValue(value: unknown) {
