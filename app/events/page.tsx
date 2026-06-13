@@ -174,7 +174,7 @@ function TopList({
           key={label}
           style={{
             display: "grid",
-            gridTemplateColumns: "220px 1fr 48px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: 12,
             alignItems: "center",
           }}

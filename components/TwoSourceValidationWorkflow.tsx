@@ -1019,7 +1019,7 @@ WHERE ${sqlParts.join(" AND ")};`);
               width: "100%",
               boxSizing: "border-box",
               display: "grid",
-              gridTemplateColumns: "1fr",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
               gap: 20,
               alignItems: "start",
               marginBottom: 20,

@@ -380,17 +380,23 @@ function RelatedPatterns({ current }: { current: string }) {
 
 const mainStyle: CSSProperties = {
   minHeight: "100vh",
+  width: "100%",
+  maxWidth: "100vw",
+  overflowX: "hidden",
   background:
     "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
-  padding: "48px 24px",
+  padding: "clamp(24px, 5vw, 48px) clamp(14px, 4vw, 24px)",
   fontFamily: "Inter, Arial, sans-serif",
   color: "#e2e8f0",
+  boxSizing: "border-box",
 };
 
 const pageStyle: CSSProperties = {
+  width: "100%",
   maxWidth: 980,
   marginLeft: "auto",
   marginRight: "auto",
+  boxSizing: "border-box",
 };
 
 const backLinkStyle: CSSProperties = {
@@ -433,7 +439,7 @@ const heroTextStyle: CSSProperties = {
 };
 
 const whiteCardStyle: CSSProperties = {
-  padding: 28,
+  padding: "clamp(20px, 5vw, 28px)",
   borderRadius: 24,
   background: "rgba(255, 255, 255, 0.96)",
   border: "1px solid rgba(226, 232, 240, 0.9)",
@@ -453,7 +459,7 @@ const eyebrowStyle: CSSProperties = {
 const cardTitleStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 14,
-  fontSize: 28,
+  fontSize: "clamp(24px, 6vw, 28px)",
   lineHeight: 1.15,
   color: "#0f172a",
   letterSpacing: "-0.03em",
@@ -486,7 +492,7 @@ const riskChipStyle: CSSProperties = {
 };
 
 const darkCardStyle: CSSProperties = {
-  padding: 28,
+  padding: "clamp(20px, 5vw, 28px)",
   borderRadius: 24,
   background:
     "linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92))",
@@ -506,7 +512,7 @@ const darkEyebrowStyle: CSSProperties = {
 const darkTitleStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
-  fontSize: 28,
+  fontSize: "clamp(24px, 6vw, 28px)",
   lineHeight: 1.15,
   color: "#ffffff",
   letterSpacing: "-0.03em",

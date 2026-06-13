@@ -562,7 +562,7 @@ const assessmentBodyStyle: CSSProperties = {
 const primaryPatternStyle: CSSProperties = {
   position: "relative",
   display: "grid",
-  gridTemplateColumns: "72px 1fr auto",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
   gap: 18,
   alignItems: "center",
   padding: 24,
@@ -722,7 +722,7 @@ const validationIntroStyle: CSSProperties = {
 
 const findingCardStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "42px 1fr auto",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
   gap: 12,
   alignItems: "center",
   border: "1px solid",
