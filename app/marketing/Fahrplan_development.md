@@ -31,7 +31,7 @@ Mindestens:
  Historical Correction
  Dimension Completion
  Snapshot Reproducibility
- Temporal Conformance
+ Historical Conformance
  Relationship History
 
 Je Pattern:
@@ -108,7 +108,7 @@ The hardest part of Data Engineering isn't ETL
 Dann:
 
 Identity Resolution
-Temporal Conformance
+Historical Conformance
 Dimension Completion
 Täglich
 

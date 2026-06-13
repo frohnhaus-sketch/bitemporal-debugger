@@ -62,7 +62,7 @@ Community responses introduced additional concepts:
 * Identity Resolution
 * Relationship History
 * Grain Evolution
-* Temporal Conformance
+* Historical Conformance
 
 Key observation:
 
@@ -120,7 +120,7 @@ Reviewing real-world notebooks revealed that most implementation effort was spen
 * State Construction
 * Snapshot Design
 * Event-State Alignment
-* Temporal Conformance
+* Historical Conformance
 
 Very little effort was spent on overlap detection itself.
 

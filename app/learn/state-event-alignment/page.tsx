@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 
 export default function StateEventAlignmentPage() {
@@ -14,253 +14,351 @@ export default function StateEventAlignmentPage() {
   }, []);
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
-        padding: "48px 24px",
-        fontFamily: "Inter, Arial, sans-serif",
-        color: "#e2e8f0",
-      }}
-    >
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ marginBottom: 28 }}>
-          <a
-            href="/patterns"
-            style={{
-              display: "inline-flex",
-              color: "#bfdbfe",
-              textDecoration: "none",
-              fontWeight: 800,
-              fontSize: 14,
-              marginBottom: 22,
-            }}
-          >
+    <main style={mainStyle}>
+      <div style={pageStyle}>
+        <header style={{ marginBottom: 40 }}>
+          <a href="/patterns" style={backLinkStyle}>
             ← Back to Pattern Catalog
           </a>
 
-          <br />
-
-          <div
-            style={{
-              display: "inline-flex",
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "#dbeafe",
-              color: "#075985",
-              fontSize: 12,
-              fontWeight: 900,
-              letterSpacing: 0.6,
-            }}
-          >
-            ALIGNMENT PATTERN
-          </div>
-        </div>
-
-        <h1
-          style={{
-            margin: "0 0 16px 0",
-            fontSize: "clamp(34px, 8vw, 56px)",
-            lineHeight: 1,
-            color: "#ffffff",
-            letterSpacing: "-0.05em",
-          }}
-        >
-          State ↔ Event Alignment
-        </h1>
-
-        <p
-          style={{
-            margin: 0,
-            fontSize: 20,
-            lineHeight: 1.6,
-            color: "#dbeafe",
-          }}
-        >
-          State ↔ Event Alignment connects business events to the state that
-          was valid when the event occurred.
-        </p>
-
-        <section
-          style={{
-            marginTop: 40,
-            display: "grid",
-            gap: 28,
-          }}
-        >
           <div>
-            <h2 style={{ color: "#ffffff" }}>The Problem</h2>
+            <div style={badgeStyle}>Alignment Pattern</div>
+          </div>
 
-            <p style={{ lineHeight: 1.8 }}>
-              Historical platforms often contain both state data and event
-              data.
-            </p>
+          <h1 style={h1Style}>State ↔ Event Alignment</h1>
 
-            <p style={{ lineHeight: 1.8 }}>
-              A contract might be represented as historized state records,
-              while mutations, claims, payments or status changes are stored as
+          <p style={heroTextStyle}>
+            State ↔ Event Alignment connects business events to the state that
+            was valid when the event occurred.
+          </p>
+        </header>
+
+        <section style={{ display: "grid", gap: 24 }}>
+          <WhiteCard
+            eyebrow="Problem"
+            title="An event needs the correct historical state, not the current one."
+          >
+            <p style={paragraphStyle}>
+              Historical platforms often contain both state data and event data.
+              A contract might be represented as historized state records, while
+              mutations, claims, payments or status changes are stored as
               events.
             </p>
 
-            <p style={{ lineHeight: 1.8 }}>
+            <p style={paragraphStyle}>
               The challenge is determining which state was valid when the event
               happened.
             </p>
-          </div>
 
-          <div>
-            <h2 style={{ color: "#ffffff" }}>Example</h2>
+            <ChipRow
+              chips={[
+                "Wrong historical version",
+                "Current-state leakage",
+                "Duplicate matches",
+                "Missing valid-time coverage",
+              ]}
+            />
+          </WhiteCard>
 
-            <div
-              style={{
-                background: "rgba(15,23,42,0.7)",
-                borderRadius: 16,
-                padding: 20,
-                border: "1px solid rgba(148,163,184,0.3)",
-              }}
-            >
-              <p style={{ marginTop: 0, fontWeight: 900 }}>Contract A</p>
+          <DarkExampleCard />
 
-              <ul>
-                <li>Premium = 100 CHF (Jan–Jun)</li>
-                <li>Premium = 120 CHF (Jul–Dec)</li>
-              </ul>
-
-              <p style={{ fontWeight: 900 }}>Event</p>
-
-              <ul>
-                <li>Claim submitted on August 15</li>
-              </ul>
-
-              <p style={{ marginBottom: 0 }}>
-                The event must be aligned to the premium state that was valid on
-                August 15.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h2 style={{ color: "#ffffff" }}>Typical Risks</h2>
-
-            <ul style={{ lineHeight: 2 }}>
-              <li>Joining to the wrong historical version</li>
-              <li>Using current state instead of historical state</li>
-              <li>Late arriving corrections</li>
-              <li>Duplicate matches</li>
-              <li>Missing valid-time coverage</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 style={{ color: "#ffffff" }}>Where It Appears</h2>
-
-            <ul style={{ lineHeight: 2 }}>
-              <li>Claims ↔ Policies</li>
-              <li>Transactions ↔ Accounts</li>
-              <li>Orders ↔ Product Prices</li>
-              <li>Mutations ↔ Contracts</li>
-              <li>Business Events ↔ Master Data</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 style={{ color: "#ffffff" }}>Why It Matters</h2>
-
-            <p style={{ lineHeight: 1.8 }}>
-              Most historical reporting ultimately depends on correctly
-              connecting events to the historical state that existed when the
-              event occurred.
+          <WhiteCard
+            eyebrow="Why it happens"
+            title="Events are points in time, while states are valid over intervals."
+          >
+            <p style={paragraphStyle}>
+              A state row describes what was true during a period. An event
+              describes something that happened at a specific time. Alignment
+              requires joining the event timestamp into the correct state
+              interval.
             </p>
 
-            <p style={{ lineHeight: 1.8 }}>
+            <p style={paragraphStyle}>
+              This becomes harder when source history has gaps, overlaps, late
+              arriving corrections or multiple candidate state records.
+            </p>
+
+            <ChipRow
+              chips={[
+                "Point-in-time events",
+                "Interval-based states",
+                "Late corrections",
+                "Temporal join predicates",
+                "State coverage gaps",
+                "Ambiguous matches",
+              ]}
+            />
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Common modeling approaches"
+            title="Join the event timestamp into the valid state interval."
+          >
+            <div style={solutionGridStyle}>
+              <MiniCard
+                title="Point-in-interval join"
+                text="Match the event timestamp against the valid_from and valid_to interval of the state table."
+              />
+              <MiniCard
+                title="As-known alignment"
+                text="Add visible-time logic when the event should only use state knowledge available at reporting time."
+              />
+              <MiniCard
+                title="Coverage handling"
+                text="Define what should happen when an event has no matching state record."
+              />
+              <MiniCard
+                title="Ambiguity handling"
+                text="Validate that each event resolves to one intended state, or document the tie-breaking rule."
+              />
+            </div>
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Validation checks"
+            title="Validate that every event resolves to the intended state."
+          >
+            <CheckChipRow
+              checks={[
+                "Detect events without matching state",
+                "Detect events with multiple matching states",
+                "Validate event timestamp inside valid interval",
+                "Check for current-state leakage",
+                "Compare aligned events against known examples",
+              ]}
+            />
+          </WhiteCard>
+
+          <DetectionCard />
+
+          <WhiteCard
+            eyebrow="Why it matters"
+            title="Most historical reporting depends on correctly connecting events to state."
+          >
+            <p style={paragraphStyle}>
+              Claims, payments, mutations and transactions often need the
+              customer, contract, price, relationship or product state that was
+              valid when the event occurred.
+            </p>
+
+            <p style={paragraphStyle}>
               Incorrect alignment can lead to reporting drift, duplicate facts
               and inconsistent KPI calculations.
             </p>
-          </div>
+          </WhiteCard>
         </section>
 
         <RelatedPatterns current="state_event_alignment" />
 
-        <a
-          href="/"
-          onClick={() => {
-            track("learn_cta_clicked", {
-              page: "state_event_alignment",
-              cta: "open_workbench",
-            });
-          }}
-          style={{
-            display: "inline-flex",
-            marginTop: 30,
-            padding: "12px 18px",
-            borderRadius: 12,
-            background: "#2563eb",
-            color: "#ffffff",
-            textDecoration: "none",
-            fontWeight: 900,
-          }}
-        >
-          Open Historical Modeling Workbench →
-        </a>
+        <TryItCard />
       </div>
     </main>
+  );
+}
+
+function DarkExampleCard() {
+  return (
+    <section style={darkCardStyle}>
+      <div style={darkEyebrowStyle}>Example</div>
+
+      <h2 style={darkTitleStyle}>
+        A claim event must be aligned to the premium state valid on the event
+        date.
+      </h2>
+
+      <div style={alignmentGridStyle}>
+        <StateCard label="State 1" value="Premium = 100" range="Jan – Jun" />
+        <EventCard label="Event" value="Claim submitted" date="Aug 15" />
+        <StateCard label="State 2" value="Premium = 120" range="Jul – Dec" />
+      </div>
+
+      <div style={exampleNoteStyle}>
+        <div style={exampleNoteLabelStyle}>Alignment result</div>
+
+        <p style={exampleNoteTextStyle}>
+          The event occurred on August 15, so it must align to the state valid
+          from July to December. Joining to the current state or the wrong
+          historical interval would produce incorrect attribution.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function StateCard({
+  label,
+  value,
+  range,
+}: {
+  label: string;
+  value: string;
+  range: string;
+}) {
+  return (
+    <div style={stateCardStyle}>
+      <div style={cardLabelStyle}>{label}</div>
+      <div style={cardValueStyle}>{value}</div>
+      <div style={cardRangeStyle}>{range}</div>
+    </div>
+  );
+}
+
+function EventCard({
+  label,
+  value,
+  date,
+}: {
+  label: string;
+  value: string;
+  date: string;
+}) {
+  return (
+    <div style={eventCardStyle}>
+      <div style={cardLabelStyle}>{label}</div>
+      <div style={cardValueStyle}>{value}</div>
+      <div style={cardRangeStyle}>{date}</div>
+    </div>
+  );
+}
+
+function DetectionCard() {
+  return (
+    <section style={detectionCardStyle}>
+      <div style={detectionEyebrowStyle}>
+        Detectable by Historical Modeling Workbench
+      </div>
+
+      <h2 style={detectionTitleStyle}>
+        The Workbench can surface state-event alignment risks.
+      </h2>
+
+      <CheckChipRow
+        checks={[
+          "JOIN_GAP",
+          "JOIN_AMBIGUITY",
+          "NO_VALID_MATCH",
+          "MULTIPLE_MATCHES",
+        ]}
+      />
+    </section>
+  );
+}
+
+function WhiteCard({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section style={whiteCardStyle}>
+      <div style={eyebrowStyle}>{eyebrow}</div>
+      <h2 style={cardTitleStyle}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function MiniCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div style={miniCardStyle}>
+      <div style={miniCardTitleStyle}>{title}</div>
+      <div style={miniCardTextStyle}>{text}</div>
+    </div>
+  );
+}
+
+function ChipRow({ chips }: { chips: string[] }) {
+  return (
+    <div style={chipRowStyle}>
+      {chips.map((chip) => (
+        <span key={chip} style={riskChipStyle}>
+          {chip}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function CheckChipRow({ checks }: { checks: string[] }) {
+  return (
+    <div style={checkRowStyle}>
+      {checks.map((check) => (
+        <span key={check} style={checkChipStyle}>
+          ✓ {check}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TryItCard() {
+  return (
+    <section style={tryItCardStyle}>
+      <div style={tryItEyebrowStyle}>Try it</div>
+
+      <h2 style={tryItTitleStyle}>
+        Validate whether events align to the correct historical state.
+      </h2>
+
+      <p style={tryItTextStyle}>
+        Use the Historical Modeling Workbench to detect missing matches,
+        ambiguous matches and temporal join risks between state and event data.
+      </p>
+
+      <a
+        href="/"
+        onClick={() => {
+          track("learn_cta_clicked", {
+            page: "state_event_alignment",
+            cta: "open_workbench",
+          });
+        }}
+        style={tryItButtonStyle}
+      >
+        Open Historical Modeling Workbench →
+      </a>
+    </section>
   );
 }
 
 function RelatedPatterns({ current }: { current: string }) {
   const patterns = [
     {
-      title: "Dimension Completion",
-      href: "/learn/dimension-completion",
-      key: "dimension_completion",
+      title: "Event Modeling",
+      href: "/learn/event-modeling",
+      key: "event_modeling",
     },
     {
-      title: "Snapshot Reproducibility",
-      href: "/learn/snapshot-reproducibility",
-      key: "snapshot_reproducibility",
+      title: "State Modeling",
+      href: "/learn/state-modeling",
+      key: "state_modeling",
     },
     {
-      title: "Relationship History",
-      href: "/learn/relationship-history",
-      key: "relationship_history",
+      title: "Event-to-State Projection",
+      href: "/learn/event-to-state-projection",
+      key: "event_to_state_projection",
+    },
+    {
+      title: "Historical Match Ambiguity",
+      href: "/learn/historical-match-ambiguity",
+      key: "historical_match_ambiguity",
     },
     {
       title: "Historical Coverage Gap",
       href: "/learn/historical-coverage-gap",
       key: "historical_coverage_gap",
     },
-    {
-      title: "State ↔ State Alignment",
-      href: "/learn/state-state-alignment",
-      key: "state_state_alignment",
-    },
   ];
 
   return (
-    <section
-      style={{
-        marginTop: 30,
-        padding: 24,
-        borderRadius: 22,
-        background: "rgba(15, 23, 42, 0.72)",
-        border: "1px solid rgba(148, 163, 184, 0.32)",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 900,
-          color: "#93c5fd",
-          textTransform: "uppercase",
-          letterSpacing: 0.7,
-          marginBottom: 10,
-        }}
-      >
-        Related Patterns
-      </div>
+    <section style={relatedSectionStyle}>
+      <div style={relatedTitleStyle}>Related Patterns</div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      <div style={relatedGridStyle}>
         {patterns
           .filter((pattern) => pattern.key !== current)
           .map((pattern) => (
@@ -273,16 +371,7 @@ function RelatedPatterns({ current }: { current: string }) {
                   to: pattern.key,
                 });
               }}
-              style={{
-                display: "inline-flex",
-                padding: "9px 12px",
-                borderRadius: 999,
-                background: "#ffffff",
-                color: "#1d4ed8",
-                textDecoration: "none",
-                fontSize: 13,
-                fontWeight: 900,
-              }}
+              style={relatedLinkStyle}
             >
               {pattern.title}
             </a>
@@ -291,3 +380,352 @@ function RelatedPatterns({ current }: { current: string }) {
     </section>
   );
 }
+
+const mainStyle: CSSProperties = {
+  minHeight: "100vh",
+  background:
+    "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
+  padding: "48px 24px",
+  fontFamily: "Inter, Arial, sans-serif",
+  color: "#e2e8f0",
+};
+
+const pageStyle: CSSProperties = {
+  maxWidth: 980,
+  marginLeft: "auto",
+  marginRight: "auto",
+};
+
+const backLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  color: "#bfdbfe",
+  textDecoration: "none",
+  fontWeight: 800,
+  fontSize: 14,
+  marginBottom: 22,
+};
+
+const badgeStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "#dbeafe",
+  color: "#075985",
+  fontSize: 12,
+  fontWeight: 900,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+};
+
+const h1Style: CSSProperties = {
+  marginTop: 22,
+  marginBottom: 16,
+  fontSize: "clamp(34px, 8vw, 56px)",
+  lineHeight: 1,
+  color: "#ffffff",
+  letterSpacing: "-0.05em",
+};
+
+const heroTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 0,
+  maxWidth: 760,
+  fontSize: 20,
+  lineHeight: 1.6,
+  color: "#dbeafe",
+};
+
+const whiteCardStyle: CSSProperties = {
+  padding: 28,
+  borderRadius: 24,
+  background: "rgba(255, 255, 255, 0.96)",
+  border: "1px solid rgba(226, 232, 240, 0.9)",
+  boxShadow: "0 24px 70px rgba(15, 23, 42, 0.18)",
+  color: "#0f172a",
+};
+
+const eyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const cardTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 14,
+  fontSize: 28,
+  lineHeight: 1.15,
+  color: "#0f172a",
+  letterSpacing: "-0.03em",
+};
+
+const paragraphStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  fontSize: 16,
+  lineHeight: 1.8,
+  color: "#334155",
+};
+
+const chipRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 18,
+};
+
+const riskChipStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "8px 11px",
+  borderRadius: 999,
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontSize: 13,
+  fontWeight: 900,
+  border: "1px solid #bfdbfe",
+};
+
+const darkCardStyle: CSSProperties = {
+  padding: 28,
+  borderRadius: 24,
+  background:
+    "linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92))",
+  border: "1px solid rgba(148, 163, 184, 0.35)",
+  boxShadow: "0 24px 70px rgba(2, 6, 23, 0.35)",
+};
+
+const darkEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#93c5fd",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const darkTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  fontSize: 28,
+  lineHeight: 1.15,
+  color: "#ffffff",
+  letterSpacing: "-0.03em",
+};
+
+const alignmentGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+  gap: 12,
+  marginTop: 18,
+};
+
+const stateCardStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 18,
+  background: "rgba(219, 234, 254, 0.12)",
+  border: "1px solid rgba(147, 197, 253, 0.38)",
+};
+
+const eventCardStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 18,
+  background: "rgba(251, 146, 60, 0.13)",
+  border: "1px solid rgba(251, 146, 60, 0.42)",
+};
+
+const cardLabelStyle: CSSProperties = {
+  color: "#93c5fd",
+  fontSize: 12,
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: 0.6,
+  marginBottom: 8,
+};
+
+const cardValueStyle: CSSProperties = {
+  color: "#ffffff",
+  fontSize: 18,
+  fontWeight: 900,
+  marginBottom: 6,
+};
+
+const cardRangeStyle: CSSProperties = {
+  color: "#cbd5e1",
+  fontSize: 14,
+  fontWeight: 800,
+};
+
+const exampleNoteStyle: CSSProperties = {
+  marginTop: 18,
+  padding: 18,
+  borderRadius: 16,
+  background: "#020617",
+  border: "1px solid #334155",
+};
+
+const exampleNoteLabelStyle: CSSProperties = {
+  color: "#93c5fd",
+  fontWeight: 900,
+  fontSize: 13,
+};
+
+const exampleNoteTextStyle: CSSProperties = {
+  marginTop: 8,
+  marginBottom: 0,
+  color: "#cbd5e1",
+  fontSize: 15,
+  lineHeight: 1.55,
+};
+
+const solutionGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+  gap: 14,
+  marginTop: 18,
+};
+
+const miniCardStyle: CSSProperties = {
+  padding: 16,
+  borderRadius: 18,
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+};
+
+const miniCardTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  color: "#0f172a",
+  marginBottom: 8,
+};
+
+const miniCardTextStyle: CSSProperties = {
+  fontSize: 14,
+  lineHeight: 1.6,
+  color: "#475569",
+};
+
+const checkRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 8,
+};
+
+const checkChipStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "9px 12px",
+  borderRadius: 999,
+  background: "#ecfdf5",
+  color: "#047857",
+  fontSize: 13,
+  fontWeight: 900,
+  border: "1px solid #a7f3d0",
+};
+
+const detectionCardStyle: CSSProperties = {
+  padding: 28,
+  borderRadius: 24,
+  background: "linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)",
+  border: "1px solid rgba(147, 197, 253, 0.8)",
+  color: "#0f172a",
+};
+
+const detectionEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const detectionTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 14,
+  fontSize: 26,
+  lineHeight: 1.15,
+  letterSpacing: "-0.03em",
+  color: "#0f172a",
+};
+
+const relatedSectionStyle: CSSProperties = {
+  marginTop: 30,
+  padding: 24,
+  borderRadius: 22,
+  background: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(148, 163, 184, 0.32)",
+};
+
+const relatedTitleStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#93c5fd",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const relatedGridStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+};
+
+const relatedLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "9px 12px",
+  borderRadius: 999,
+  background: "#ffffff",
+  color: "#1d4ed8",
+  textDecoration: "none",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const tryItCardStyle: CSSProperties = {
+  marginTop: 30,
+  padding: 28,
+  borderRadius: 24,
+  background: "linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)",
+  border: "1px solid rgba(147, 197, 253, 0.8)",
+  color: "#0f172a",
+};
+
+const tryItEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const tryItTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 10,
+  fontSize: 26,
+  lineHeight: 1.15,
+  letterSpacing: "-0.03em",
+  color: "#0f172a",
+};
+
+const tryItTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 20,
+  fontSize: 16,
+  lineHeight: 1.7,
+  color: "#334155",
+  maxWidth: 720,
+};
+
+const tryItButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "12px 18px",
+  borderRadius: 14,
+  background: "#2563eb",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: 900,
+};

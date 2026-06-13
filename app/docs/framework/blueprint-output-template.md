@@ -183,7 +183,7 @@ Execute validation checks.
 Potential risks for this architecture:
 
 * Historical Match Ambiguity
-* Temporal Conformance Issues
+* Historical Conformance Issues
 * Snapshot Drift
 * Missing Dimension Coverage
 * Incorrect Event Selection

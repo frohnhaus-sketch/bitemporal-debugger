@@ -155,7 +155,7 @@ Events are mapped to the state that was active when the event occurred.
 
 ---
 
-## 06 — Temporal Conformance
+## 06 — Historical Conformance
 
 ### Description
 

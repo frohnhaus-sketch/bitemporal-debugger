@@ -318,7 +318,7 @@ Examples:
 
 ---
 
-### Temporal Conformance
+### Historical Conformance
 
 Reconcile competing timelines from multiple source systems.
 
@@ -655,7 +655,7 @@ Relate
 Align
 Resolve
 ↓
-Temporal Conformance
+Historical Conformance
 Winner Selection
 Identity Resolution
 ↓

@@ -40,7 +40,7 @@ const PATTERN_GROUPS = [
         examples: ["Claim ↔ Policy", "Mutation ↔ Contract"],
       },
       {
-        name: "Temporal Conformance",
+        name: "Historical Conformance",
         text: "Aligns competing timelines from multiple source systems.",
         examples: ["CRM + ERP", "Policy system + billing system"],
       },
@@ -129,7 +129,7 @@ const PATTERN_GROUPS = [
     patterns: [
       {
         name: "Rectangle Decomposition",
-        text: "Combines multiple historical timelines into stable reporting intervals.",
+        text: "Creates stable reporting intervals from independently historized attributes.",
         examples: [
           "Coverage timelines",
           "Risk attributes",
@@ -420,9 +420,9 @@ export default function PatternsPage() {
                         group={group.title}
                       />
                     )}
-                    {pattern.name === "Temporal Conformance" && (
+                    {pattern.name === "Historical Conformance" && (
                       <LearnMoreLink
-                        href="/learn/temporal-conformance"
+                        href="/learn/historical-conformance"
                         pattern={pattern.name}
                         group={group.title}
                       />

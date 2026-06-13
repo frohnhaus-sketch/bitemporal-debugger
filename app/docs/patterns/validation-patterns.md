@@ -278,7 +278,7 @@ Dimension Completion
 
 ---
 
-# Validation Pattern 08 — Temporal Conformance Risk
+# Validation Pattern 08 — Historical Conformance Risk
 
 ## Description
 
@@ -301,7 +301,7 @@ Medium
 
 ## Related Pattern
 
-Temporal Conformance
+Historical Conformance
 
 ---
 
@@ -329,7 +329,7 @@ Low
 
 ## Related Pattern
 
-Temporal Conformance
+Historical Conformance
 
 ---
 

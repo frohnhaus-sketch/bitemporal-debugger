@@ -30,7 +30,7 @@ export const COMMUNITY_VALIDATION: Record<
       "Historical reports must remain reproducible over time.",
   },
 
-  "Temporal Conformance": {
+  "Historical Conformance": {
     priority: "High",
     observedIn: [
       "Multiple Source Systems",
@@ -62,4 +62,4 @@ export const COMMUNITY_VALIDATION: Record<
     summary:
       "Events must map to exactly one historical state.",
   },
-};
+};  

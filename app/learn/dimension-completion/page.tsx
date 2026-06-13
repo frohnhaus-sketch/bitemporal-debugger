@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { track } from "@/lib/analytics";
 
@@ -31,7 +31,6 @@ const SOLUTIONS = [
 ];
 
 export default function DimensionCompletionPage() {
-
   useEffect(() => {
     track("learn_page_opened", {
       page: "dimension_completion",
@@ -41,414 +40,91 @@ export default function DimensionCompletionPage() {
     });
   }, []);
 
-  function trackWorkbenchClick(source: string) {
-    track("learn_cta_clicked", {
-      page: "dimension_completion",
-      cta: "open_workbench",
-      source,
-    });
-  }
-
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
-        padding: "44px 40px",
-        fontFamily: "Inter, Arial, sans-serif",
-        color: "#e2e8f0",
-      }}
-    >
-      <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-        <a
-          href="/patterns"
-          style={{
-            color: "#bfdbfe",
-            textDecoration: "none",
-            fontSize: 14,
-            fontWeight: 800,
-          }}
-        >
-          ← Back to Pattern Catalog
-        </a>
+    <main style={mainStyle}>
+      <div style={pageStyle}>
+        <header style={{ marginBottom: 40 }}>
+          <a href="/patterns" style={backLinkStyle}>
+            ← Back to Pattern Catalog
+          </a>
 
-        <section style={{ marginTop: 34, marginBottom: 30 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              padding: "7px 12px",
-              borderRadius: 999,
-              background: "#dbeafe",
-              color: "#075985",
-              fontSize: 12,
-              fontWeight: 900,
-              letterSpacing: 0.6,
-              marginBottom: 16,
-            }}
-          >
-            HISTORICAL MODELING PATTERN
+          <div>
+            <div style={badgeStyle}>Historical Modeling Pattern</div>
           </div>
 
-          <h1
-            style={{
-              margin: 0,
-              maxWidth: 900,
-              fontSize: "clamp(36px, 10vw, 62px)",
-              lineHeight: 1.02,
-              letterSpacing: "-0.06em",
-              color: "#ffffff",
-            }}
-          >
-            Dimension Completion
-          </h1>
+          <h1 style={h1Style}>Dimension Completion</h1>
 
-          <p
-            style={{
-              marginTop: 18,
-              maxWidth: 820,
-              color: "#dbeafe",
-              fontSize: 20,
-              lineHeight: 1.55,
-            }}
-          >
+          <p style={heroTextStyle}>
             Dimension Completion ensures that dimension history covers all
             required reporting periods of the fact model.
           </p>
-        </section>
+        </header>
 
-        <section
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-            boxShadow: "0 22px 60px rgba(15, 23, 42, 0.28)",
-          }}
-        >
-          <SectionEyebrow>Problem</SectionEyebrow>
-
-          <h2 style={{ margin: 0, fontSize: 30, letterSpacing: "-0.04em" }}>
-            A fact exists, but no valid dimension record exists.
-          </h2>
-
-          <p
-            style={{
-              marginTop: 12,
-              color: "#475569",
-              fontSize: 16,
-              lineHeight: 1.6,
-              maxWidth: 820,
-            }}
+        <section style={{ display: "grid", gap: 24 }}>
+          <WhiteCard
+            eyebrow="Problem"
+            title="A fact exists, but no valid dimension record exists."
           >
-            This often happens in snapshot reporting, late-arriving dimensions
-            or cross-system integrations. The fact row is available for a
-            reporting period, but the dimension history does not cover that
-            same period.
-          </p>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: 10,
-              marginTop: 18,
-            }}
-          >
-            {[
-              "Missing attributes",
-              "Missing joins",
-              "Incorrect historical reporting",
-              "Unstable snapshots",
-            ].map((risk) => (
-              <div
-                key={risk}
-                style={{
-                  padding: 14,
-                  borderRadius: 14,
-                  background: "#fff7ed",
-                  border: "1px solid #fed7aa",
-                  color: "#9a3412",
-                  fontSize: 13,
-                  fontWeight: 900,
-                }}
-              >
-                {risk}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
-          style={{
-            background: "rgba(15, 23, 42, 0.72)",
-            border: "1px solid rgba(148, 163, 184, 0.32)",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-          }}
-        >
-          <SectionEyebrow color="#93c5fd">Example</SectionEyebrow>
-
-          <h2 style={{ margin: 0, color: "#ffffff", fontSize: 28 }}>
-            Contract snapshot exists in February. Customer dimension starts in
-            April.
-          </h2>
-
-          <div
-            style={{
-              marginTop: 22,
-              display: "grid",
-              gap: 14,
-              maxWidth: 820,
-            }}
-          >
-            <TimelineRow
-              label="Contract fact"
-              before="Jan"
-              bar="────────────────────────"
-              after="Dec"
-              active
-            />
-
-            <TimelineRow
-              label="Customer dimension"
-              before="Jan"
-              bar="          ──────────────"
-              after="Dec"
-              active={false}
-            />
-          </div>
-
-          <div
-            style={{
-              marginTop: 22,
-              padding: 18,
-              borderRadius: 16,
-              background: "#020617",
-              border: "1px solid #334155",
-            }}
-          >
-            <div style={{ color: "#93c5fd", fontWeight: 900, fontSize: 13 }}>
-              Reporting date: February
-            </div>
-
-            <p
-              style={{
-                margin: "8px 0 0",
-                color: "#cbd5e1",
-                fontSize: 15,
-                lineHeight: 1.55,
-              }}
-            >
-              The contract exists, but the customer dimension has no valid row
-              yet. Without completion, the snapshot either loses the dimension
-              attributes or fails the historical join.
+            <p style={paragraphStyle}>
+              This often happens in snapshot reporting, late-arriving dimensions
+              or cross-system integrations. The fact row is available for a
+              reporting period, but the dimension history does not cover that
+              same period.
             </p>
-          </div>
+
+            <ChipRow
+              chips={[
+                "Missing attributes",
+                "Missing joins",
+                "Incorrect historical reporting",
+                "Unstable snapshots",
+              ]}
+            />
+          </WhiteCard>
+
+          <DarkExampleCard />
+
+          <WhiteCard
+            eyebrow="Why it happens"
+            title="The fact model and dimension model do not have the same historical coverage."
+          >
+            <ChipRow
+              chips={[
+                "Late arriving dimensions",
+                "Partial source history",
+                "Cross-system integration",
+                "Historical backfills",
+                "Snapshot reporting requirements",
+              ]}
+            />
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Typical solutions"
+            title="Complete the dimension before joining it to the fact model."
+          >
+            <div style={solutionGridStyle}>
+              {SOLUTIONS.map((solution) => (
+                <MiniCard
+                  key={solution.title}
+                  title={solution.title}
+                  text={solution.text}
+                />
+              ))}
+            </div>
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Validation checks"
+            title="Before publishing the model, validate historical coverage."
+          >
+            <CheckChipRow checks={VALIDATION_CHECKS} />
+          </WhiteCard>
         </section>
 
-        <section
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-          }}
-        >
-          <SectionEyebrow>Why it happens</SectionEyebrow>
+        <RelatedPatterns current="dimension_completion" />
 
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: "-0.04em" }}>
-            The fact model and dimension model do not have the same historical
-            coverage.
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-              gap: 12,
-              marginTop: 18,
-            }}
-          >
-            {[
-              "Late arriving dimensions",
-              "Partial source history",
-              "Cross-system integration",
-              "Historical backfills",
-              "Snapshot reporting requirements",
-            ].map((item) => (
-              <div
-                key={item}
-                style={{
-                  padding: 15,
-                  borderRadius: 14,
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  color: "#334155",
-                  fontSize: 14,
-                  fontWeight: 800,
-                }}
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-          }}
-        >
-          <SectionEyebrow>Typical solutions</SectionEyebrow>
-
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: "-0.04em" }}>
-            Complete the dimension before joining it to the fact model.
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: 12,
-              marginTop: 18,
-            }}
-          >
-            {SOLUTIONS.map((solution) => (
-              <div
-                key={solution.title}
-                style={{
-                  padding: 18,
-                  borderRadius: 16,
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: 17,
-                    color: "#0f172a",
-                  }}
-                >
-                  {solution.title}
-                </h3>
-
-                <p
-                  style={{
-                    margin: "8px 0 0",
-                    color: "#475569",
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {solution.text}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-          }}
-        >
-          <SectionEyebrow>Validation checks</SectionEyebrow>
-
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: "-0.04em" }}>
-            Before publishing the model, validate historical coverage.
-          </h2>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 10,
-              marginTop: 18,
-            }}
-          >
-            {VALIDATION_CHECKS.map((check) => (
-              <span
-                key={check}
-                style={{
-                  padding: "9px 12px",
-                  borderRadius: 999,
-                  background: "#ecfeff",
-                  border: "1px solid #a5f3fc",
-                  color: "#155e75",
-                  fontSize: 13,
-                  fontWeight: 900,
-                }}
-              >
-                ✓ {check}
-              </span>
-            ))}
-          </div>
-        </section>
-
-    <RelatedPatterns current="dimension_completion" />
-
-        <section
-          style={{
-            background: "#dbeafe",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-            border: "1px solid #93c5fd",
-          }}
-        >
-          <SectionEyebrow color="#1d4ed8">Try it</SectionEyebrow>
-
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: "-0.04em" }}>
-            Use the advisor to map this pattern to your own historical model.
-          </h2>
-
-          <p
-            style={{
-              marginTop: 10,
-              color: "#334155",
-              fontSize: 15,
-              lineHeight: 1.55,
-              maxWidth: 760,
-            }}
-          >
-            The Historical Modeling Advisor can recommend modeling strategies,
-            risks and validation checks based on your reporting goal, source
-            types and historized dimensions.
-          </p>
-
-          <a
-            href="/"
-            onClick={() => trackWorkbenchClick("bottom_cta")}
-            style={{
-              display: "inline-flex",
-              marginTop: 18,
-              padding: "13px 16px",
-              borderRadius: 12,
-              background: "#2563eb",
-              color: "#ffffff",
-              textDecoration: "none",
-              fontSize: 14,
-              fontWeight: 900,
-              boxShadow: "0 14px 30px rgba(37, 99, 235, 0.25)",
-            }}
-          >
-            Open Historical Modeling Workbench
-          </a>
-        </section>
+        <TryItCard />
       </div>
 
       <Analytics />
@@ -456,25 +132,94 @@ export default function DimensionCompletionPage() {
   );
 }
 
-function SectionEyebrow({
+function DarkExampleCard() {
+  return (
+    <section style={darkCardStyle}>
+      <div style={darkEyebrowStyle}>Example</div>
+
+      <h2 style={darkTitleStyle}>
+        Contract snapshot exists in February. Customer dimension starts in
+        April.
+      </h2>
+
+      <div style={timelineListStyle}>
+        <TimelineRow
+          label="Contract fact"
+          before="Jan"
+          bar="────────────────────────"
+          after="Dec"
+          active
+        />
+
+        <TimelineRow
+          label="Customer dimension"
+          before="Jan"
+          bar="          ──────────────"
+          after="Dec"
+          active={false}
+        />
+      </div>
+
+      <div style={exampleNoteStyle}>
+        <div style={exampleNoteLabelStyle}>Reporting date: February</div>
+
+        <p style={exampleNoteTextStyle}>
+          The contract exists, but the customer dimension has no valid row yet.
+          Without completion, the snapshot either loses the dimension attributes
+          or fails the historical join.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function WhiteCard({
+  eyebrow,
+  title,
   children,
-  color = "#2563eb",
 }: {
-  children: React.ReactNode;
-  color?: string;
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
 }) {
   return (
-    <div
-      style={{
-        fontSize: 12,
-        fontWeight: 900,
-        color,
-        textTransform: "uppercase",
-        letterSpacing: 0.7,
-        marginBottom: 8,
-      }}
-    >
+    <section style={whiteCardStyle}>
+      <div style={eyebrowStyle}>{eyebrow}</div>
+      <h2 style={cardTitleStyle}>{title}</h2>
       {children}
+    </section>
+  );
+}
+
+function MiniCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div style={miniCardStyle}>
+      <div style={miniCardTitleStyle}>{title}</div>
+      <div style={miniCardTextStyle}>{text}</div>
+    </div>
+  );
+}
+
+function ChipRow({ chips }: { chips: string[] }) {
+  return (
+    <div style={chipRowStyle}>
+      {chips.map((chip) => (
+        <span key={chip} style={riskChipStyle}>
+          {chip}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function CheckChipRow({ checks }: { checks: string[] }) {
+  return (
+    <div style={checkRowStyle}>
+      {checks.map((check) => (
+        <span key={check} style={checkChipStyle}>
+          ✓ {check}
+        </span>
+      ))}
     </div>
   );
 }
@@ -493,35 +238,15 @@ function TimelineRow({
   active: boolean;
 }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "150px 1fr",
-        gap: 14,
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          color: "#cbd5e1",
-          fontSize: 13,
-          fontWeight: 900,
-        }}
-      >
-        {label}
-      </div>
+    <div style={timelineRowStyle}>
+      <div style={timelineLabelStyle}>{label}</div>
 
       <div
         style={{
-          padding: "12px 14px",
-          borderRadius: 14,
+          ...timelineBarStyle,
           background: active ? "#eff6ff" : "#fff7ed",
           border: active ? "1px solid #bfdbfe" : "1px solid #fed7aa",
           color: active ? "#1d4ed8" : "#9a3412",
-          fontFamily: "monospace",
-          fontSize: 13,
-          overflowX: "auto",
-          whiteSpace: "nowrap",
         }}
       >
         {before} {bar} {after}
@@ -530,11 +255,39 @@ function TimelineRow({
   );
 }
 
-function RelatedPatterns({
-  current,
-}: {
-  current: string;
-}) {
+function TryItCard() {
+  return (
+    <section style={tryItCardStyle}>
+      <div style={tryItEyebrowStyle}>Try it</div>
+
+      <h2 style={tryItTitleStyle}>
+        Use the advisor to map this pattern to your own historical model.
+      </h2>
+
+      <p style={tryItTextStyle}>
+        The Historical Modeling Advisor can recommend modeling strategies, risks
+        and validation checks based on your reporting goal, source types and
+        historized dimensions.
+      </p>
+
+      <a
+        href="/"
+        onClick={() => {
+          track("learn_cta_clicked", {
+            page: "dimension_completion",
+            cta: "open_workbench",
+            source: "bottom_cta",
+          });
+        }}
+        style={tryItButtonStyle}
+      >
+        Open Historical Modeling Workbench →
+      </a>
+    </section>
+  );
+}
+
+function RelatedPatterns({ current }: { current: string }) {
   const patterns = [
     {
       title: "Dimension Completion",
@@ -569,29 +322,10 @@ function RelatedPatterns({
   ];
 
   return (
-    <section
-      style={{
-        marginTop: 30,
-        padding: 24,
-        borderRadius: 22,
-        background: "rgba(15, 23, 42, 0.72)",
-        border: "1px solid rgba(148, 163, 184, 0.32)",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 900,
-          color: "#93c5fd",
-          textTransform: "uppercase",
-          letterSpacing: 0.7,
-          marginBottom: 10,
-        }}
-      >
-        Related Patterns
-      </div>
+    <section style={relatedSectionStyle}>
+      <div style={relatedTitleStyle}>Related Patterns</div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      <div style={relatedGridStyle}>
         {patterns
           .filter((pattern) => pattern.key !== current)
           .map((pattern) => (
@@ -604,16 +338,7 @@ function RelatedPatterns({
                   to: pattern.key,
                 });
               }}
-              style={{
-                display: "inline-flex",
-                padding: "9px 12px",
-                borderRadius: 999,
-                background: "#ffffff",
-                color: "#1d4ed8",
-                textDecoration: "none",
-                fontSize: 13,
-                fontWeight: 900,
-              }}
+              style={relatedLinkStyle}
             >
               {pattern.title}
             </a>
@@ -622,3 +347,312 @@ function RelatedPatterns({
     </section>
   );
 }
+
+const mainStyle: CSSProperties = {
+  minHeight: "100vh",
+  background:
+    "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
+  padding: "48px 24px",
+  fontFamily: "Inter, Arial, sans-serif",
+  color: "#e2e8f0",
+};
+
+const pageStyle: CSSProperties = {
+  maxWidth: 980,
+  marginLeft: "auto",
+  marginRight: "auto",
+};
+
+const backLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  color: "#bfdbfe",
+  textDecoration: "none",
+  fontWeight: 800,
+  fontSize: 14,
+  marginBottom: 22,
+};
+
+const badgeStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "#dbeafe",
+  color: "#075985",
+  fontSize: 12,
+  fontWeight: 900,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+};
+
+const h1Style: CSSProperties = {
+  marginTop: 22,
+  marginBottom: 16,
+  fontSize: "clamp(34px, 8vw, 56px)",
+  lineHeight: 1,
+  color: "#ffffff",
+  letterSpacing: "-0.05em",
+};
+
+const heroTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 0,
+  maxWidth: 760,
+  fontSize: 20,
+  lineHeight: 1.6,
+  color: "#dbeafe",
+};
+
+const whiteCardStyle: CSSProperties = {
+  padding: 28,
+  borderRadius: 24,
+  background: "rgba(255, 255, 255, 0.96)",
+  border: "1px solid rgba(226, 232, 240, 0.9)",
+  boxShadow: "0 24px 70px rgba(15, 23, 42, 0.18)",
+  color: "#0f172a",
+};
+
+const eyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const cardTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 14,
+  fontSize: 28,
+  lineHeight: 1.15,
+  color: "#0f172a",
+  letterSpacing: "-0.03em",
+};
+
+const paragraphStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  fontSize: 16,
+  lineHeight: 1.8,
+  color: "#334155",
+};
+
+const chipRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 18,
+};
+
+const riskChipStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "8px 11px",
+  borderRadius: 999,
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontSize: 13,
+  fontWeight: 900,
+  border: "1px solid #bfdbfe",
+};
+
+const darkCardStyle: CSSProperties = {
+  padding: 28,
+  borderRadius: 24,
+  background:
+    "linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92))",
+  border: "1px solid rgba(148, 163, 184, 0.35)",
+  boxShadow: "0 24px 70px rgba(2, 6, 23, 0.35)",
+};
+
+const darkEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#93c5fd",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const darkTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 16,
+  fontSize: 28,
+  lineHeight: 1.15,
+  color: "#ffffff",
+  letterSpacing: "-0.03em",
+};
+
+const timelineListStyle: CSSProperties = {
+  marginTop: 22,
+  display: "grid",
+  gap: 14,
+  maxWidth: 820,
+};
+
+const timelineRowStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "150px 1fr",
+  gap: 14,
+  alignItems: "center",
+};
+
+const timelineLabelStyle: CSSProperties = {
+  color: "#cbd5e1",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const timelineBarStyle: CSSProperties = {
+  padding: "12px 14px",
+  borderRadius: 14,
+  fontFamily: "monospace",
+  fontSize: 13,
+  overflowX: "auto",
+  whiteSpace: "nowrap",
+};
+
+const exampleNoteStyle: CSSProperties = {
+  marginTop: 22,
+  padding: 18,
+  borderRadius: 16,
+  background: "#020617",
+  border: "1px solid #334155",
+};
+
+const exampleNoteLabelStyle: CSSProperties = {
+  color: "#93c5fd",
+  fontWeight: 900,
+  fontSize: 13,
+};
+
+const exampleNoteTextStyle: CSSProperties = {
+  marginTop: 8,
+  marginBottom: 0,
+  color: "#cbd5e1",
+  fontSize: 15,
+  lineHeight: 1.55,
+};
+
+const solutionGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 14,
+  marginTop: 18,
+};
+
+const miniCardStyle: CSSProperties = {
+  padding: 16,
+  borderRadius: 18,
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+};
+
+const miniCardTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  color: "#0f172a",
+  marginBottom: 8,
+};
+
+const miniCardTextStyle: CSSProperties = {
+  fontSize: 14,
+  lineHeight: 1.6,
+  color: "#475569",
+};
+
+const checkRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 8,
+};
+
+const checkChipStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "9px 12px",
+  borderRadius: 999,
+  background: "#ecfdf5",
+  color: "#047857",
+  fontSize: 13,
+  fontWeight: 900,
+  border: "1px solid #a7f3d0",
+};
+
+const relatedSectionStyle: CSSProperties = {
+  marginTop: 30,
+  padding: 24,
+  borderRadius: 22,
+  background: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(148, 163, 184, 0.32)",
+};
+
+const relatedTitleStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#93c5fd",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const relatedGridStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+};
+
+const relatedLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "9px 12px",
+  borderRadius: 999,
+  background: "#ffffff",
+  color: "#1d4ed8",
+  textDecoration: "none",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const tryItCardStyle: CSSProperties = {
+  marginTop: 30,
+  padding: 28,
+  borderRadius: 24,
+  background: "linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)",
+  border: "1px solid rgba(147, 197, 253, 0.8)",
+  color: "#0f172a",
+};
+
+const tryItEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const tryItTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 10,
+  fontSize: 26,
+  lineHeight: 1.15,
+  letterSpacing: "-0.03em",
+  color: "#0f172a",
+};
+
+const tryItTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 20,
+  fontSize: 16,
+  lineHeight: 1.7,
+  color: "#334155",
+  maxWidth: 720,
+};
+
+const tryItButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "12px 18px",
+  borderRadius: 14,
+  background: "#2563eb",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: 900,
+};

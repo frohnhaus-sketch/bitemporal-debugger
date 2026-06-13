@@ -283,7 +283,7 @@ Priority: HIGH
 
 ---
 
-# Temporal Conformance
+# Historical Conformance
 
 ## Observed Community Discussions
 
@@ -308,7 +308,7 @@ Examples include:
 
 ## Related Pattern
 
-Temporal Conformance
+Historical Conformance
 
 ## Workbench Coverage
 
@@ -493,7 +493,7 @@ The same themes appear repeatedly:
 * Historical joins
 * Historical coverage
 * Late arriving dimensions
-* Temporal conformance
+* Historical conformance
 * Historical corrections
 * Event prioritization
 

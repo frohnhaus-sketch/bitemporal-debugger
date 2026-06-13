@@ -67,7 +67,7 @@ const PATTERN_ORDER = [
   "State ↔ Event Alignment",
   "Relationship History",
   "Identity Resolution",
-  "Temporal Conformance",
+  "Historical Conformance",
   "Historical Correction",
   "Dimension Completion",
   "Bitemporal Modeling",
@@ -141,8 +141,8 @@ const COMMUNITY_EVIDENCE: Record<string, CommunityEvidence> = {
       "Fact rows often require dimension history that is incomplete, delayed or only partially available.",
   },
 
-  "Temporal Conformance": {
-    pattern: "Temporal Conformance",
+  "Historical Conformance": {
+    pattern: "Historical Conformance",
     priority: "MEDIUM",
     observedIn: [
       "Multiple source systems",
@@ -352,7 +352,7 @@ export function generateAdvisorBlueprint(
 
   if (answers.multipleSystems === "YES") {
     operations.push("Conform identities and timelines across systems");
-    patterns.push("Identity Resolution", "Temporal Conformance");
+    patterns.push("Identity Resolution", "Historical Conformance");
     validationChecklist.push("Check cross-system key stability");
     notebookStructure.push("03_identity_resolution");
     risks.push("Identity mismatch", "Cross-system timeline drift");
@@ -423,7 +423,7 @@ export function generateAdvisorBlueprint(
     patterns.push(
       "Historical Correction",
       "Dimension Completion",
-      "Temporal Conformance",
+      "Historical Conformance",
       "Relationship History",
       "State ↔ Event Alignment"
     );

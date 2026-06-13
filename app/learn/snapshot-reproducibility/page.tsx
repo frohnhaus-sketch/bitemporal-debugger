@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { Analytics } from "@vercel/analytics/next";
+import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 
 const VALIDATION_CHECKS = [
@@ -9,6 +8,7 @@ const VALIDATION_CHECKS = [
   "As-known reporting validation",
   "Late arriving data validation",
   "Historical correction validation",
+  "Published report comparison",
 ];
 
 const SOLUTIONS = [
@@ -22,7 +22,7 @@ const SOLUTIONS = [
   },
   {
     title: "Frozen Report State",
-    text: "Store the exact reporting state used for published reports when regulatory or audit reproducibility is required.",
+    text: "Store the exact reporting state used for published reports when audit reproducibility is required.",
   },
   {
     title: "As-Known Joins",
@@ -40,507 +40,276 @@ export default function SnapshotReproducibilityPage() {
     });
   }, []);
 
-  function trackWorkbenchClick(source: string) {
-    track("learn_cta_clicked", {
-      page: "snapshot_reproducibility",
-      cta: "open_workbench",
-      source,
-    });
-  }
-
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
-        padding: "44px 40px",
-        fontFamily: "Inter, Arial, sans-serif",
-        color: "#e2e8f0",
-      }}
-    >
-      <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-        <a
-          href="/patterns"
-          style={{
-            color: "#bfdbfe",
-            textDecoration: "none",
-            fontSize: 14,
-            fontWeight: 800,
-          }}
-        >
-          ← Back to Pattern Catalog
-        </a>
+    <main style={mainStyle}>
+      <div style={pageStyle}>
+        <header style={{ marginBottom: 40 }}>
+          <a href="/patterns" style={backLinkStyle}>
+            ← Back to Pattern Catalog
+          </a>
 
-        <section style={{ marginTop: 34, marginBottom: 30 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              padding: "7px 12px",
-              borderRadius: 999,
-              background: "#dbeafe",
-              color: "#075985",
-              fontSize: 12,
-              fontWeight: 900,
-              letterSpacing: 0.6,
-              marginBottom: 16,
-            }}
-          >
-            HISTORICAL MODELING PATTERN
+          <div>
+            <div style={badgeStyle}>Reporting Pattern</div>
           </div>
 
-          <h1
-            style={{
-              margin: 0,
-              maxWidth: 900,
-              fontSize: "clamp(36px, 10vw, 62px)",
-              lineHeight: 1.02,
-              letterSpacing: "-0.06em",
-              color: "#ffffff",
-            }}
-          >
-            Snapshot Reproducibility
-          </h1>
+          <h1 style={h1Style}>Snapshot Reproducibility</h1>
 
-          <p
-            style={{
-              marginTop: 18,
-              maxWidth: 820,
-              color: "#dbeafe",
-              fontSize: 20,
-              lineHeight: 1.55,
-            }}
-          >
-            Snapshot Reproducibility ensures that a historical report can be
+          <p style={heroTextStyle}>
+            Snapshot Reproducibility ensures that historical reports can be
             rebuilt later and still produce the same result for the same
             reporting period.
           </p>
-        </section>
+        </header>
 
-        <section
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-            boxShadow: "0 22px 60px rgba(15, 23, 42, 0.28)",
-          }}
-        >
-          <SectionEyebrow>Problem</SectionEyebrow>
-
-          <h2 style={{ margin: 0, fontSize: 30, letterSpacing: "-0.04em" }}>
-            The same month-end report produces different numbers when rebuilt
-            later.
-          </h2>
-
-          <p
-            style={{
-              marginTop: 12,
-              color: "#475569",
-              fontSize: 16,
-              lineHeight: 1.6,
-              maxWidth: 840,
-            }}
+        <section style={{ display: "grid", gap: 24 }}>
+          <WhiteCard
+            eyebrow="Problem"
+            title="The same month-end report produces different numbers when rebuilt later."
           >
-            This usually happens when reports are rebuilt from mutable source
-            data. Late-arriving records, corrected history, overwritten
-            dimensions or changed relationships can alter the result even though
-            the reporting date did not change.
-          </p>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: 10,
-              marginTop: 18,
-            }}
-          >
-            {[
-              "Changing historical totals",
-              "Non-reproducible reports",
-              "Audit disagreements",
-              "Incorrect as-known results",
-            ].map((risk) => (
-              <div
-                key={risk}
-                style={{
-                  padding: 14,
-                  borderRadius: 14,
-                  background: "#fff7ed",
-                  border: "1px solid #fed7aa",
-                  color: "#9a3412",
-                  fontSize: 13,
-                  fontWeight: 900,
-                }}
-              >
-                {risk}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
-          style={{
-            background: "rgba(15, 23, 42, 0.72)",
-            border: "1px solid rgba(148, 163, 184, 0.32)",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-          }}
-        >
-          <SectionEyebrow color="#93c5fd">Example</SectionEyebrow>
-
-          <h2 style={{ margin: 0, color: "#ffffff", fontSize: 28 }}>
-            A March report is published. In June, corrected history changes the
-            March result.
-          </h2>
-
-          <div
-            style={{
-              marginTop: 22,
-              display: "grid",
-              gap: 14,
-              maxWidth: 820,
-            }}
-          >
-            <TimelineRow
-              label="March report"
-              left="Report date: Mar 31"
-              center="Published result"
-              right="Premium total = 1.2M"
-              active
-            />
-
-            <TimelineRow
-              label="June rebuild"
-              left="Same report date"
-              center="Corrected history applied"
-              right="Premium total = 1.3M"
-              active={false}
-            />
-          </div>
-
-          <div
-            style={{
-              marginTop: 22,
-              padding: 18,
-              borderRadius: 16,
-              background: "#020617",
-              border: "1px solid #334155",
-            }}
-          >
-            <div style={{ color: "#93c5fd", fontWeight: 900, fontSize: 13 }}>
-              Reporting date: March 31
-            </div>
-
-            <p
-              style={{
-                margin: "8px 0 0",
-                color: "#cbd5e1",
-                fontSize: 15,
-                lineHeight: 1.55,
-              }}
-            >
-              Both reports ask for the same reporting period, but they use
-              different knowledge states. Without visible time or persisted
-              snapshot state, the rebuilt report silently uses information that
-              was not available when the original report was published.
+            <p style={paragraphStyle}>
+              This usually happens when reports are rebuilt from mutable source
+              data. Late-arriving records, corrected history, overwritten
+              dimensions or changed relationships can alter the result even
+              though the reporting date did not change.
             </p>
-          </div>
+
+            <ChipRow
+              chips={[
+                "Changing historical totals",
+                "Non-reproducible reports",
+                "Audit disagreements",
+                "Incorrect as-known results",
+              ]}
+            />
+          </WhiteCard>
+
+          <DarkExampleCard />
+
+          <WhiteCard
+            eyebrow="Why it happens"
+            title="The model does not separate reporting date from knowledge date."
+          >
+            <p style={paragraphStyle}>
+              A report can be correct for a business date and still use
+              information that was not known when the report was originally
+              published. Snapshot Reproducibility makes that distinction
+              explicit.
+            </p>
+
+            <ChipRow
+              chips={[
+                "Late arriving facts",
+                "Corrected source history",
+                "SCD1 overwrites",
+                "Missing visible time",
+                "Changed relationship history",
+              ]}
+            />
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Typical solutions"
+            title="Decide whether the report should show current truth or what was known at the time."
+          >
+            <div style={solutionGridStyle}>
+              {SOLUTIONS.map((solution) => (
+                <MiniCard
+                  key={solution.title}
+                  title={solution.title}
+                  text={solution.text}
+                />
+              ))}
+            </div>
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Validation checks"
+            title="Validate whether reports can be rebuilt consistently."
+          >
+            <CheckChipRow checks={VALIDATION_CHECKS} />
+          </WhiteCard>
+
+          <WhiteCard
+            eyebrow="Why it matters"
+            title="Reproducible snapshots create trust in historical reporting."
+          >
+            <p style={paragraphStyle}>
+              Snapshot facts are often the bridge between complex historical
+              source behavior and simple business reporting.
+            </p>
+
+            <p style={paragraphStyle}>
+              Without clear reproducibility rules, the same historical question
+              may produce different results depending on when and how the query
+              is rebuilt.
+            </p>
+          </WhiteCard>
         </section>
 
-        <section
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-          }}
-        >
-          <SectionEyebrow>Why it happens</SectionEyebrow>
+        <RelatedPatterns current="snapshot_reproducibility" />
 
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: "-0.04em" }}>
-            The model does not separate reporting date from knowledge date.
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-              gap: 12,
-              marginTop: 18,
-            }}
-          >
-            {[
-              "Late arriving facts",
-              "Corrected source history",
-              "SCD1 overwrites",
-              "Missing visible time",
-              "Changed relationship history",
-            ].map((item) => (
-              <div
-                key={item}
-                style={{
-                  padding: 15,
-                  borderRadius: 14,
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  color: "#334155",
-                  fontSize: 14,
-                  fontWeight: 800,
-                }}
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-          }}
-        >
-          <SectionEyebrow>Typical solutions</SectionEyebrow>
-
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: "-0.04em" }}>
-            Decide whether the report should show current truth or what was
-            known at the time.
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: 12,
-              marginTop: 18,
-            }}
-          >
-            {SOLUTIONS.map((solution) => (
-              <div
-                key={solution.title}
-                style={{
-                  padding: 18,
-                  borderRadius: 16,
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: 17,
-                    color: "#0f172a",
-                  }}
-                >
-                  {solution.title}
-                </h3>
-
-                <p
-                  style={{
-                    margin: "8px 0 0",
-                    color: "#475569",
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {solution.text}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-          }}
-        >
-          <SectionEyebrow>Validation checks</SectionEyebrow>
-
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: "-0.04em" }}>
-            Before publishing the model, validate whether reports can be rebuilt
-            consistently.
-          </h2>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 10,
-              marginTop: 18,
-            }}
-          >
-            {VALIDATION_CHECKS.map((check) => (
-              <span
-                key={check}
-                style={{
-                  padding: "9px 12px",
-                  borderRadius: 999,
-                  background: "#ecfeff",
-                  border: "1px solid #a5f3fc",
-                  color: "#155e75",
-                  fontSize: 13,
-                  fontWeight: 900,
-                }}
-              >
-                ✓ {check}
-              </span>
-            ))}
-          </div>
-        </section>
-
-    <RelatedPatterns current="snapshot_reproducibility" />
-
-        <section
-          style={{
-            background: "#dbeafe",
-            color: "#0f172a",
-            borderRadius: 22,
-            padding: 26,
-            marginBottom: 22,
-            border: "1px solid #93c5fd",
-          }}
-        >
-          <SectionEyebrow color="#1d4ed8">Try it</SectionEyebrow>
-
-          <h2 style={{ margin: 0, fontSize: 28, letterSpacing: "-0.04em" }}>
-            Use the advisor to design reproducible historical reporting models.
-          </h2>
-
-          <p
-            style={{
-              marginTop: 10,
-              color: "#334155",
-              fontSize: 15,
-              lineHeight: 1.55,
-              maxWidth: 760,
-            }}
-          >
-            The Historical Modeling Advisor can recommend modeling strategies,
-            risks and validation checks based on your reporting goal, source
-            types and historized dimensions.
-          </p>
-
-          <a
-            href="/"
-            onClick={() => trackWorkbenchClick("bottom_cta")}
-            style={{
-              display: "inline-flex",
-              marginTop: 18,
-              padding: "13px 16px",
-              borderRadius: 12,
-              background: "#2563eb",
-              color: "#ffffff",
-              textDecoration: "none",
-              fontSize: 14,
-              fontWeight: 900,
-              boxShadow: "0 14px 30px rgba(37, 99, 235, 0.25)",
-            }}
-          >
-            Open Historical Modeling Workbench
-          </a>
-        </section>
+        <TryItCard />
       </div>
-
-      <Analytics />
     </main>
   );
 }
 
-function SectionEyebrow({
-  children,
-  color = "#2563eb",
-}: {
-  children: React.ReactNode;
-  color?: string;
-}) {
+function DarkExampleCard() {
   return (
-    <div
-      style={{
-        fontSize: 12,
-        fontWeight: 900,
-        color,
-        textTransform: "uppercase",
-        letterSpacing: 0.7,
-        marginBottom: 8,
-      }}
-    >
-      {children}
-    </div>
+    <section style={darkCardStyle}>
+      <div style={darkEyebrowStyle}>Example</div>
+
+      <h2 style={darkTitleStyle}>
+        A March report is published. In June, corrected history changes the
+        March result.
+      </h2>
+
+      <div style={timelineGridStyle}>
+        <TimelineCard
+          title="March report"
+          date="Report date: Mar 31"
+          state="Published result"
+          result="Premium total = 1.2M"
+          active
+        />
+
+        <TimelineCard
+          title="June rebuild"
+          date="Same report date"
+          state="Corrected history applied"
+          result="Premium total = 1.3M"
+        />
+      </div>
+
+      <div style={exampleNoteStyle}>
+        <div style={exampleNoteLabelStyle}>Reporting date: March 31</div>
+
+        <p style={exampleNoteTextStyle}>
+          Both reports ask for the same reporting period, but they use different
+          knowledge states. Without visible time or persisted snapshot state,
+          the rebuilt report silently uses information that was not available
+          when the original report was published.
+        </p>
+      </div>
+    </section>
   );
 }
 
-function TimelineRow({
-  label,
-  left,
-  center,
-  right,
+function TimelineCard({
+  title,
+  date,
+  state,
+  result,
   active,
 }: {
-  label: string;
-  left: string;
-  center: string;
-  right: string;
-  active: boolean;
+  title: string;
+  date: string;
+  state: string;
+  result: string;
+  active?: boolean;
 }) {
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns: "150px 1fr",
-        gap: 14,
-        alignItems: "center",
+        ...timelineCardStyle,
+        background: active
+          ? "rgba(219, 234, 254, 0.13)"
+          : "rgba(251, 146, 60, 0.12)",
+        border: active
+          ? "1px solid rgba(147, 197, 253, 0.45)"
+          : "1px solid rgba(251, 146, 60, 0.42)",
       }}
     >
-      <div
-        style={{
-          color: "#cbd5e1",
-          fontSize: 13,
-          fontWeight: 900,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(150px, 1fr))",
-          gap: 8,
-          padding: "12px 14px",
-          borderRadius: 14,
-          background: active ? "#eff6ff" : "#fff7ed",
-          border: active ? "1px solid #bfdbfe" : "1px solid #fed7aa",
-          color: active ? "#1d4ed8" : "#9a3412",
-          fontSize: 13,
-          overflowX: "auto",
-        }}
-      >
-        <span style={{ fontWeight: 900 }}>{left}</span>
-        <span>{center}</span>
-        <span style={{ fontWeight: 900 }}>{right}</span>
-      </div>
+      <div style={timelineTitleStyle}>{title}</div>
+      <div style={timelineMetaStyle}>{date}</div>
+      <div style={timelineStateStyle}>{state}</div>
+      <div style={timelineResultStyle}>{result}</div>
     </div>
   );
 }
 
-function RelatedPatterns({
-  current,
+function WhiteCard({
+  eyebrow,
+  title,
+  children,
 }: {
-  current: string;
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
 }) {
+  return (
+    <section style={whiteCardStyle}>
+      <div style={eyebrowStyle}>{eyebrow}</div>
+      <h2 style={cardTitleStyle}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function MiniCard({ title, text }: { title: string; text: string }) {
+  return (
+    <div style={miniCardStyle}>
+      <div style={miniCardTitleStyle}>{title}</div>
+      <div style={miniCardTextStyle}>{text}</div>
+    </div>
+  );
+}
+
+function ChipRow({ chips }: { chips: string[] }) {
+  return (
+    <div style={chipRowStyle}>
+      {chips.map((chip) => (
+        <span key={chip} style={riskChipStyle}>
+          {chip}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function CheckChipRow({ checks }: { checks: string[] }) {
+  return (
+    <div style={checkRowStyle}>
+      {checks.map((check) => (
+        <span key={check} style={checkChipStyle}>
+          ✓ {check}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TryItCard() {
+  return (
+    <section style={tryItCardStyle}>
+      <div style={tryItEyebrowStyle}>Try it</div>
+
+      <h2 style={tryItTitleStyle}>
+        Design reproducible historical reporting models.
+      </h2>
+
+      <p style={tryItTextStyle}>
+        Use the Historical Modeling Workbench to reason about reporting dates,
+        knowledge dates, source corrections and snapshot validation risks.
+      </p>
+
+      <a
+        href="/"
+        onClick={() => {
+          track("learn_cta_clicked", {
+            page: "snapshot_reproducibility",
+            cta: "open_workbench",
+          });
+        }}
+        style={tryItButtonStyle}
+      >
+        Open Historical Modeling Workbench →
+      </a>
+    </section>
+  );
+}
+
+function RelatedPatterns({ current }: { current: string }) {
   const patterns = [
     {
       title: "Dimension Completion",
@@ -548,56 +317,32 @@ function RelatedPatterns({
       key: "dimension_completion",
     },
     {
-      title: "Snapshot Reproducibility",
-      href: "/learn/snapshot-reproducibility",
-      key: "snapshot_reproducibility",
+      title: "As-Known Reporting",
+      href: "/learn/as-known-reporting",
+      key: "as_known_reporting",
     },
     {
-      title: "State ↔ Event Alignment",
-      href: "/learn/state-event-alignment",
-      key: "state_event_alignment",
+      title: "Snapshot Fact Modeling",
+      href: "/learn/snapshot-fact-modeling",
+      key: "snapshot_fact_modeling",
     },
     {
-      title: "Relationship History",
-      href: "/learn/relationship-history",
-      key: "relationship_history",
+      title: "Bitemporal Modeling",
+      href: "/learn/bitemporal-modeling",
+      key: "bitemporal_modeling",
     },
     {
-      title: "Historical Coverage Gap",
-      href: "/learn/historical-coverage-gap",
-      key: "historical_coverage_gap",
-    },
-    {
-      title: "State ↔ State Alignment",
-      href: "/learn/state-state-alignment",
-      key: "state_state_alignment",
+      title: "Historical Correction",
+      href: "/learn/historical-correction",
+      key: "historical_correction",
     },
   ];
 
   return (
-    <section
-      style={{
-        marginTop: 30,
-        padding: 24,
-        borderRadius: 22,
-        background: "rgba(15, 23, 42, 0.72)",
-        border: "1px solid rgba(148, 163, 184, 0.32)",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 900,
-          color: "#93c5fd",
-          textTransform: "uppercase",
-          letterSpacing: 0.7,
-          marginBottom: 10,
-        }}
-      >
-        Related Patterns
-      </div>
+    <section style={relatedSectionStyle}>
+      <div style={relatedTitleStyle}>Related Patterns</div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      <div style={relatedGridStyle}>
         {patterns
           .filter((pattern) => pattern.key !== current)
           .map((pattern) => (
@@ -610,16 +355,7 @@ function RelatedPatterns({
                   to: pattern.key,
                 });
               }}
-              style={{
-                display: "inline-flex",
-                padding: "9px 12px",
-                borderRadius: 999,
-                background: "#ffffff",
-                color: "#1d4ed8",
-                textDecoration: "none",
-                fontSize: 13,
-                fontWeight: 900,
-              }}
+              style={relatedLinkStyle}
             >
               {pattern.title}
             </a>
@@ -628,3 +364,321 @@ function RelatedPatterns({
     </section>
   );
 }
+
+const mainStyle: CSSProperties = {
+  minHeight: "100vh",
+  background:
+    "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
+  padding: "48px 24px",
+  fontFamily: "Inter, Arial, sans-serif",
+  color: "#e2e8f0",
+};
+
+const pageStyle: CSSProperties = {
+  maxWidth: 980,
+  marginLeft: "auto",
+  marginRight: "auto",
+};
+
+const backLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  color: "#bfdbfe",
+  textDecoration: "none",
+  fontWeight: 800,
+  fontSize: 14,
+  marginBottom: 22,
+};
+
+const badgeStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "#dbeafe",
+  color: "#075985",
+  fontSize: 12,
+  fontWeight: 900,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+};
+
+const h1Style: CSSProperties = {
+  marginTop: 22,
+  marginBottom: 16,
+  fontSize: "clamp(34px, 8vw, 56px)",
+  lineHeight: 1,
+  color: "#ffffff",
+  letterSpacing: "-0.05em",
+};
+
+const heroTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 0,
+  maxWidth: 760,
+  fontSize: 20,
+  lineHeight: 1.6,
+  color: "#dbeafe",
+};
+
+const whiteCardStyle: CSSProperties = {
+  padding: 28,
+  borderRadius: 24,
+  background: "rgba(255, 255, 255, 0.96)",
+  border: "1px solid rgba(226, 232, 240, 0.9)",
+  boxShadow: "0 24px 70px rgba(15, 23, 42, 0.18)",
+  color: "#0f172a",
+};
+
+const eyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const cardTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 14,
+  fontSize: 28,
+  lineHeight: 1.15,
+  color: "#0f172a",
+  letterSpacing: "-0.03em",
+};
+
+const paragraphStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  fontSize: 16,
+  lineHeight: 1.8,
+  color: "#334155",
+};
+
+const chipRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 18,
+};
+
+const riskChipStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "8px 11px",
+  borderRadius: 999,
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontSize: 13,
+  fontWeight: 900,
+  border: "1px solid #bfdbfe",
+};
+
+const darkCardStyle: CSSProperties = {
+  padding: 28,
+  borderRadius: 24,
+  background:
+    "linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92))",
+  border: "1px solid rgba(148, 163, 184, 0.35)",
+  boxShadow: "0 24px 70px rgba(2, 6, 23, 0.35)",
+};
+
+const darkEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#93c5fd",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const darkTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  fontSize: 28,
+  lineHeight: 1.15,
+  color: "#ffffff",
+  letterSpacing: "-0.03em",
+};
+
+const timelineGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: 12,
+  marginTop: 18,
+};
+
+const timelineCardStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 18,
+};
+
+const timelineTitleStyle: CSSProperties = {
+  color: "#ffffff",
+  fontSize: 18,
+  fontWeight: 900,
+  marginBottom: 10,
+};
+
+const timelineMetaStyle: CSSProperties = {
+  color: "#bfdbfe",
+  fontSize: 13,
+  fontWeight: 900,
+  marginBottom: 6,
+};
+
+const timelineStateStyle: CSSProperties = {
+  color: "#cbd5e1",
+  fontSize: 14,
+  marginBottom: 8,
+};
+
+const timelineResultStyle: CSSProperties = {
+  color: "#ffffff",
+  fontSize: 15,
+  fontWeight: 900,
+};
+
+const exampleNoteStyle: CSSProperties = {
+  marginTop: 18,
+  padding: 18,
+  borderRadius: 16,
+  background: "#020617",
+  border: "1px solid #334155",
+};
+
+const exampleNoteLabelStyle: CSSProperties = {
+  color: "#93c5fd",
+  fontWeight: 900,
+  fontSize: 13,
+};
+
+const exampleNoteTextStyle: CSSProperties = {
+  marginTop: 8,
+  marginBottom: 0,
+  color: "#cbd5e1",
+  fontSize: 15,
+  lineHeight: 1.55,
+};
+
+const solutionGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+  gap: 14,
+  marginTop: 18,
+};
+
+const miniCardStyle: CSSProperties = {
+  padding: 16,
+  borderRadius: 18,
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+};
+
+const miniCardTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  color: "#0f172a",
+  marginBottom: 8,
+};
+
+const miniCardTextStyle: CSSProperties = {
+  fontSize: 14,
+  lineHeight: 1.6,
+  color: "#475569",
+};
+
+const checkRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 8,
+};
+
+const checkChipStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "9px 12px",
+  borderRadius: 999,
+  background: "#ecfdf5",
+  color: "#047857",
+  fontSize: 13,
+  fontWeight: 900,
+  border: "1px solid #a7f3d0",
+};
+
+const relatedSectionStyle: CSSProperties = {
+  marginTop: 30,
+  padding: 24,
+  borderRadius: 22,
+  background: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(148, 163, 184, 0.32)",
+};
+
+const relatedTitleStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#93c5fd",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const relatedGridStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+};
+
+const relatedLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "9px 12px",
+  borderRadius: 999,
+  background: "#ffffff",
+  color: "#1d4ed8",
+  textDecoration: "none",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const tryItCardStyle: CSSProperties = {
+  marginTop: 30,
+  padding: 28,
+  borderRadius: 24,
+  background: "linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)",
+  border: "1px solid rgba(147, 197, 253, 0.8)",
+  color: "#0f172a",
+};
+
+const tryItEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const tryItTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 10,
+  fontSize: 26,
+  lineHeight: 1.15,
+  letterSpacing: "-0.03em",
+  color: "#0f172a",
+};
+
+const tryItTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 20,
+  fontSize: 16,
+  lineHeight: 1.7,
+  color: "#334155",
+  maxWidth: 720,
+};
+
+const tryItButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "12px 18px",
+  borderRadius: 14,
+  background: "#2563eb",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: 900,
+};

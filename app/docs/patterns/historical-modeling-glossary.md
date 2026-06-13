@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This glossary defines the terminology used throughout the Historical Data Modeling Workbench.
+This glossary defines the terminology used throughout the Historical Data Engineering Toolkit.
 
 Each term is classified as one of:
 
@@ -286,7 +286,7 @@ Related Core Pattern:
 
 ---
 
-# Temporal Conformance
+# Historical Conformance
 
 ## Classification
 
@@ -298,7 +298,7 @@ Multiple systems describe the same entity using different historical timelines.
 
 Related Core Pattern:
 
-* Temporal Conformance
+* Historical Conformance
 
 ---
 

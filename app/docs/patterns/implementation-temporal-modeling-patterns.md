@@ -487,7 +487,7 @@ Event Reconstruction
 
 ---
 
-# Pattern 15 — Temporal Conformance
+# Pattern 15 — Historical Conformance
 
 ## Description
 

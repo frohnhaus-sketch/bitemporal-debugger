@@ -348,38 +348,68 @@ export function AdvisorPanel() {
               Recommended Patterns
             </div>
             
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {blueprint.patterns.slice(0, 4).map((pattern) => (
-                <span
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+                gap: 10,
+              }}
+            >
+              {blueprint.patterns.slice(0, 6).map((pattern) => (
+                <a
                   key={pattern}
+                  href={getLearnHrefForAdvisorPattern(pattern)}
+                  onClick={() => {
+                    track("related_pattern_clicked", {
+                      from: "advisor_recommendation",
+                      to: getAdvisorPatternKey(pattern),
+                    });
+                  }}
                   style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    padding: 12,
+                    borderRadius: 14,
+                    background: "#ffffff",
+                    border: "1px solid #bfdbfe",
+                    color: "#1d4ed8",
+                    textDecoration: "none",
+                    fontSize: 13,
+                    fontWeight: 900,
+                  }}
+                >
+                  <span>{pattern}</span>
+                  <span>›</span>
+                </a>
+              ))}
+
+              {blueprint.patterns.length > 6 && (
+                <a
+                  href="/patterns"
+                  onClick={() => {
+                    track("related_pattern_clicked", {
+                      from: "advisor_recommendation",
+                      to: "pattern_catalog",
+                    });
+                  }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    padding: 12,
+                    borderRadius: 14,
                     background: "#eff6ff",
                     border: "1px solid #bfdbfe",
                     color: "#1d4ed8",
-                    fontSize: 12,
-                    fontWeight: 700,
+                    textDecoration: "none",
+                    fontSize: 13,
+                    fontWeight: 900,
                   }}
                 >
-                  {pattern}
-                </span>
-              ))}
-
-              {blueprint.patterns.length > 5 && (
-                <span
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    background: "#dbeafe",
-                    border: "1px solid #bfdbfe",
-                    color: "#1d4ed8",
-                    fontSize: 12,
-                    fontWeight: 800,
-                  }}
-                >
-                  +{blueprint.patterns.length - 5} more
-                </span>
+                  <span>Browse all patterns</span>
+                  <span>›</span>
+                </a>
               )}
             </div>
           </div>
@@ -656,7 +686,7 @@ export function AdvisorPanel() {
         >
           {copyState === "copied"
             ? "Copied Markdown Recommendation"
-            : "Copy Markdown Recommendation"}
+            : "Copy Implementation Blueprint"}
         </button>
 
         <details style={{ marginTop: 14 }}>
@@ -699,6 +729,37 @@ const SOURCE_TYPES: SourceType[] = [
   "Reference Data",
   "Business Relationships",
 ];
+
+function getLearnHrefForAdvisorPattern(pattern: string) {
+  const normalized = pattern.toLowerCase();
+
+  if (normalized.includes("state modeling")) return "/learn/state-modeling";
+  if (normalized.includes("event modeling")) return "/learn/event-modeling";
+  if (normalized.includes("state ↔ event")) return "/learn/state-event-alignment";
+  if (normalized.includes("state ↔ state")) return "/learn/state-state-alignment";
+  if (normalized.includes("relationship")) return "/learn/relationship-history";
+  if (normalized.includes("dimension completion")) return "/learn/dimension-completion";
+  if (normalized.includes("snapshot reproducibility")) return "/learn/snapshot-reproducibility";
+  if (normalized.includes("snapshot fact")) return "/learn/snapshot-fact-modeling";
+  if (normalized.includes("bitemporal")) return "/learn/bitemporal-modeling";
+  if (normalized.includes("historical conformance")) return "/learn/historical-conformance";
+  if (normalized.includes("historical correction")) return "/learn/historical-correction";
+  if (normalized.includes("backfill")) return "/learn/historical-backfill";
+  if (normalized.includes("state reduction")) return "/learn/state-reduction";
+  if (normalized.includes("event prioritization")) return "/learn/event-prioritization";
+  if (normalized.includes("rectangle")) return "/learn/rectangle-decomposition";
+
+  return "/patterns";
+}
+
+function getAdvisorPatternKey(pattern: string) {
+  return pattern
+    .toLowerCase()
+    .replaceAll(" ↔ ", "_")
+    .replaceAll(" / ", "_")
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
+}
 
 function SectionEyebrow({
   children,

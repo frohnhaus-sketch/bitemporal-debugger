@@ -6,7 +6,7 @@ import { track } from "@/lib/analytics";
 export default function TemporalConformancePage() {
   useEffect(() => {
     track("learn_page_opened", {
-      page: "temporal_conformance",
+      page: "historical_conformance",
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
@@ -67,7 +67,7 @@ export default function TemporalConformancePage() {
             letterSpacing: "-0.05em",
           }}
         >
-          Temporal Conformance
+          Historical Conformance
         </h1>
 
         <p
@@ -78,8 +78,8 @@ export default function TemporalConformancePage() {
             color: "#dbeafe",
           }}
         >
-          Temporal Conformance aligns competing timelines from multiple source
-          systems into one consistent historical reporting model.
+          Historical Conformance aligns multiple historical source timelines
+          into one consistent reporting history.
         </p>
 
         <section
@@ -93,24 +93,24 @@ export default function TemporalConformancePage() {
             <h2 style={{ color: "#ffffff" }}>The Problem</h2>
 
             <p style={{ lineHeight: 1.8 }}>
-              Different source systems often describe the same business entity
-              with different historical timelines.
+              Historical reporting often combines data from several source systems.
             </p>
 
             <p style={{ lineHeight: 1.8 }}>
-              A CRM system may know about a customer change on one date, while a
-              policy system, billing system or product system represents related
-              changes on different dates.
+              Each source can have its own history, change frequency and temporal
+              behavior.
             </p>
 
             <p style={{ lineHeight: 1.8 }}>
-              Temporal Conformance is the process of deciding how these
-              timelines should be aligned for reporting.
+              A customer change may appear in one system before it appears in another.
+              A contract update may be effective on one date while related attributes
+              change on different dates.
             </p>
-          </div>
 
-          <div>
-            <h2 style={{ color: "#ffffff" }}>Example</h2>
+            <p style={{ lineHeight: 1.8 }}>
+              Historical Conformance is the process of deciding how these independent
+              histories should behave together inside a reporting model.
+            </p>
 
             <div
               style={{
@@ -121,31 +121,32 @@ export default function TemporalConformancePage() {
               }}
             >
               <p style={{ marginTop: 0, fontWeight: 900 }}>
-                Customer timeline from CRM
+                Customer Timeline
               </p>
-
+          
               <ul>
-                <li>Customer segment changes on April 1</li>
+                <li>Customer Segment changes on April 1</li>
               </ul>
-
+          
               <p style={{ fontWeight: 900 }}>
-                Contract timeline from policy system
+                Contract Timeline
               </p>
-
+          
               <ul>
-                <li>Contract status changes on April 15</li>
+                <li>Contract Status changes on April 15</li>
               </ul>
-
-              <p style={{ fontWeight: 900 }}>Billing timeline</p>
-
+          
+              <p style={{ fontWeight: 900 }}>
+                Risk Timeline
+              </p>
+          
               <ul>
-                <li>Premium adjustment becomes visible on May 1</li>
+                <li>Risk Classification changes on May 1</li>
               </ul>
-
+          
               <p style={{ marginBottom: 0 }}>
-                A reporting model must decide which timeline drives the
-                snapshot, which dates are used for joins and which changes are
-                allowed to affect a historical report.
+                The reporting model must define how these independent timelines are
+                combined into one historical reporting view.
               </p>
             </div>
           </div>
@@ -179,10 +180,10 @@ export default function TemporalConformancePage() {
 
             <ul style={{ lineHeight: 2 }}>
               <li>Choose the driving timeline for the reporting model</li>
-              <li>Separate business-valid time from system-visible time</li>
               <li>Define which source owns each historical attribute</li>
-              <li>Resolve conflicting state changes across systems</li>
-              <li>Document which history corrections affect published reports</li>
+              <li>Resolve conflicting historical changes across systems</li>
+              <li>Separate business-valid time from system-visible time</li>
+              <li>Define how source corrections affect published history</li>
             </ul>
           </div>
 
@@ -202,29 +203,29 @@ export default function TemporalConformancePage() {
             <h2 style={{ color: "#ffffff" }}>Why It Matters</h2>
 
             <p style={{ lineHeight: 1.8 }}>
-              Temporal Conformance is often where historical modeling becomes
-              architecture rather than simple SCD2 implementation.
+              Many historical modeling projects fail not because individual sources
+              are wrong, but because multiple sources are combined inconsistently.
             </p>
 
             <p style={{ lineHeight: 1.8 }}>
-              The hardest question is not whether a source is historized, but
-              how multiple histories should behave together.
+              Historical Conformance provides the rules that turn independent source
+              histories into one coherent reporting history.
             </p>
 
             <p style={{ lineHeight: 1.8 }}>
-              Without temporal conformance, different reports can answer the
-              same historical question using different timelines.
+              It is often the difference between a collection of historized tables
+              and a trustworthy historical reporting model.
             </p>
           </div>
         </section>
 
-        <RelatedPatterns current="temporal_conformance" />
+        <RelatedPatterns current="historical_conformance" />
 
         <a
           href="/"
           onClick={() => {
             track("learn_cta_clicked", {
-              page: "temporal_conformance",
+              page: "historical_conformance",
               cta: "open_workbench",
             });
           }}
@@ -249,29 +250,29 @@ export default function TemporalConformancePage() {
 function RelatedPatterns({ current }: { current: string }) {
   const patterns = [
     {
-      title: "Snapshot Reproducibility",
-      href: "/learn/snapshot-reproducibility",
-      key: "snapshot_reproducibility",
-    },
-    {
       title: "State ↔ State Alignment",
       href: "/learn/state-state-alignment",
       key: "state_state_alignment",
     },
     {
-      title: "State ↔ Event Alignment",
-      href: "/learn/state-event-alignment",
-      key: "state_event_alignment",
+      title: "Dimension Completion",
+      href: "/learn/dimension-completion",
+      key: "dimension_completion",
+    },
+    {
+      title: "Rectangle Decomposition",
+      href: "/learn/rectangle-decomposition",
+      key: "rectangle_decomposition",
+    },
+    {
+      title: "Snapshot Reproducibility",
+      href: "/learn/snapshot-reproducibility",
+      key: "snapshot_reproducibility",
     },
     {
       title: "Relationship History",
       href: "/learn/relationship-history",
       key: "relationship_history",
-    },
-    {
-      title: "Historical Match Ambiguity",
-      href: "/learn/historical-match-ambiguity",
-      key: "historical_match_ambiguity",
     },
   ];
 

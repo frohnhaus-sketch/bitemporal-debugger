@@ -123,7 +123,7 @@ Options:
 
 Potential Pattern Impact:
 
-* Temporal Conformance
+* Historical Conformance
 * Identity Resolution
 
 ---
@@ -271,7 +271,7 @@ Based on the answers, the Advisor may recommend:
 * Event Prioritization
 * Winner Selection
 * State Reduction
-* Temporal Conformance
+* Historical Conformance
 * Relationship History
 * Identity Resolution
 * Dimension Completion
