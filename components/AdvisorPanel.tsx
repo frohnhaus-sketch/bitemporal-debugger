@@ -14,6 +14,9 @@ import {
 
 export function AdvisorPanel() {
   const hasTrackedAdvisorOpened = useRef(false);
+  const hasInteractedWithAdvisor = useRef(false);
+  const hasTrackedAdvisorCompleted = useRef(false);
+  const lastTrackedRecommendationKey = useRef<string | null>(null);
 
   useEffect(() => {
     if (hasTrackedAdvisorOpened.current) return;
@@ -48,6 +51,50 @@ export function AdvisorPanel() {
     [answers, blueprint]
   );
 
+  useEffect(() => {
+    if (!hasInteractedWithAdvisor.current) return;
+
+    const recommendationKey = JSON.stringify({
+      reportingGoal: answers.reportingGoal,
+      sourceTypes: answers.sourceTypes,
+      historyCorrected: answers.historyCorrected,
+      multipleSystems: answers.multipleSystems,
+      changingRelationships: answers.changingRelationships,
+      historizedDimensions: answers.historizedDimensions,
+      recommendation: blueprint.recommendation,
+    });
+
+    if (!hasTrackedAdvisorCompleted.current) {
+      hasTrackedAdvisorCompleted.current = true;
+
+      track("advisor_completed", {
+        reportingGoal: answers.reportingGoal,
+        sourceTypes: answers.sourceTypes.join(","),
+        historyCorrected: answers.historyCorrected,
+        multipleSystems: answers.multipleSystems,
+        changingRelationships: answers.changingRelationships,
+        historizedDimensions: answers.historizedDimensions,
+      });
+    }
+
+    if (lastTrackedRecommendationKey.current === recommendationKey) return;
+
+    lastTrackedRecommendationKey.current = recommendationKey;
+
+    track("advisor_recommendation_generated", {
+      recommendation: blueprint.recommendation,
+      reportingGoal: answers.reportingGoal,
+      sourceTypes: answers.sourceTypes.join(","),
+      historyCorrected: answers.historyCorrected,
+      multipleSystems: answers.multipleSystems,
+      changingRelationships: answers.changingRelationships,
+      historizedDimensions: answers.historizedDimensions,
+      patternCount: blueprint.patterns.length,
+      riskCount: blueprint.risks.length,
+      validationCheckCount: blueprint.validationChecks.length,
+    });
+  }, [answers, blueprint]);
+
   const selectedSummary = [
     getReportingGoalLabel(answers.reportingGoal),
     ...answers.sourceTypes,
@@ -62,6 +109,7 @@ export function AdvisorPanel() {
   ].filter(Boolean);
 
   function toggleSourceType(sourceType: SourceType) {
+    hasInteractedWithAdvisor.current = true;
     setAnswers((prev) => {
       const exists = prev.sourceTypes.includes(sourceType);
 
@@ -87,6 +135,8 @@ export function AdvisorPanel() {
     question: K,
     value: AdvisorAnswers[K]
   ) {
+    hasInteractedWithAdvisor.current = true;
+
     track("advisor_question_changed", {
       question,
       value: Array.isArray(value) ? value.join(",") : String(value),
