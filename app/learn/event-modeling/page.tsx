@@ -477,12 +477,17 @@ const riskChipStyle: CSSProperties = {
 };
 
 const darkCardStyle: CSSProperties = {
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  overflow: "hidden",
   padding: "clamp(20px, 5vw, 28px)",
   borderRadius: 24,
   background:
     "linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92))",
   border: "1px solid rgba(148, 163, 184, 0.35)",
   boxShadow: "0 24px 70px rgba(2, 6, 23, 0.35)",
+  boxSizing: "border-box",
 };
 
 const darkEyebrowStyle: CSSProperties = {
@@ -511,12 +516,14 @@ const eventListStyle: CSSProperties = {
 
 const eventRowStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gridTemplateColumns: "minmax(0, 96px) minmax(0, 1fr)",
   gap: 14,
   padding: 14,
   borderRadius: 16,
   background: "rgba(255, 255, 255, 0.06)",
   border: "1px solid rgba(148, 163, 184, 0.24)",
+  minWidth: 0,
+  boxSizing: "border-box",
 };
 
 const eventDateStyle: CSSProperties = {
@@ -535,6 +542,7 @@ const eventTextStyle: CSSProperties = {
   color: "#cbd5e1",
   fontSize: 14,
   lineHeight: 1.6,
+  overflowWrap: "anywhere",
 };
 
 const codeBoxStyle: CSSProperties = {
