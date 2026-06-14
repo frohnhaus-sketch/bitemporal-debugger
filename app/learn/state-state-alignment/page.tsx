@@ -38,7 +38,42 @@ C-1001,Customer B,Changed,2024-10-31,2024-10-01,2024-10-31,overlap_join_only
 C-1001,Customer B,Changed,2024-11-30,2024-11-01,2024-11-30,overlap_join_only
 C-1001,Customer B,Changed,2024-12-31,2024-12-01,2024-12-31,overlap_join_only`;
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function update() {
+      setIsMobile(window.innerWidth < 760);
+    }
+
+    update();
+    window.addEventListener("resize", update);
+
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return isMobile;
+}
+
+function useReloadOnBackForwardCache() {
+  useEffect(() => {
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    }
+
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []);
+}
+
 export default function StateStateAlignmentPage() {
+  useReloadOnBackForwardCache();
+
   useEffect(() => {
     track("learn_page_opened", {
       page: "state_state_alignment",
@@ -470,13 +505,36 @@ function CopyTableCard({
   const [hovered, setHovered] = useState(false);
   const isGood = tone === "good";
 
+  useEffect(() => {
+    function resetCopyState() {
+      setCopied(false);
+      setHovered(false);
+    }
+
+    window.addEventListener("pageshow", resetCopyState);
+    window.addEventListener("focus", resetCopyState);
+
+    return () => {
+      window.removeEventListener("pageshow", resetCopyState);
+      window.removeEventListener("focus", resetCopyState);
+    };
+  }, []);
+
   async function handleCopy() {
-    await navigator.clipboard.writeText(value);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        copyWithFallback(value);
+      }
+    } catch {
+      copyWithFallback(value);
+    }
 
     setCopied(true);
 
     track("example_table_copied", {
-      example: "state_state_alignment",
+      example: "dimension_completion",
       table: tableName,
     });
 
@@ -500,7 +558,10 @@ function CopyTableCard({
 
       <button
         type="button"
-        onClick={handleCopy}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          handleCopy();
+        }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
@@ -514,12 +575,33 @@ function CopyTableCard({
           boxShadow: hovered
             ? "0 10px 22px rgba(15, 23, 42, 0.22)"
             : "none",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
         }}
       >
         {copied ? "✓ Copied" : "Copy table"}
       </button>
     </div>
   );
+}
+
+function copyWithFallback(value: string) {
+  const textarea = document.createElement("textarea");
+
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+
+  textarea.focus();
+  textarea.select();
+
+  document.execCommand("copy");
+
+  document.body.removeChild(textarea);
 }
 
 function DetectionCard() {
@@ -1286,6 +1368,8 @@ const copyTableButtonStyle: CSSProperties = {
   fontWeight: 900,
   cursor: "pointer",
   transition: "all 160ms ease",
+  touchAction: "manipulation",
+  WebkitTapHighlightColor: "transparent",
 };
 
 const testCaseButtonStyle: CSSProperties = {

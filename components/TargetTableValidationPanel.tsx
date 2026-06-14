@@ -66,7 +66,7 @@ export function TargetTableValidationPanel() {
     <section
       id="target-table-validation"
       style={{
-        scrollMarginTop: 24,
+        scrollMarginTop: 10,
         background: "#ffffff",
         color: "#0f172a",
         padding: 24,
@@ -303,6 +303,30 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
     dimensionColumns: detectDimensionColumns(columns),
   };
 
+const sourceSystemColumn = detectColumn(columns, [
+  "source_system",
+  "source",
+  "system",
+  "source_name",
+  "system_name",
+]);
+
+  const effectiveBusinessKey =
+    detectedColumns.businessKey && sourceSystemColumn
+      ? "__validation_business_key"
+      : detectedColumns.businessKey;
+
+  const effectiveRows =
+    detectedColumns.businessKey && sourceSystemColumn
+      ? rows.map((row) => ({
+          ...row,
+          __validation_business_key: [
+            row[detectedColumns.businessKey!],
+            row[sourceSystemColumn],
+          ].join("||"),
+        }))
+      : rows;
+
   const findings: TargetFinding[] = [];
 
   if (rows.length === 0) {
@@ -350,18 +374,20 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
   }
 
   if (
-    detectedColumns.businessKey &&
+    effectiveBusinessKey &&
     detectedColumns.validFrom &&
     detectedColumns.validTo
   ) {
+  if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
     findings.push(
       ...detectDuplicateIntervals(
-        rows,
-        detectedColumns.businessKey,
+        effectiveRows,
+        effectiveBusinessKey,
         detectedColumns.validFrom,
         detectedColumns.validTo
       )
     );
+  }
 
     findings.push(
       ...detectInvalidIntervals(
@@ -371,20 +397,22 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
       )
     );
 
-    findings.push(
-      ...detectValidTimeOverlaps(
-        rows,
-        detectedColumns.businessKey,
-        detectedColumns.validFrom,
-        detectedColumns.validTo
-      )
-    );
+    if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
+      findings.push(
+        ...detectValidTimeOverlaps(
+          effectiveRows,
+          effectiveBusinessKey,
+          detectedColumns.validFrom,
+          detectedColumns.validTo
+        )
+      );
+    }
 
     if (!detectedColumns.snapshotDate) {
       findings.push(
         ...detectValidTimeGaps(
-          rows,
-          detectedColumns.businessKey,
+          effectiveRows,
+          effectiveBusinessKey,
           detectedColumns.validFrom,
           detectedColumns.validTo
         )
@@ -392,19 +420,21 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
     }
   }
 
-  if (detectedColumns.snapshotDate && detectedColumns.businessKey) {
-    findings.push(
-      ...detectSnapshotDuplicates(
-        rows,
-        detectedColumns.businessKey,
-        detectedColumns.snapshotDate
-      )
-    );
+  if (detectedColumns.snapshotDate && effectiveBusinessKey) {
+    if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
+      findings.push(
+        ...detectSnapshotDuplicates(
+          effectiveRows,
+          effectiveBusinessKey,
+          detectedColumns.snapshotDate
+        )
+      );
+    }
 
     findings.push(
       ...detectMissingSnapshotCoverage(
-        rows,
-        detectedColumns.businessKey,
+        effectiveRows,
+        effectiveBusinessKey,
         detectedColumns.snapshotDate
       )
     );
@@ -417,6 +447,70 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
   }
 
   findings.push(...detectRiskyAlignmentMethods(rows));
+  findings.push(...detectSnapshotReproducibilityRisk(rows, detectedColumns));
+  findings.push(...detectHistoricalConformanceRisk(rows));
+
+  function detectHistoricalConformanceRisk(rows: any[]): TargetFinding[] {
+    const statusColumns = [
+      "conformance_status",
+      "conformity_status",
+      "historical_conformance_status",
+      "mapping_status",
+    ];
+
+    const existingStatusColumn = statusColumns.find((column) =>
+      rows.some((row) => row[column] !== undefined)
+    );
+
+    if (!existingStatusColumn) return [];
+
+    const riskyValues = new Set([
+      "unconformed",
+      "conflict",
+      "conflicting_history",
+      "source_conflict",
+      "inconsistent",
+      "unresolved",
+    ]);
+
+    const riskyRows = rows.filter((row) => {
+      const value = String(row[existingStatusColumn] ?? "")
+        .trim()
+        .toLowerCase();
+
+      return riskyValues.has(value);
+    });
+
+    if (riskyRows.length === 0) return [];
+
+    const examplePeriods = riskyRows
+      .slice(0, 3)
+      .map(
+        (row) =>
+          row.snapshot_date ??
+          row.reference_date ??
+          row.reporting_date ??
+          row.valid_from ??
+          "unknown period"
+      )
+      .join(", ");
+
+    return [
+      {
+        id: "historical-conformance-risk",
+        title: "Historical conformance risk detected",
+        severity: "high",
+        evidence: [
+          `${riskyRows.length} row${
+            riskyRows.length === 1 ? "" : "s"
+          } have ${existingStatusColumn} marked as unresolved or unconformed.`,
+          `Example affected periods: ${examplePeriods}.`,
+        ],
+        recommendation:
+          "Resolve cross-system historical conflicts before publishing the reporting model. Define which source owns each attribute, whether values should be conformed, and how conflicting history should be represented.",
+      },
+    ];
+  }
 
   if (
     (detectedColumns.visibleFrom && !detectedColumns.visibleTo) ||
@@ -611,116 +705,6 @@ function detectMissingSnapshotCoverage(
   ];
 }
 
-function detectDimensionColumns(columns: string[]) {
-  const excluded = new Set([
-    "business_key",
-    "entity_id",
-    "id",
-    "contract_id",
-    "policy_id",
-    "police_id",
-    "police_nummer",
-    "vnr",
-    "bk_contract",
-    "bk_policy",
-    "bk_police",
-    "fk__police",
-    "valid_from",
-    "bk_valid_from",
-    "effective_from",
-    "effective_start",
-    "start_date",
-    "gueltig_ab",
-    "valid_to",
-    "bk_valid_to",
-    "effective_to",
-    "effective_end",
-    "end_date",
-    "gueltig_bis",
-    "visible_from",
-    "bk_visible_from",
-    "loaded_from",
-    "system_from",
-    "technical_from",
-    "visible_to",
-    "bk_visible_to",
-    "loaded_to",
-    "system_to",
-    "technical_to",
-    "snapshot_date",
-    "reference_date",
-    "reporting_date",
-    "bk_reference_date",
-    "month_end",
-    "as_of_date",
-    "stichtag",
-    "completion_method",
-    "alignment_method",
-    "join_method",
-    "modeling_method",
-    "generation_method",
-  ]);
-
-  return columns.filter((column) => {
-    if (excluded.has(column)) return false;
-
-    return (
-      column.endsWith("_key") ||
-      column.endsWith("_code") ||
-      column.endsWith("_number") ||
-      column.startsWith("customer") ||
-      column.startsWith("broker") ||
-      column.startsWith("product") ||
-      column.startsWith("agent") ||
-      column.startsWith("sales") ||
-      column.startsWith("territory") ||
-      column.startsWith("risk") ||
-      column.startsWith("coverage")
-    );
-  });
-}
-
-function detectMissingDimensionValues(
-  rows: any[],
-  dimensionColumns: string[]
-): TargetFinding[] {
-  const findings: TargetFinding[] = [];
-
-  dimensionColumns.forEach((column) => {
-    const missingRows = rows.filter((row) => isMissingValue(row[column]));
-
-    if (missingRows.length === 0) return;
-
-    const examplePeriods = missingRows
-      .slice(0, 3)
-      .map(
-        (row) =>
-          row.snapshot_date ??
-          row.reference_date ??
-          row.reporting_date ??
-          row.valid_from ??
-          "unknown period"
-      )
-      .join(", ");
-
-    findings.push({
-      id: `missing-dimension-values-${column}`,
-      title: `Missing dimension values detected in ${column}`,
-      severity: "high",
-      evidence: [
-        `${missingRows.length} row${
-          missingRows.length === 1 ? "" : "s"
-        } have no value for ${column}.`,
-        `Example affected periods: ${examplePeriods}.`,
-      ],
-      recommendation:
-        "Check whether these missing dimension values are expected. If the fact exists but the dimension is missing, apply Dimension Completion, an Unknown Member or document the expected sparsity.",
-    });
-  });
-
-  return findings;
-}
-
 function detectRiskyAlignmentMethods(rows: any[]): TargetFinding[] {
   const methodColumns = [
     "alignment_method",
@@ -781,6 +765,214 @@ function detectRiskyAlignmentMethods(rows: any[]): TargetFinding[] {
         "For State ↔ State Alignment, validate that the joined table is split at every relevant state boundary. An overlap join alone can produce coarse intervals and incorrect attribution when either side changes independently.",
     },
   ];
+}
+
+function detectSnapshotReproducibilityRisk(
+  rows: any[],
+  detectedColumns: DetectedColumns
+): TargetFinding[] {
+  const methodColumns = [
+    "reproducibility_method",
+    "snapshot_method",
+    "reporting_method",
+    "generation_method",
+  ];
+
+  const existingMethodColumn = methodColumns.find((column) =>
+    rows.some((row) => row[column] !== undefined)
+  );
+
+  if (!existingMethodColumn) return [];
+
+  const riskyValues = new Set([
+    "current_rebuild_only",
+    "no_visible_time",
+    "current_truth_only",
+    "latest_state_rebuild",
+    "overwrite_snapshot",
+    "non_reproducible_rebuild",
+  ]);
+
+  const riskyRows = existingMethodColumn
+    ? rows.filter((row) => {
+        const value = String(row[existingMethodColumn] ?? "")
+          .trim()
+          .toLowerCase();
+
+        return riskyValues.has(value);
+      })
+    : [];
+
+  const hasSnapshotDate = Boolean(detectedColumns.snapshotDate);
+  const hasVisibleTime = Boolean(
+    detectedColumns.visibleFrom && detectedColumns.visibleTo
+  );
+
+  if (riskyRows.length === 0 && (!hasSnapshotDate || hasVisibleTime)) {
+    return [];
+  }
+
+  if (!hasSnapshotDate) {
+    return [];
+  }
+
+  const evidence = [];
+
+  if (!hasVisibleTime) {
+    evidence.push(
+      "The table has snapshot_date but no complete visible_from / visible_to interval."
+    );
+  }
+
+  if (existingMethodColumn && riskyRows.length > 0) {
+    const examplePeriods = riskyRows
+      .slice(0, 3)
+      .map(
+        (row) =>
+          row.snapshot_date ??
+          row.reference_date ??
+          row.reporting_date ??
+          row.valid_from ??
+          "unknown period"
+      )
+      .join(", ");
+
+    evidence.push(
+      `${riskyRows.length} row${
+        riskyRows.length === 1 ? "" : "s"
+      } use ${existingMethodColumn} with a non-reproducible rebuild method.`
+    );
+
+    evidence.push(`Example affected periods: ${examplePeriods}.`);
+  }
+
+  return [
+    {
+      id: "snapshot-reproducibility-risk",
+      title: "Snapshot reproducibility risk detected",
+      severity: "high",
+      evidence,
+      recommendation:
+        "If published reports must be reproducible, include visible-time information or persist the exact snapshot state used at publication time. Otherwise, rebuilding old reports may silently use later corrections or future knowledge.",
+    },
+  ];
+}
+
+function detectDimensionColumns(columns: string[]) {
+  const excluded = new Set([
+    "business_key",
+    "entity_id",
+    "id",
+    "contract_id",
+    "policy_id",
+    "police_id",
+    "police_nummer",
+    "vnr",
+    "bk_contract",
+    "bk_policy",
+    "bk_police",
+    "fk__police",
+    "valid_from",
+    "bk_valid_from",
+    "effective_from",
+    "effective_start",
+    "start_date",
+    "gueltig_ab",
+    "valid_to",
+    "bk_valid_to",
+    "effective_to",
+    "effective_end",
+    "end_date",
+    "gueltig_bis",
+    "visible_from",
+    "bk_visible_from",
+    "loaded_from",
+    "system_from",
+    "technical_from",
+    "visible_to",
+    "bk_visible_to",
+    "loaded_to",
+    "system_to",
+    "technical_to",
+    "snapshot_date",
+    "reference_date",
+    "reporting_date",
+    "bk_reference_date",
+    "month_end",
+    "as_of_date",
+    "stichtag",
+    "completion_method",
+    "alignment_method",
+    "join_method",
+    "modeling_method",
+    "generation_method",
+    "reproducibility_method",
+    "snapshot_method",
+    "reporting_method",
+    "conformance_status",
+    "conformity_status",
+    "historical_conformance_status",
+    "mapping_status",
+  ]);
+
+  return columns.filter((column) => {
+    if (excluded.has(column)) return false;
+
+    return (
+      column.endsWith("_key") ||
+      column.endsWith("_code") ||
+      column.endsWith("_number") ||
+      column.startsWith("customer") ||
+      column.startsWith("broker") ||
+      column.startsWith("product") ||
+      column.startsWith("agent") ||
+      column.startsWith("sales") ||
+      column.startsWith("territory") ||
+      column.startsWith("risk") ||
+      column.startsWith("coverage")
+    );
+  });
+}
+
+function detectMissingDimensionValues(
+  rows: any[],
+  dimensionColumns: string[]
+): TargetFinding[] {
+  const findings: TargetFinding[] = [];
+
+  dimensionColumns.forEach((column) => {
+    const missingRows = rows.filter((row) => isMissingValue(row[column]));
+
+    if (missingRows.length === 0) return;
+
+    const examplePeriods = missingRows
+      .slice(0, 3)
+      .map(
+        (row) =>
+          row.snapshot_date ??
+          row.reference_date ??
+          row.reporting_date ??
+          row.valid_from ??
+          "unknown period"
+      )
+      .join(", ");
+
+    findings.push({
+      id: `missing-dimension-values-${column}`,
+      title: `Missing dimension values detected in ${column}`,
+      severity: "high",
+      evidence: [
+        `${missingRows.length} row${
+          missingRows.length === 1 ? "" : "s"
+        } have no value for ${column}.`,
+        `Example affected periods: ${examplePeriods}.`,
+      ],
+      recommendation:
+        "Check whether these missing dimension values are expected. If the fact exists but the dimension is missing, apply Dimension Completion, an Unknown Member or document the expected sparsity.",
+    });
+  });
+
+  return findings;
 }
 
 function isMissingValue(value: unknown) {

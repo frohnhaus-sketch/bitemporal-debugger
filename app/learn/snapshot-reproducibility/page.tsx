@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 
 const VALIDATION_CHECKS = [
@@ -30,10 +30,64 @@ const SOLUTIONS = [
   },
 ];
 
+const EXPECTED_ROWS = [
+  ["2024-03-31", "As known on Mar 31", "Premium total = 1.2M"],
+  ["2024-03-31", "Rebuilt in Jun as known on Mar 31", "Premium total = 1.2M"],
+];
+
+const WRONG_ROWS = [
+  ["2024-03-31", "Published in Mar", "Premium total = 1.2M"],
+  ["2024-03-31", "Rebuilt in Jun using current truth", "Premium total = 1.3M"],
+];
+
+const REPRODUCIBLE_TARGET_TABLE = `contract_id,customer_key,premium_amount,snapshot_date,valid_from,valid_to,visible_from,visible_to,reproducibility_method
+C-1001,Customer A,1200000,2024-03-31,2024-03-01,2024-03-31,2024-03-31,2024-06-14,as_known_snapshot
+C-1001,Customer A,1300000,2024-03-31,2024-03-01,2024-03-31,2024-06-15,9999-12-31,corrected_after_publication`;
+
+const WRONG_TARGET_TABLE = `contract_id,customer_key,premium_amount,snapshot_date,valid_from,valid_to,reproducibility_method
+C-1001,Customer A,1300000,2024-03-31,2024-03-01,2024-03-31,current_rebuild_only`;
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function update() {
+      setIsMobile(window.innerWidth < 760);
+    }
+
+    update();
+    window.addEventListener("resize", update);
+
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return isMobile;
+}
+
+function useReloadOnBackForwardCache() {
+  useEffect(() => {
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    }
+
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []);
+}
+
 export default function SnapshotReproducibilityPage() {
+  useReloadOnBackForwardCache();
+
   useEffect(() => {
     track("learn_page_opened", {
       page: "snapshot_reproducibility",
+      page_type: "interactive_example",
+      example: "snapshot_reproducibility",
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
@@ -84,6 +138,8 @@ export default function SnapshotReproducibilityPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <PatternTestCaseCard />
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -160,35 +216,50 @@ function DarkExampleCard() {
       <div style={darkEyebrowStyle}>Example</div>
 
       <h2 style={darkTitleStyle}>
-        A March report is published. In June, corrected history changes the
-        March result.
+        A March report was published. In June, corrected history changes the result.
       </h2>
 
       <div style={timelineGridStyle}>
         <TimelineCard
-          title="March report"
-          date="Report date: Mar 31"
-          state="Published result"
+          title="Published March report"
+          date="Snapshot date: 2024-03-31"
+          state="Knowledge date: 2024-03-31"
           result="Premium total = 1.2M"
           active
         />
 
         <TimelineCard
           title="June rebuild"
-          date="Same report date"
-          state="Corrected history applied"
+          date="Same snapshot date: 2024-03-31"
+          state="Knowledge date: 2024-06-15"
           result="Premium total = 1.3M"
         />
       </div>
 
+      <div style={questionCardStyle}>
+        <div style={questionIconStyle}>?</div>
+
+        <div>
+          <div style={questionBadgeStyle}>Reporting question</div>
+          <div style={questionTextStyle}>
+            Should the rebuilt report reproduce what was known in March, or show
+            the corrected truth known in June?
+          </div>
+        </div>
+      </div>
+
+      <div style={comparisonGridStyle}>
+        <ResultCard title="Expected Result (Reproducible)" rows={EXPECTED_ROWS} tone="good" />
+        <ResultCard title="Common Wrong Result (Risk)" rows={WRONG_ROWS} tone="bad" />
+      </div>
+
       <div style={exampleNoteStyle}>
-        <div style={exampleNoteLabelStyle}>Reporting date: March 31</div>
+        <div style={exampleNoteLabelStyle}>Key idea</div>
 
         <p style={exampleNoteTextStyle}>
-          Both reports ask for the same reporting period, but they use different
-          knowledge states. Without visible time or persisted snapshot state,
-          the rebuilt report silently uses information that was not available
-          when the original report was published.
+          A reproducible snapshot needs either persisted report state or visible
+          time. Otherwise, old reports can silently change when source history is
+          corrected later.
         </p>
       </div>
     </section>
@@ -277,6 +348,227 @@ function CheckChipRow({ checks }: { checks: string[] }) {
       ))}
     </div>
   );
+}
+
+function ResultCard({
+  title,
+  rows,
+  tone,
+}: {
+  title: string;
+  rows: string[][];
+  tone: "good" | "bad";
+}) {
+  const isGood = tone === "good";
+
+  return (
+    <section
+      style={{
+        ...resultCardStyle,
+        border: isGood ? "1px solid #86efac" : "1px solid #fecaca",
+        background: isGood ? "#f0fdf4" : "#fef2f2",
+      }}
+    >
+      <div style={resultHeaderStyle}>
+        <div
+          style={{
+            ...resultIconStyle,
+            background: isGood ? "#15803d" : "#b91c1c",
+          }}
+        >
+          {isGood ? "✓" : "×"}
+        </div>
+
+        <h3
+          style={{
+            ...resultTitleStyle,
+            color: isGood ? "#166534" : "#991b1b",
+          }}
+        >
+          {title}
+        </h3>
+      </div>
+
+      <div style={resultTableStyle}>
+        {rows.map(([snapshot, state, result]) => (
+          <div key={`${snapshot}-${state}-${result}`} style={resultRowStyle}>
+            <div>
+              <div style={resultPeriodStyle}>{snapshot}</div>
+              <div style={resultMetaStyle}>{state}</div>
+            </div>
+            <div style={resultValueStyle}>{result}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PatternTestCaseCard() {
+  return (
+    <section style={testCaseCardStyle}>
+      <div style={testCaseEyebrowStyle}>Test case</div>
+
+      <h2 style={testCaseTitleStyle}>
+        Try this Snapshot Reproducibility case in Target Table Validation
+      </h2>
+
+      <p style={testCaseTextStyle}>
+        Copy one of the generated target tables and paste it into Target Table
+        Validation. The reproducible table keeps visible-time information. The
+        wrong table only stores the current rebuild result.
+      </p>
+
+      <div style={testCaseGridStyle}>
+        <CopyTableCard
+          title="Reproducible target table"
+          description="Expected output with visible-time information."
+          tableName="reproducible_target"
+          value={REPRODUCIBLE_TARGET_TABLE}
+          tone="good"
+        />
+
+        <CopyTableCard
+          title="Wrong target table"
+          description="Common output when old reports are rebuilt using current truth only."
+          tableName="wrong_target"
+          value={WRONG_TARGET_TABLE}
+          tone="bad"
+        />
+      </div>
+
+      <a
+        href="/#target-table-validation"
+        onClick={() => {
+          track("example_model_cta_clicked", {
+            example: "snapshot_reproducibility",
+            cta: "open_target_validation",
+            source: "test_case_card",
+            page_type: "interactive_example",
+          });
+        }}
+        style={testCaseButtonStyle}
+      >
+        Open Target Table Validation →
+      </a>
+    </section>
+  );
+}
+
+function CopyTableCard({
+  title,
+  description,
+  tableName,
+  value,
+  tone,
+}: {
+  title: string;
+  description: string;
+  tableName: "reproducible_target" | "wrong_target";
+  value: string;
+  tone: "good" | "bad";
+}) {
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const isGood = tone === "good";
+
+  useEffect(() => {
+    function resetCopyState() {
+      setCopied(false);
+      setHovered(false);
+    }
+
+    window.addEventListener("pageshow", resetCopyState);
+    window.addEventListener("focus", resetCopyState);
+
+    return () => {
+      window.removeEventListener("pageshow", resetCopyState);
+      window.removeEventListener("focus", resetCopyState);
+    };
+  }, []);
+
+  async function handleCopy() {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        copyWithFallback(value);
+      }
+    } catch {
+      copyWithFallback(value);
+    }
+  
+    setCopied(true);
+  
+    track("example_table_copied", {
+      example: "dimension_completion",
+      table: tableName,
+    });
+  
+    window.setTimeout(() => {
+      setCopied(false);
+    }, 1800);
+  }
+
+  return (
+    <div
+      style={{
+        ...copyTableCardStyle,
+        border: isGood ? "1px solid #86efac" : "1px solid #fecaca",
+        background: isGood ? "#f0fdf4" : "#fef2f2",
+      }}
+    >
+      <div style={copyTableTitleStyle}>{title}</div>
+      <p style={copyTableDescriptionStyle}>{description}</p>
+
+      <pre style={copyTablePreviewStyle}>{value}</pre>
+
+      <button
+        type="button"
+        onPointerDown={(event) => {
+          event.preventDefault();
+          handleCopy();
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          ...copyTableButtonStyle,
+          background: copied
+            ? "#16a34a"
+            : isGood
+            ? "#15803d"
+            : "#b91c1c",
+          transform: hovered ? "translateY(-1px)" : "translateY(0)",
+          boxShadow: hovered
+            ? "0 10px 22px rgba(15, 23, 42, 0.22)"
+            : "none",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        {copied ? "✓ Copied" : "Copy table"}
+      </button>
+    </div>
+  );
+}
+
+function copyWithFallback(value: string) {
+  const textarea = document.createElement("textarea");
+
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+
+  textarea.focus();
+  textarea.select();
+
+  document.execCommand("copy");
+
+  document.body.removeChild(textarea);
 }
 
 function TryItCard() {
@@ -691,6 +983,214 @@ const tryItTextStyle: CSSProperties = {
 
 const tryItButtonStyle: CSSProperties = {
   display: "inline-flex",
+  padding: "12px 18px",
+  borderRadius: 14,
+  background: "#2563eb",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: 900,
+};
+
+const questionCardStyle: CSSProperties = {
+  marginTop: 22,
+  display: "flex",
+  gap: 18,
+  alignItems: "center",
+  padding: "20px 22px",
+  borderRadius: 16,
+  background: "rgba(250, 204, 21, 0.1)",
+  border: "1px solid rgba(250, 204, 21, 0.55)",
+};
+
+const questionIconStyle: CSSProperties = {
+  width: 46,
+  height: 46,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  flexShrink: 0,
+  border: "2px solid #fde047",
+  color: "#fde047",
+  fontSize: 28,
+  fontWeight: 900,
+};
+
+const questionBadgeStyle: CSSProperties = {
+  color: "#fde047",
+  fontWeight: 900,
+  fontSize: 14,
+  marginBottom: 6,
+};
+
+const questionTextStyle: CSSProperties = {
+  color: "#f8fafc",
+  fontSize: 15,
+  lineHeight: 1.55,
+};
+
+const comparisonGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
+  marginTop: 22,
+};
+
+const resultCardStyle: CSSProperties = {
+  padding: "clamp(18px, 4vw, 24px)",
+  borderRadius: 16,
+  color: "#0f172a",
+  boxShadow: "0 18px 40px rgba(2, 6, 23, 0.22)",
+};
+
+const resultHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  marginBottom: 14,
+};
+
+const resultIconStyle: CSSProperties = {
+  width: 34,
+  height: 34,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  color: "#ffffff",
+  fontSize: 22,
+  fontWeight: 900,
+  flexShrink: 0,
+};
+
+const resultTitleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 16,
+  lineHeight: 1.2,
+  fontWeight: 900,
+};
+
+const resultTableStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+};
+
+const resultRowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 14,
+  padding: "10px 0",
+  borderBottom: "1px solid rgba(15, 23, 42, 0.14)",
+};
+
+const resultPeriodStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#0f172a",
+};
+
+const resultMetaStyle: CSSProperties = {
+  marginTop: 3,
+  fontSize: 12,
+  color: "#64748b",
+  fontWeight: 800,
+};
+
+const resultValueStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#0f172a",
+  textAlign: "right",
+};
+
+const testCaseCardStyle: CSSProperties = {
+  padding: "clamp(20px, 5vw, 28px)",
+  borderRadius: 24,
+  background: "rgba(255, 255, 255, 0.96)",
+  border: "1px solid rgba(226, 232, 240, 0.9)",
+  boxShadow: "0 24px 70px rgba(15, 23, 42, 0.18)",
+  color: "#0f172a",
+};
+
+const testCaseEyebrowStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: 0.7,
+  marginBottom: 10,
+};
+
+const testCaseTitleStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  fontSize: "clamp(24px, 6vw, 28px)",
+  lineHeight: 1.15,
+  color: "#0f172a",
+  letterSpacing: "-0.03em",
+};
+
+const testCaseTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  fontSize: 16,
+  lineHeight: 1.7,
+  color: "#334155",
+};
+
+const testCaseGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 16,
+};
+
+const copyTableCardStyle: CSSProperties = {
+  padding: 16,
+  borderRadius: 18,
+  overflow: "hidden",
+};
+
+const copyTableTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  fontSize: 16,
+  color: "#0f172a",
+  marginBottom: 6,
+};
+
+const copyTableDescriptionStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  color: "#475569",
+  fontSize: 14,
+  lineHeight: 1.5,
+};
+
+const copyTablePreviewStyle: CSSProperties = {
+  maxHeight: 180,
+  overflow: "auto",
+  padding: 12,
+  borderRadius: 12,
+  background: "#020617",
+  color: "#e2e8f0",
+  fontSize: 12,
+  lineHeight: 1.5,
+  whiteSpace: "pre",
+};
+
+const copyTableButtonStyle: CSSProperties = {
+  marginTop: 12,
+  border: 0,
+  borderRadius: 12,
+  padding: "10px 14px",
+  color: "#ffffff",
+  fontWeight: 900,
+  cursor: "pointer",
+  transition: "all 160ms ease",
+  touchAction: "manipulation",
+  WebkitTapHighlightColor: "transparent",
+};
+
+const testCaseButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  marginTop: 18,
   padding: "12px 18px",
   borderRadius: 14,
   background: "#2563eb",
