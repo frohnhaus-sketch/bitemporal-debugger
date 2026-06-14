@@ -1,7 +1,7 @@
 "use client";
 
 import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { track } from "@/lib/analytics";
 
@@ -37,6 +37,47 @@ const VALIDATION_CHECKS = [
   "Late-arriving records are handled deliberately",
 ];
 
+type ReportMode =
+  | "original"
+  | "rebuilt_scd2"
+  | "rebuilt_bitemporal_as_known"
+  | "rebuilt_bitemporal_corrected";
+
+const REPORT_MODES = [
+  {
+    key: "original" as ReportMode,
+    label: "Original report",
+    title: "March report as originally known",
+    value: "Standard",
+    explanation:
+      "In March, the platform only knew the customer segment as Standard. The correction to Premium had not arrived yet.",
+  },
+  {
+    key: "rebuilt_scd2" as ReportMode,
+    label: "SCD2 rebuild",
+    title: "March report rebuilt later with SCD2",
+    value: "Premium",
+    explanation:
+      "SCD2 resolves the corrected valid-time version. The March report now shows Premium.",
+  },
+  {
+    key: "rebuilt_bitemporal_as_known" as ReportMode,
+    label: "As-known",
+    title: "March report reproduced as originally known",
+    value: "Standard",
+    explanation:
+      "The report is queried with the March knowledge date. The Premium correction was not visible yet.",
+  },
+  {
+    key: "rebuilt_bitemporal_corrected" as ReportMode,
+    label: "Corrected",
+    title: "March report using corrected history",
+    value: "Premium",
+    explanation:
+      "The report is queried with current knowledge. The Premium correction is now visible.",
+  },
+];
+
 export default function Scd2VsBitemporalPage() {
   useEffect(() => {
     track("learn_page_opened", {
@@ -63,7 +104,7 @@ export default function Scd2VsBitemporalPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Historical Modeling Guide</div>
+            <div style={badgeStyle}>Interactive Example</div>
           </div>
 
           <h1 style={h1Style}>SCD2 vs Bitemporal Modeling</h1>
@@ -81,12 +122,6 @@ export default function Scd2VsBitemporalPage() {
               and the history of when information became visible to the platform.
             </p>
           </WhiteCard>
-
-          <p style={heroTextStyle}>
-            SCD2 preserves business-valid history. Bitemporal modeling preserves
-            both business-valid history and the history of when information
-            became visible.
-          </p>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -243,74 +278,134 @@ export default function Scd2VsBitemporalPage() {
 }
 
 function DarkExampleCard() {
+  const [mode, setMode] = useState<ReportMode>("original");
+
+  const selected =
+    REPORT_MODES.find((item) => item.key === mode) ?? REPORT_MODES[0];
+
+  const isPremium = selected.value === "Premium";
+
+  function selectMode(nextMode: ReportMode) {
+    setMode(nextMode);
+
+    track("interactive_example_changed", {
+      example: "scd2_vs_bitemporal",
+      mode: nextMode,
+    });
+  }
+
   return (
     <section style={darkCardStyle}>
-      <div style={darkEyebrowStyle}>Example</div>
+      <div style={darkEyebrowStyle}>Interactive example</div>
 
       <h2 style={darkTitleStyle}>
-        In March, the platform shows Bronze. In May, a correction says March
-        should have been Gold.
+        In March, the platform shows Standard. In May, a correction says March
+        should have been Premium.
       </h2>
 
       <p style={darkIntroTextStyle}>
-        SCD2 can store the corrected March value. Bitemporal modeling can also
-        preserve what was visible before the correction arrived.
+        The business-valid date stays March. What changes is the knowledge date:
+        do you query what is corrected today, or what was known back then?
       </p>
 
-      <div style={scenarioGridStyle}>
-        <div style={scenarioCardStyle}>
-          <div style={scenarioEyebrowStyle}>March report</div>
-          <div style={scenarioTitleStyle}>What the platform sees</div>
+      <div style={interactiveLayoutStyle}>
+        <div style={timelinePanelStyle}>
+          <div style={timelineTitleStyle}>Timeline</div>
 
-          <div style={valueRowStyle}>
-            <span style={valueLabelStyle}>Business reality</span>
-            <span style={goldValueStyle}>Gold</span>
+          <div style={timeAxisStyle}>
+            <div>Mar</div>
+            <div>Apr</div>
+            <div>May</div>
+            <div>Jun</div>
           </div>
 
-          <div style={valueRowStyle}>
-            <span style={valueLabelStyle}>Visible to platform</span>
-            <span style={bronzeValueStyle}>Bronze</span>
+          <div style={timelineLineWrapperStyle}>
+            <div style={timelineLineStyle} />
+
+            <div style={{ ...timelineDotStyle, left: "4%" }}>
+              <span style={timelineDotLabelStyle}>March report</span>
+            </div>
+
+            <div style={{ ...timelineDotStyle, left: "66%" }}>
+              <span style={timelineDotLabelStyle}>Correction arrives</span>
+            </div>
+          </div>
+
+          <div style={stateComparisonStyle}>
+            <div style={stateBoxStyle}>
+              <div style={scenarioEyebrowStyle}>Business-valid reality</div>
+              <div style={valueRowStyle}>
+                <span style={valueLabelStyle}>Valid for March</span>
+                <span style={premiumValueStyle}>Premium</span>
+              </div>
+            </div>
+
+            <div style={stateBoxStyle}>
+              <div style={scenarioEyebrowStyle}>Visible in March</div>
+              <div style={valueRowStyle}>
+                <span style={valueLabelStyle}>Known by platform</span>
+                <span style={standardValueStyle}>Standard</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style={scenarioCardStyle}>
-          <div style={scenarioEyebrowStyle}>May correction</div>
-          <div style={scenarioTitleStyle}>What changes later</div>
+        <div style={modePanelStyle}>
+          <div style={timelineTitleStyle}>Query perspective</div>
 
-          <div style={correctionBoxStyle}>
-            March customer segment should have been{" "}
-            <strong style={{ color: "#fde68a" }}>Gold</strong>.
+          <div style={modeButtonGridStyle}>
+            {REPORT_MODES.map((item) => {
+              const active = item.key === mode;
+
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => selectMode(item.key)}
+                  style={{
+                    ...modeButtonStyle,
+                    background: active ? "#2563eb" : "#0f172a",
+                    borderColor: active ? "#60a5fa" : "#334155",
+                    color: active ? "#ffffff" : "#cbd5e1",
+                  }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
 
-          <div style={visibleNoteStyle}>
-            The correction becomes visible only in May.
+          <div
+            style={{
+              ...resultPerspectiveCardStyle,
+              borderColor: isPremium ? "#a7f3d0" : "#bfdbfe",
+              background: isPremium
+                ? "rgba(236, 253, 245, 0.12)"
+                : "rgba(239, 246, 255, 0.12)",
+            }}
+          >
+            <div style={scenarioEyebrowStyle}>{selected.title}</div>
+
+            <div style={bigResultStyle}>
+              <span>Customer segment</span>
+              <span style={isPremium ? premiumValueStyle : standardValueStyle}>
+                {selected.value}
+              </span>
+            </div>
+
+            <p style={resultExplanationStyle}>{selected.explanation}</p>
           </div>
         </div>
       </div>
 
       <div style={exampleNoteStyle}>
-        <div style={exampleNoteLabelStyle}>Reporting question</div>
+        <div style={exampleNoteLabelStyle}>Key idea</div>
 
         <p style={exampleNoteTextStyle}>
-          When rebuilding the March report later, should it show the corrected
-          value or the value that was visible when the report was originally
-          produced?
+          SCD2 can tell you the corrected valid-time truth. Bitemporal modeling
+          can additionally reproduce what the platform knew at the time the
+          report was created.
         </p>
-
-        <div style={answerBoxStyle}>
-          <div style={answerColumnStyle}>
-            <strong style={answerLabelStyle}>SCD2 answer</strong>
-            <p style={answerTextStyle}>Use the corrected March value: Gold.</p>
-          </div>
-
-          <div style={answerColumnStyle}>
-            <strong style={answerLabelStyle}>Bitemporal answer</strong>
-            <p style={answerTextStyle}>
-              You can choose: corrected history shows Gold, as-known history
-              reproduces Bronze.
-            </p>
-          </div>
-        </div>
       </div>
     </section>
   );
@@ -381,14 +476,12 @@ function TryItCard() {
       <div style={tryItEyebrowStyle}>Try it</div>
 
       <h2 style={tryItTitleStyle}>
-        Use the advisor to decide whether your model needs SCD2 or bitemporal
-        history.
+        Explore the Advisor for your own model.
       </h2>
 
       <p style={tryItTextStyle}>
-        The Historical Modeling Advisor can recommend modeling strategies,
-        risks and validation checks based on your reporting goal, source types
-        and correction behavior.
+        Use the advisor when you are unsure whether your historical model only needs
+        valid-time history or must also preserve what was known at reporting time.
       </p>
 
       <a
@@ -396,13 +489,13 @@ function TryItCard() {
         onClick={() => {
           track("learn_cta_clicked", {
             page: "scd2_vs_bitemporal",
-            cta: "open_workbench",
+            cta: "explore_advisor",
             source: "bottom_cta",
           });
         }}
         style={tryItButtonStyle}
       >
-        Open Historical Modeling Workbench →
+        Explore the Advisor →
       </a>
     </section>
   );
@@ -457,15 +550,6 @@ const h1Style: CSSProperties = {
   lineHeight: 1,
   color: "#ffffff",
   letterSpacing: "-0.05em",
-};
-
-const heroTextStyle: CSSProperties = {
-  marginTop: 0,
-  marginBottom: 0,
-  maxWidth: 780,
-  fontSize: 20,
-  lineHeight: 1.6,
-  color: "#dbeafe",
 };
 
 const whiteCardStyle: CSSProperties = {
@@ -579,20 +663,6 @@ const darkIntroTextStyle: CSSProperties = {
   lineHeight: 1.7,
 };
 
-const scenarioGridStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-  gap: 16,
-  marginTop: 24,
-};
-
-const scenarioCardStyle: CSSProperties = {
-  padding: 20,
-  borderRadius: 20,
-  background: "rgba(15, 23, 42, 0.72)",
-  border: "1px solid rgba(148, 163, 184, 0.28)",
-};
-
 const scenarioEyebrowStyle: CSSProperties = {
   fontSize: 11,
   fontWeight: 900,
@@ -600,13 +670,6 @@ const scenarioEyebrowStyle: CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: 0.7,
   marginBottom: 8,
-};
-
-const scenarioTitleStyle: CSSProperties = {
-  color: "#ffffff",
-  fontSize: 18,
-  fontWeight: 900,
-  marginBottom: 16,
 };
 
 const valueRowStyle: CSSProperties = {
@@ -627,46 +690,24 @@ const valueLabelStyle: CSSProperties = {
   fontWeight: 800,
 };
 
-const goldValueStyle: CSSProperties = {
+const premiumValueStyle: CSSProperties = {
   padding: "6px 10px",
   borderRadius: 999,
-  background: "#fef3c7",
-  border: "1px solid #fde68a",
-  color: "#92400e",
+  background: "#ecfdf5",
+  border: "1px solid #a7f3d0",
+  color: "#047857",
   fontSize: 13,
   fontWeight: 900,
 };
 
-const bronzeValueStyle: CSSProperties = {
+const standardValueStyle: CSSProperties = {
   padding: "6px 10px",
-  borderRadius: 999,
-  background: "#fff7ed",
-  border: "1px solid #fed7aa",
-  color: "#9a3412",
-  fontSize: 13,
-  fontWeight: 900,
-};
-
-const correctionBoxStyle: CSSProperties = {
-  padding: 16,
-  borderRadius: 16,
-  background: "#020617",
-  border: "1px solid #334155",
-  color: "#e2e8f0",
-  fontSize: 15,
-  lineHeight: 1.6,
-};
-
-const visibleNoteStyle: CSSProperties = {
-  marginTop: 12,
-  padding: "10px 12px",
   borderRadius: 999,
   background: "#eff6ff",
   border: "1px solid #bfdbfe",
   color: "#1d4ed8",
   fontSize: 13,
   fontWeight: 900,
-  display: "inline-flex",
 };
 
 const exampleNoteStyle: CSSProperties = {
@@ -689,33 +730,6 @@ const exampleNoteTextStyle: CSSProperties = {
   color: "#cbd5e1",
   fontSize: 15,
   lineHeight: 1.55,
-};
-
-const answerBoxStyle: CSSProperties = {
-  marginTop: 20,
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: 14,
-};
-
-const answerColumnStyle: CSSProperties = {
-  padding: 16,
-  borderRadius: 14,
-  background: "#0f172a",
-  border: "1px solid #334155",
-};
-
-const answerLabelStyle: CSSProperties = {
-  color: "#93c5fd",
-  fontSize: 13,
-  fontWeight: 900,
-};
-
-const answerTextStyle: CSSProperties = {
-  marginTop: 8,
-  marginBottom: 0,
-  color: "#cbd5e1",
-  lineHeight: 1.6,
 };
 
 const comparisonGridStyle: CSSProperties = {
@@ -809,4 +823,134 @@ const tryItButtonStyle: CSSProperties = {
   color: "#ffffff",
   textDecoration: "none",
   fontWeight: 900,
+};
+
+const interactiveLayoutStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
+  marginTop: 24,
+};
+
+const timelinePanelStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 20,
+  background: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+};
+
+const modePanelStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 20,
+  background: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+};
+
+const timelineTitleStyle: CSSProperties = {
+  color: "#ffffff",
+  fontSize: 18,
+  fontWeight: 900,
+  marginBottom: 16,
+};
+
+const timeAxisStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, 1fr)",
+  color: "#cbd5e1",
+  fontSize: 13,
+  fontWeight: 900,
+  marginBottom: 12,
+};
+
+const timelineLineWrapperStyle: CSSProperties = {
+  position: "relative",
+  height: 76,
+  marginBottom: 18,
+};
+
+const timelineLineStyle: CSSProperties = {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  top: 32,
+  height: 4,
+  borderRadius: 999,
+  background: "#334155",
+};
+
+const timelineDotStyle: CSSProperties = {
+  position: "absolute",
+  top: 20,
+  width: 26,
+  height: 26,
+  borderRadius: 999,
+  background: "#fde047",
+  border: "3px solid #fef9c3",
+  transform: "translateX(-50%)",
+};
+
+const timelineDotLabelStyle: CSSProperties = {
+  position: "absolute",
+  top: 34,
+  left: "50%",
+  transform: "translateX(-50%)",
+  width: 130,
+  textAlign: "center",
+  color: "#fde68a",
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const stateComparisonStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+};
+
+const stateBoxStyle: CSSProperties = {
+  padding: 14,
+  borderRadius: 16,
+  background: "#020617",
+  border: "1px solid #334155",
+};
+
+const modeButtonGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+  gap: 10,
+  marginBottom: 16,
+};
+
+const modeButtonStyle: CSSProperties = {
+  border: "1px solid #334155",
+  borderRadius: 14,
+  padding: "11px 12px",
+  fontWeight: 900,
+  cursor: "pointer",
+  transition: "all 160ms ease",
+};
+
+const resultPerspectiveCardStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 18,
+  border: "1px solid",
+};
+
+const bigResultStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  marginTop: 12,
+  padding: "14px 0",
+  color: "#f8fafc",
+  fontSize: 18,
+  fontWeight: 900,
+};
+
+const resultExplanationStyle: CSSProperties = {
+  marginTop: 10,
+  marginBottom: 0,
+  color: "#cbd5e1",
+  fontSize: 15,
+  lineHeight: 1.6,
 };

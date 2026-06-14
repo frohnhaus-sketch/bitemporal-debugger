@@ -86,7 +86,7 @@ export default function StateEventAlignmentPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Alignment Pattern</div>
+            <div style={badgeStyle}>Interactive Example</div>
           </div>
 
           <h1 style={h1Style}>State ↔ Event Alignment</h1>
@@ -175,7 +175,7 @@ export default function StateEventAlignmentPage() {
             eyebrow="Validation checks"
             title="Validate that every event resolves to the intended state."
           >
-          <CheckChipRow checks={VALIDATION_CHECKS} />
+            <CheckChipRow checks={VALIDATION_CHECKS} />
           </WhiteCard>
 
           <DetectionCard />
@@ -289,7 +289,7 @@ function ExampleDatasetCard() {
   return (
     <WhiteCard
       eyebrow="Example datasets"
-      title="The same event produces different results depending on the selected state interval."
+      title="The same event can be interpreted correctly or incorrectly depending on the state interval."
     >
       <div style={datasetGridStyle}>
         <DatasetTable
@@ -322,9 +322,10 @@ function ExampleDatasetCard() {
       </div>
 
       <div style={explanationBoxStyle}>
-        <strong>Why the wrong result is wrong:</strong> The claim happened on
-        August 15. The premium state valid on August 15 is the July–December
-        interval, so the event must align to Premium = 120.
+        <strong>Why the wrong interpretation is wrong:</strong> The claim happened on
+        August 15. The only state interval valid on August 15 is July–December.
+        Joining the event to the January–June state is current-state leakage or an
+        incorrect point-in-interval join.
       </div>
     </WhiteCard>
   );
@@ -453,10 +454,10 @@ function DetectionCard() {
 
       <CheckChipRow
         checks={[
-          "✓ JOIN_GAP",
-          "✓ JOIN_AMBIGUITY",
-          "✓ NO_VALID_MATCH",
-          "✓ MULTIPLE_MATCHES",
+          "JOIN_GAP",
+          "JOIN_AMBIGUITY",
+          "NO_VALID_MATCH",
+          "MULTIPLE_MATCHES",
         ]}
       />
     </section>

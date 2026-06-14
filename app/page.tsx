@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ModelReviewPanel } from "@/components/ModelReviewPanel";
@@ -23,7 +23,6 @@ export default function Home() {
 
   const exampleModelRef = useRef<HTMLDivElement>(null);
   const validateModelRef = useRef<HTMLDivElement>(null);
-  const twoSourceRef = useRef<HTMLDivElement>(null);
 
   function openExampleModel() {
     setShowExampleModel(true);
@@ -187,11 +186,11 @@ export default function Home() {
           <ModelReviewPanel />
         </div>
 
-        <TargetTableValidationPanel />
-
-        <div ref={twoSourceRef}>
-          <TwoSourceValidationWorkflow />
+        <div id="target-table-validation">
+          <TargetTableValidationPanel />
         </div>
+
+        <TwoSourceValidationWorkflow />
 
         <Footer />
       </div>
@@ -377,7 +376,7 @@ function ActivationSection({
   showExampleModel: boolean;
   onSeeExampleModel: () => void;
   onValidateOwnModel: () => void;
-  exampleModelRef: React.RefObject<HTMLDivElement | null>;
+  exampleModelRef: RefObject<HTMLDivElement | null>;
 }) {
   return (
     <section

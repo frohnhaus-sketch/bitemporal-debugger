@@ -430,7 +430,7 @@ const sourceSystemColumn = detectColumn(columns, [
         )
       );
     }
-
+  
     findings.push(
       ...detectMissingSnapshotCoverage(
         effectiveRows,
@@ -438,6 +438,16 @@ const sourceSystemColumn = detectColumn(columns, [
         detectedColumns.snapshotDate
       )
     );
+  
+    if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
+      findings.push(
+        ...detectMonthlySnapshotGaps(
+          effectiveRows,
+          effectiveBusinessKey,
+          detectedColumns.snapshotDate
+        )
+      );
+    }
   }
 
   if (detectedColumns.dimensionColumns.length > 0) {
@@ -450,6 +460,7 @@ const sourceSystemColumn = detectColumn(columns, [
   findings.push(...detectSnapshotReproducibilityRisk(rows, detectedColumns));
   findings.push(...detectHistoricalConformanceRisk(rows));
   findings.push(...detectStateEventAlignmentRisk(rows));
+  findings.push(...detectCoverageGapRisk(rows));
 
   function detectHistoricalConformanceRisk(rows: any[]): TargetFinding[] {
     const statusColumns = [
@@ -815,6 +826,77 @@ function detectMissingSnapshotCoverage(
   ];
 }
 
+function detectMonthlySnapshotGaps(
+  rows: any[],
+  keyColumn: string,
+  snapshotColumn: string
+): TargetFinding[] {
+  const byKey = groupRowsByKey(rows, keyColumn);
+  let missingCount = 0;
+  const examples: string[] = [];
+
+  byKey.forEach((keyRows, key) => {
+  const dates = Array.from(
+    new Set(
+      keyRows
+        .map((row) => parseDate(row[snapshotColumn]))
+        .filter((date): date is Date => date !== null)
+        .map((date) => formatDate(date))
+    )
+  )
+    .map((date) => new Date(`${date}T00:00:00`))
+    .sort((a, b) => a.getTime() - b.getTime());
+
+    for (let i = 1; i < dates.length; i++) {
+      const expectedNext = nextMonthEnd(dates[i - 1]);
+
+      if (!sameDay(expectedNext, dates[i])) {
+        missingCount += 1;
+
+        if (examples.length < 3) {
+          examples.push(
+            `${key}: expected ${formatDate(expectedNext)} before ${formatDate(dates[i])}`
+          );
+        }
+      }
+    }
+  });
+
+  if (missingCount === 0) return [];
+
+  return [
+    {
+      id: "monthly-snapshot-gap",
+      title: "Monthly snapshot coverage gap detected",
+      severity: "high",
+      evidence: [
+        `${missingCount} missing monthly snapshot step${
+          missingCount === 1 ? "" : "s"
+        } detected within a business key timeline.`,
+        `Examples: ${examples.join("; ")}.`,
+      ],
+      recommendation:
+        "Check whether the missing snapshot month should be present. If the fact or dimension is required for every month-end snapshot, explicitly mark the gap, complete the history or use a controlled unknown member.",
+    },
+  ];
+}
+
+function nextMonthEnd(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 2, 0);
+}
+
+function sameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function formatDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
 function detectRiskyAlignmentMethods(rows: any[]): TargetFinding[] {
   const methodColumns = [
     "alignment_method",
@@ -903,30 +985,24 @@ function detectSnapshotReproducibilityRisk(
     "non_reproducible_rebuild",
   ]);
 
-  const riskyRows = existingMethodColumn
-    ? rows.filter((row) => {
-        const value = String(row[existingMethodColumn] ?? "")
-          .trim()
-          .toLowerCase();
+  const riskyRows = rows.filter((row) => {
+    const value = String(row[existingMethodColumn] ?? "")
+      .trim()
+      .toLowerCase();
 
-        return riskyValues.has(value);
-      })
-    : [];
+    return riskyValues.has(value);
+  });
+
+  if (riskyRows.length === 0) return [];
 
   const hasSnapshotDate = Boolean(detectedColumns.snapshotDate);
   const hasVisibleTime = Boolean(
     detectedColumns.visibleFrom && detectedColumns.visibleTo
   );
 
-  if (riskyRows.length === 0 && (!hasSnapshotDate || hasVisibleTime)) {
-    return [];
-  }
+  if (!hasSnapshotDate) return [];
 
-  if (!hasSnapshotDate) {
-    return [];
-  }
-
-  const evidence = [];
+  const evidence: string[] = [];
 
   if (!hasVisibleTime) {
     evidence.push(
@@ -934,27 +1010,25 @@ function detectSnapshotReproducibilityRisk(
     );
   }
 
-  if (existingMethodColumn && riskyRows.length > 0) {
-    const examplePeriods = riskyRows
-      .slice(0, 3)
-      .map(
-        (row) =>
-          row.snapshot_date ??
-          row.reference_date ??
-          row.reporting_date ??
-          row.valid_from ??
-          "unknown period"
-      )
-      .join(", ");
+  const examplePeriods = riskyRows
+    .slice(0, 3)
+    .map(
+      (row) =>
+        row.snapshot_date ??
+        row.reference_date ??
+        row.reporting_date ??
+        row.valid_from ??
+        "unknown period"
+    )
+    .join(", ");
 
-    evidence.push(
-      `${riskyRows.length} row${
-        riskyRows.length === 1 ? "" : "s"
-      } use ${existingMethodColumn} with a non-reproducible rebuild method.`
-    );
+  evidence.push(
+    `${riskyRows.length} row${
+      riskyRows.length === 1 ? "" : "s"
+    } use ${existingMethodColumn} with a non-reproducible rebuild method.`
+  );
 
-    evidence.push(`Example affected periods: ${examplePeriods}.`);
-  }
+  evidence.push(`Example affected periods: ${examplePeriods}.`);
 
   return [
     {
@@ -964,6 +1038,54 @@ function detectSnapshotReproducibilityRisk(
       evidence,
       recommendation:
         "If published reports must be reproducible, include visible-time information or persist the exact snapshot state used at publication time. Otherwise, rebuilding old reports may silently use later corrections or future knowledge.",
+    },
+  ];
+}
+
+function detectCoverageGapRisk(rows: any[]): TargetFinding[] {
+  const statusColumns = [
+    "coverage_status",
+    "historical_coverage_status",
+    "gap_status",
+  ];
+
+  const existingStatusColumn = statusColumns.find((column) =>
+    rows.some((row) => row[column] !== undefined)
+  );
+
+  if (!existingStatusColumn) return [];
+
+  const riskyValues = new Set([
+    "coverage_gap",
+    "coverage_gap_unmarked",
+    "missing_period",
+    "silently_missing",
+    "missing_snapshot",
+    "gap_not_handled",
+  ]);
+
+  const riskyRows = rows.filter((row) => {
+    const value = String(row[existingStatusColumn] ?? "")
+      .trim()
+      .toLowerCase();
+
+    return riskyValues.has(value);
+  });
+
+  if (riskyRows.length === 0) return [];
+
+  return [
+    {
+      id: "historical-coverage-gap-risk",
+      title: "Historical coverage gap risk detected",
+      severity: "high",
+      evidence: [
+        `${riskyRows.length} row${
+          riskyRows.length === 1 ? "" : "s"
+        } have ${existingStatusColumn} marked as missing or unhandled coverage.`,
+      ],
+      recommendation:
+        "Explicitly handle missing historical coverage before publishing the model. Mark the gap, complete the history or use a controlled unknown member.",
     },
   ];
 }

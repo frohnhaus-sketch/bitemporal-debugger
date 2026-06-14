@@ -341,15 +341,20 @@ function PatternTestCaseCard() {
       </h2>
 
       <p style={testCaseTextStyle}>
-        Copy one of the generated target tables and paste it into Target Table
-        Validation. The conformed table uses a consistent reporting value. The
-        wrong table keeps unresolved source conflicts.
+        Use these sample target tables to test the validator:
       </p>
+
+      <ol style={testCaseStepsStyle}>
+        <li>Copy one of the target tables below.</li>
+        <li>Open Target Table Validation.</li>
+        <li>Paste the copied table as your target output.</li>
+        <li>Check whether the result is conformed or still conflicting.</li>
+      </ol>
 
       <div style={testCaseGridStyle}>
         <CopyTableCard
           title="Conformed target table"
-          description="Expected output after applying conformance rules."
+          description="Copy this table to validate the expected conformed reporting output."
           tableName="conformed_target"
           value={CONFORMED_TARGET_TABLE}
           tone="good"
@@ -357,7 +362,7 @@ function PatternTestCaseCard() {
 
         <CopyTableCard
           title="Wrong target table"
-          description="Common output when cross-system differences remain unresolved."
+          description="Copy this table to validate a risky output where cross-system conflicts remain unresolved."
           tableName="wrong_target"
           value={WRONG_TARGET_TABLE}
           tone="bad"
@@ -400,7 +405,15 @@ function CopyTableCard({
   const isGood = tone === "good";
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(value);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        copyWithFallback(value);
+      }
+    } catch {
+      copyWithFallback(value);
+    }
 
     setCopied(true);
 
@@ -434,11 +447,7 @@ function CopyTableCard({
         onMouseLeave={() => setHovered(false)}
         style={{
           ...copyTableButtonStyle,
-          background: copied
-            ? "#16a34a"
-            : isGood
-            ? "#15803d"
-            : "#b91c1c",
+          background: copied ? "#16a34a" : isGood ? "#15803d" : "#b91c1c",
           transform: hovered ? "translateY(-1px)" : "translateY(0)",
           boxShadow: hovered
             ? "0 10px 22px rgba(15, 23, 42, 0.22)"
@@ -449,6 +458,25 @@ function CopyTableCard({
       </button>
     </div>
   );
+}
+
+function copyWithFallback(value: string) {
+  const textarea = document.createElement("textarea");
+
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+
+  textarea.focus();
+  textarea.select();
+
+  document.execCommand("copy");
+
+  document.body.removeChild(textarea);
 }
 
 function WhiteCard({
@@ -1066,6 +1094,16 @@ const testCaseTextStyle: CSSProperties = {
   fontSize: 16,
   lineHeight: 1.7,
   color: "#334155",
+};
+
+const testCaseStepsStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  paddingLeft: 26,
+  color: "#334155",
+  fontSize: 16,
+  lineHeight: 1.7,
+  listStyleType: "decimal",
 };
 
 const testCaseGridStyle: CSSProperties = {

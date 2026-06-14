@@ -455,15 +455,20 @@ function PatternTestCaseCard() {
       </h2>
 
       <p style={testCaseTextStyle}>
-        Copy the generated joined target table and paste it into Target Table
-        Validation. The aligned table splits the result when either source state
-        changes. The wrong table keeps the customer assignment too coarse.
+        Use these sample target tables to test the validator:
       </p>
+
+      <ol style={testCaseStepsStyle}>
+        <li>Copy one of the target tables below.</li>
+        <li>Open Target Table Validation.</li>
+        <li>Paste the copied table as your target output.</li>
+        <li>Check whether the result is aligned or too coarse.</li>
+      </ol>
 
       <div style={testCaseGridStyle}>
         <CopyTableCard
           title="Aligned target table"
-          description="Expected output after interval splitting."
+          description="Copy this table to validate the expected aligned output."
           tableName="aligned_target"
           value={ALIGNED_TARGET_TABLE}
           tone="good"
@@ -471,7 +476,7 @@ function PatternTestCaseCard() {
 
         <CopyTableCard
           title="Wrong target table"
-          description="Common output when the join does not split at all state boundaries."
+          description="Copy this table to validate a risky output that does not split at all state boundaries."
           tableName="wrong_target"
           value={WRONG_TARGET_TABLE}
           tone="bad"
@@ -542,7 +547,7 @@ function CopyTableCard({
     setCopied(true);
 
     track("example_table_copied", {
-      example: "dimension_completion",
+      example: "state_state_alignment",
       table: tableName,
     });
 
@@ -1326,6 +1331,16 @@ const testCaseTextStyle: CSSProperties = {
   fontSize: 16,
   lineHeight: 1.7,
   color: "#334155",
+};
+
+const testCaseStepsStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  paddingLeft: 26,
+  color: "#334155",
+  fontSize: 16,
+  lineHeight: 1.7,
+  listStyleType: "decimal",
 };
 
 const testCaseGridStyle: CSSProperties = {

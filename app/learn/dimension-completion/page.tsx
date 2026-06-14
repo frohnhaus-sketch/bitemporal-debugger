@@ -389,18 +389,6 @@ function DarkExampleCard() {
   );
 }
 
-async function copyExampleTable(
-  tableName: "completed_target" | "wrong_target",
-  value: string
-) {
-  await navigator.clipboard.writeText(value);
-
-  track("example_table_copied", {
-    example: "dimension_completion",
-    table: tableName,
-  });
-}
-
 function WhiteCard({
   eyebrow,
   title,
@@ -587,16 +575,20 @@ function PatternTestCaseCard() {
       </h2>
 
       <p style={testCaseTextStyle}>
-        Copy one of the generated target tables below and paste it into Target
-        Table Validation. The completed table represents the intended output.
-        The wrong table simulates a pipeline that keeps missing customer matches
-        instead of completing the dimension history.
+        Use these sample target tables to test the validator:
       </p>
+
+      <ol style={testCaseStepsStyle}>
+        <li>Copy one of the target tables below.</li>
+        <li>Open Target Table Validation.</li>
+        <li>Paste the copied table as your target output.</li>
+        <li>Check whether missing dimension history was completed or left unresolved.</li>
+      </ol>
 
       <div style={testCaseGridStyle}>
         <CopyTableCard
           title="Completed target table"
-          description="Expected output after Dimension Completion."
+          description="Copy this table to validate the expected completed dimension output."
           tableName="completed_target"
           value={COMPLETED_TARGET_TABLE}
           tone="good"
@@ -604,7 +596,7 @@ function PatternTestCaseCard() {
 
         <CopyTableCard
           title="Wrong target table"
-          description="Common output when missing dimension matches are not handled."
+          description="Copy this table to validate a risky output where missing dimension matches remain unresolved."
           tableName="wrong_target"
           value={WRONG_TARGET_TABLE}
           tone="bad"
@@ -1409,6 +1401,16 @@ const testCaseTextStyle: CSSProperties = {
   fontSize: 16,
   lineHeight: 1.7,
   color: "#334155",
+};
+
+const testCaseStepsStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  paddingLeft: 26,
+  color: "#334155",
+  fontSize: 16,
+  lineHeight: 1.7,
+  listStyleType: "decimal",
 };
 
 const testCaseGridStyle: CSSProperties = {

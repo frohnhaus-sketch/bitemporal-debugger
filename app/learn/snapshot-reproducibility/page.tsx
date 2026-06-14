@@ -422,15 +422,20 @@ function PatternTestCaseCard() {
       </h2>
 
       <p style={testCaseTextStyle}>
-        Copy one of the generated target tables and paste it into Target Table
-        Validation. The reproducible table keeps visible-time information. The
-        wrong table only stores the current rebuild result.
+        Use these sample target tables to test the validator:
       </p>
+
+      <ol style={testCaseStepsStyle}>
+        <li>Copy one of the target tables below.</li>
+        <li>Open Target Table Validation.</li>
+        <li>Paste the copied table as your target output.</li>
+        <li>Check whether the snapshot remains reproducible or only reflects the current rebuild.</li>
+      </ol>
 
       <div style={testCaseGridStyle}>
         <CopyTableCard
           title="Reproducible target table"
-          description="Expected output with visible-time information."
+          description="Copy this table to validate the expected reproducible snapshot output."
           tableName="reproducible_target"
           value={REPRODUCIBLE_TARGET_TABLE}
           tone="good"
@@ -438,7 +443,7 @@ function PatternTestCaseCard() {
 
         <CopyTableCard
           title="Wrong target table"
-          description="Common output when old reports are rebuilt using current truth only."
+          description="Copy this table to validate a risky output that only stores the current rebuild result."
           tableName="wrong_target"
           value={WRONG_TARGET_TABLE}
           tone="bad"
@@ -509,7 +514,7 @@ function CopyTableCard({
     setCopied(true);
   
     track("example_table_copied", {
-      example: "dimension_completion",
+      example: "snapshot_reproducibility",
       table: tableName,
     });
   
@@ -1142,6 +1147,16 @@ const testCaseTextStyle: CSSProperties = {
   fontSize: 16,
   lineHeight: 1.7,
   color: "#334155",
+};
+
+const testCaseStepsStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  paddingLeft: 26,
+  color: "#334155",
+  fontSize: 16,
+  lineHeight: 1.7,
+  listStyleType: "decimal",
 };
 
 const testCaseGridStyle: CSSProperties = {

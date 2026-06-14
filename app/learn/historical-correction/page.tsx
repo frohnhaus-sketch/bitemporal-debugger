@@ -1,8 +1,53 @@
 "use client";
 
 import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
+
+type CorrectionMode =
+  | "overwrite"
+  | "append_version"
+  | "bitemporal"
+  | "persisted_snapshot";
+
+const CORRECTION_MODES = [
+  {
+    key: "overwrite" as CorrectionMode,
+    label: "Overwrite",
+    title: "Overwrite corrected history",
+    result: "January report now shows Premium",
+    risk: "Previously published knowledge is lost.",
+    explanation:
+      "The old value is replaced. This may be acceptable for simple corrections, but it cannot explain what users originally saw.",
+  },
+  {
+    key: "append_version" as CorrectionMode,
+    label: "Append version",
+    title: "Append a corrected valid-time version",
+    result: "Current January truth shows Premium",
+    risk: "As-known reporting is still unclear unless visibility is tracked.",
+    explanation:
+      "The model keeps valid-time history, but it may still not preserve when the correction became visible.",
+  },
+  {
+    key: "bitemporal" as CorrectionMode,
+    label: "Bitemporal",
+    title: "Preserve valid time and visible time",
+    result: "January as-known shows Retail. Corrected truth shows Premium.",
+    risk: "More complex, but reproducible.",
+    explanation:
+      "The correction is valid for January but visible from March. Both reporting perspectives remain explainable.",
+  },
+  {
+    key: "persisted_snapshot" as CorrectionMode,
+    label: "Persist snapshot",
+    title: "Persist the published report output",
+    result: "Original January report remains Retail",
+    risk: "Corrected truth must be handled separately.",
+    explanation:
+      "The published snapshot is stored as an output. This is useful when exact report reproduction is more important than recalculation.",
+  },
+];
 
 export default function HistoricalCorrectionPage() {
   useEffect(() => {
@@ -30,7 +75,7 @@ export default function HistoricalCorrectionPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Reporting Pattern</div>
+            <div style={badgeStyle}>Interactive Example</div>
           </div>
 
           <h1 style={h1Style}>Historical Correction</h1>
@@ -156,54 +201,122 @@ export default function HistoricalCorrectionPage() {
 }
 
 function DarkExampleCard() {
+  const [mode, setMode] = useState<CorrectionMode>("bitemporal");
+
+  const selected =
+    CORRECTION_MODES.find((item) => item.key === mode) ?? CORRECTION_MODES[0];
+
+  function selectMode(nextMode: CorrectionMode) {
+    setMode(nextMode);
+
+    track("interactive_example_changed", {
+      example: "historical_correction",
+      mode: nextMode,
+    });
+  }
+
   return (
     <section style={darkCardStyle}>
-      <div style={darkEyebrowStyle}>Example</div>
+      <div style={darkEyebrowStyle}>Interactive example</div>
 
       <h2 style={darkTitleStyle}>
-        A January report is published before a March correction arrives.
+        A January report shows Retail. In March, a correction says January should have been Premium.
       </h2>
 
-      <div style={comparisonGridStyle}>
-        <CorrectionCard
-          label="January reporting"
-          title="Published knowledge"
-          text="Customer Segment = Retail"
-        />
-        <CorrectionCard
-          label="March correction"
-          title="Corrected truth"
-          text="January Segment = Premium"
-        />
+      <p style={darkIntroTextStyle}>
+        Choose how the model handles the correction. Each strategy answers a different reporting question.
+      </p>
+
+      <div style={interactiveGridStyle}>
+        <div style={timelinePanelStyle}>
+          <div style={panelTitleStyle}>Correction timeline</div>
+
+          <div style={monthAxisStyle}>
+            <div>Jan</div>
+            <div>Feb</div>
+            <div>Mar</div>
+            <div>Apr</div>
+          </div>
+
+          <div style={timelineLineWrapperStyle}>
+            <div style={timelineLineStyle} />
+
+            <div style={{ ...timelineDotStyle, left: "4%" }}>
+              <span style={timelineDotLabelStyle}>Report published</span>
+            </div>
+
+            <div style={{ ...timelineDotStyle, left: "66%" }}>
+              <span style={timelineDotLabelStyle}>Correction arrives</span>
+            </div>
+          </div>
+
+          <div style={stateGridStyle}>
+            <div style={stateBoxStyle}>
+              <div style={correctionLabelStyle}>Known in January</div>
+              <div style={valueRowStyle}>
+                <span>Customer Segment</span>
+                <strong style={retailValueStyle}>Retail</strong>
+              </div>
+            </div>
+
+            <div style={stateBoxStyle}>
+              <div style={correctionLabelStyle}>Corrected in March</div>
+              <div style={valueRowStyle}>
+                <span>January Segment</span>
+                <strong style={premiumValueStyle}>Premium</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={strategyPanelStyle}>
+          <div style={panelTitleStyle}>Correction strategy</div>
+
+          <div style={modeButtonGridStyle}>
+            {CORRECTION_MODES.map((item) => {
+              const active = item.key === mode;
+
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => selectMode(item.key)}
+                  style={{
+                    ...modeButtonStyle,
+                    background: active ? "#2563eb" : "#0f172a",
+                    borderColor: active ? "#60a5fa" : "#334155",
+                    color: active ? "#ffffff" : "#cbd5e1",
+                  }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={resultCardStyle}>
+            <div style={correctionLabelStyle}>{selected.title}</div>
+
+            <div style={resultHeadlineStyle}>{selected.result}</div>
+
+            <p style={resultTextStyle}>{selected.explanation}</p>
+
+            <div style={riskBoxStyle}>
+              <strong>Trade-off:</strong> {selected.risk}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div style={exampleNoteStyle}>
         <div style={exampleNoteLabelStyle}>Reporting question</div>
 
         <p style={exampleNoteTextStyle}>
-          Should a rebuilt January report show Retail because that was known in
-          January, or Premium because that is the corrected business truth?
+          Should a rebuilt January report show Retail because that was known in January,
+          or Premium because that is the corrected business truth?
         </p>
       </div>
     </section>
-  );
-}
-
-function CorrectionCard({
-  label,
-  title,
-  text,
-}: {
-  label: string;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div style={correctionCardStyle}>
-      <div style={correctionLabelStyle}>{label}</div>
-      <div style={correctionTitleStyle}>{title}</div>
-      <div style={correctionTextStyle}>{text}</div>
-    </div>
   );
 }
 
@@ -358,9 +471,11 @@ const mainStyle: CSSProperties = {
 };
 
 const pageStyle: CSSProperties = {
+  width: "100%",
   maxWidth: 980,
   marginLeft: "auto",
   marginRight: "auto",
+  minWidth: 0,
 };
 
 const backLinkStyle: CSSProperties = {
@@ -482,20 +597,6 @@ const darkTitleStyle: CSSProperties = {
   letterSpacing: "-0.03em",
 };
 
-const comparisonGridStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-  gap: 14,
-  marginTop: 20,
-};
-
-const correctionCardStyle: CSSProperties = {
-  padding: 18,
-  borderRadius: 18,
-  background: "rgba(255, 255, 255, 0.06)",
-  border: "1px solid rgba(148, 163, 184, 0.24)",
-};
-
 const correctionLabelStyle: CSSProperties = {
   color: "#93c5fd",
   fontSize: 12,
@@ -503,19 +604,6 @@ const correctionLabelStyle: CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: 0.6,
   marginBottom: 10,
-};
-
-const correctionTitleStyle: CSSProperties = {
-  color: "#ffffff",
-  fontSize: 17,
-  fontWeight: 900,
-  marginBottom: 8,
-};
-
-const correctionTextStyle: CSSProperties = {
-  color: "#cbd5e1",
-  fontSize: 15,
-  lineHeight: 1.6,
 };
 
 const exampleNoteStyle: CSSProperties = {
@@ -662,4 +750,185 @@ const tryItButtonStyle: CSSProperties = {
   color: "#ffffff",
   textDecoration: "none",
   fontWeight: 900,
+};
+
+const darkIntroTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 24,
+  maxWidth: 820,
+  color: "#cbd5e1",
+  fontSize: 16,
+  lineHeight: 1.7,
+};
+
+const interactiveGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
+  marginTop: 24,
+};
+
+const timelinePanelStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 20,
+  background: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+};
+
+const strategyPanelStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 20,
+  background: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+};
+
+const panelTitleStyle: CSSProperties = {
+  color: "#ffffff",
+  fontSize: 18,
+  fontWeight: 900,
+  marginBottom: 16,
+};
+
+const monthAxisStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, 1fr)",
+  color: "#cbd5e1",
+  fontSize: 13,
+  fontWeight: 900,
+  marginBottom: 12,
+};
+
+const timelineLineWrapperStyle: CSSProperties = {
+  position: "relative",
+  height: 76,
+  marginBottom: 18,
+};
+
+const timelineLineStyle: CSSProperties = {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  top: 32,
+  height: 4,
+  borderRadius: 999,
+  background: "#334155",
+};
+
+const timelineDotStyle: CSSProperties = {
+  position: "absolute",
+  top: 20,
+  width: 26,
+  height: 26,
+  borderRadius: 999,
+  background: "#fde047",
+  border: "3px solid #fef9c3",
+  transform: "translateX(-50%)",
+};
+
+const timelineDotLabelStyle: CSSProperties = {
+  position: "absolute",
+  top: 34,
+  left: "50%",
+  transform: "translateX(-50%)",
+  width: 130,
+  textAlign: "center",
+  color: "#fde68a",
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const stateGridStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+};
+
+const stateBoxStyle: CSSProperties = {
+  padding: 14,
+  borderRadius: 16,
+  background: "#020617",
+  border: "1px solid #334155",
+};
+
+const valueRowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  padding: "12px 14px",
+  borderRadius: 14,
+  background: "#020617",
+  border: "1px solid #334155",
+  color: "#cbd5e1",
+  fontSize: 14,
+  fontWeight: 800,
+};
+
+const retailValueStyle: CSSProperties = {
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "#eff6ff",
+  border: "1px solid #bfdbfe",
+  color: "#1d4ed8",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const premiumValueStyle: CSSProperties = {
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "#ecfdf5",
+  border: "1px solid #a7f3d0",
+  color: "#047857",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const modeButtonGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+  gap: 10,
+  marginBottom: 16,
+};
+
+const modeButtonStyle: CSSProperties = {
+  border: "1px solid #334155",
+  borderRadius: 14,
+  padding: "11px 12px",
+  fontWeight: 900,
+  cursor: "pointer",
+  transition: "all 160ms ease",
+};
+
+const resultCardStyle: CSSProperties = {
+  padding: 18,
+  borderRadius: 18,
+  background: "rgba(239, 246, 255, 0.1)",
+  border: "1px solid #bfdbfe",
+};
+
+const resultHeadlineStyle: CSSProperties = {
+  marginTop: 12,
+  color: "#ffffff",
+  fontSize: 19,
+  lineHeight: 1.3,
+  fontWeight: 900,
+};
+
+const resultTextStyle: CSSProperties = {
+  marginTop: 12,
+  marginBottom: 0,
+  color: "#cbd5e1",
+  fontSize: 15,
+  lineHeight: 1.6,
+};
+
+const riskBoxStyle: CSSProperties = {
+  marginTop: 14,
+  padding: 12,
+  borderRadius: 14,
+  background: "#020617",
+  border: "1px solid #334155",
+  color: "#e2e8f0",
+  fontSize: 14,
+  lineHeight: 1.5,
 };
