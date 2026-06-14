@@ -48,9 +48,12 @@ export function initializeScrollDepthTracking({
   }
 
   window.addEventListener("scroll", handleScroll, { passive: true });
-  window.setTimeout(handleScroll, 0);
+  window.addEventListener("resize", handleScroll);
+
+  handleScroll();
 
   return () => {
     window.removeEventListener("scroll", handleScroll);
+    window.removeEventListener("resize", handleScroll);
   };
 }

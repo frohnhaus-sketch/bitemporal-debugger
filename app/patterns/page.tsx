@@ -173,36 +173,6 @@ export default function PatternsPage() {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const docHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-
-      if (docHeight <= 0) return;
-
-      const percent = Math.round((window.scrollY / docHeight) * 100);
-
-      [25, 50, 75, 100].forEach((threshold) => {
-        if (
-          percent >= threshold &&
-          !trackedDepths.current.has(threshold)
-        ) {
-          trackedDepths.current.add(threshold);
-
-          track("scroll_depth", {
-            page: "patterns",
-            percent: threshold,
-          });
-        }
-      });
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
     const handleCategoryVisibility = () => {
       const sections = document.querySelectorAll("[data-pattern-group]");
 

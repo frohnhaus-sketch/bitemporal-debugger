@@ -163,6 +163,15 @@ function countBy<T extends string>(
   }, {});
 }
 
+function normalizeScrollPage(page: string | null) {
+  if (!page) return "unknown";
+
+  return page
+    .replace(/^learn\//, "")
+    .replaceAll("_", "-")
+    .replaceAll("alignement", "alignment");
+}
+
 function TopList({
   rows,
   emptyText,
@@ -224,6 +233,52 @@ function TopList({
   );
 }
 
+function EngagementTable({
+  rows,
+  emptyText,
+}: {
+  rows: {
+    page: string;
+    visitors: number;
+    avgMaxScroll: number;
+    reached75Rate: number;
+    reached100Rate: number;
+  }[];
+  emptyText: string;
+}) {
+  if (rows.length === 0) {
+    return <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>{emptyText}</p>;
+  }
+
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead>
+          <tr style={{ color: "#94a3b8", borderBottom: "1px solid #1e293b" }}>
+            <th style={thStyle}>Page</th>
+            <th style={thStyle}>Visitors</th>
+            <th style={thStyle}>Avg Max Scroll</th>
+            <th style={thStyle}>Reached 75%</th>
+            <th style={thStyle}>Reached 100%</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.page} style={{ borderBottom: "1px solid #1e293b" }}>
+              <td style={tdStyle}>{row.page}</td>
+              <td style={tdStyle}>{row.visitors}</td>
+              <td style={tdStyle}>{row.avgMaxScroll}%</td>
+              <td style={tdStyle}>{row.reached75Rate}%</td>
+              <td style={tdStyle}>{row.reached100Rate}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 const thStyle: React.CSSProperties = {
   textAlign: "left",
   padding: "12px 14px",
@@ -255,7 +310,7 @@ export default async function EventsPage() {
     .from("events")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(2000);
+    .limit(10000);
 
   if (error) {
     return (
@@ -472,21 +527,65 @@ export default async function EventsPage() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
 
-  const scrollDepthRows = Object.entries(
-    countBy(events, (event) =>
-      event.event === "scroll_depth"
-        ? `${getDataValue(event, "page") ?? "unknown"}: ${getDataValue(
-            event,
-            "percent"
-          )}%`
-        : null
-    )
-  )
-    .sort((a, b) => {
-      const aNum = Number(a[0].match(/(\d+)%/)?.[1] ?? 0);
-      const bNum = Number(b[0].match(/(\d+)%/)?.[1] ?? 0);
-      return aNum - bNum;
-    });
+const scrollByVisitorAndPage = events.reduce<Record<string, number>>(
+  (acc, event) => {
+    if (event.event !== "scroll_depth") return acc;
+
+    const page = normalizeScrollPage(getDataValue(event, "page"));
+    const visitor = event.ip_hash ? String(event.ip_hash) : "unknown";
+    const percent = Number(getDataValue(event, "percent") ?? 0);
+
+    if (!page || !visitor || !percent) return acc;
+
+    const key = `${page}|||${visitor}`;
+
+    acc[key] = Math.max(acc[key] ?? 0, percent);
+
+    return acc;
+  },
+  {}
+);
+
+const scrollEngagementByPage = Object.entries(scrollByVisitorAndPage).reduce<
+  Record<
+    string,
+    {
+      visitors: number;
+      totalMaxScroll: number;
+      reached75: number;
+      reached100: number;
+    }
+  >
+>((acc, [key, maxScroll]) => {
+  const [page] = key.split("|||");
+
+  if (!acc[page]) {
+    acc[page] = {
+      visitors: 0,
+      totalMaxScroll: 0,
+      reached75: 0,
+      reached100: 0,
+    };
+  }
+
+  acc[page].visitors += 1;
+  acc[page].totalMaxScroll += maxScroll;
+
+  if (maxScroll >= 75) acc[page].reached75 += 1;
+  if (maxScroll >= 100) acc[page].reached100 += 1;
+
+  return acc;
+}, {});
+
+const scrollEngagementRows = Object.entries(scrollEngagementByPage)
+  .map(([page, stats]) => ({
+    page,
+    visitors: stats.visitors,
+    avgMaxScroll: Math.round(stats.totalMaxScroll / stats.visitors),
+    reached75Rate: Math.round((stats.reached75 / stats.visitors) * 100),
+    reached100Rate: Math.round((stats.reached100 / stats.visitors) * 100),
+  }))
+  .sort((a, b) => b.avgMaxScroll - a.avgMaxScroll);
 
   const activationCtaRows = Object.entries(
     countBy(events, (event) =>
@@ -645,8 +744,11 @@ export default async function EventsPage() {
           <TopList rows={topPatternGroups} emptyText="No pattern group data yet." />
         </Panel>
 
-        <Panel title="Scroll Depth">
-          <TopList rows={scrollDepthRows} emptyText="No scroll depth data yet." />
+        <Panel title="Learn Page Scroll Engagement">
+          <EngagementTable
+            rows={scrollEngagementRows}
+            emptyText="No scroll depth data yet."
+          />
         </Panel>
 
         <Panel title="Activation CTAs">

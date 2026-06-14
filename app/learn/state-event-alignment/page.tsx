@@ -61,9 +61,9 @@ const BAD_ALIGNMENT_ROWS = [
 export default function StateEventAlignmentPage() {
   useEffect(() => {
     track("learn_page_opened", {
-      page: "state_event_alignment",
+      page: "state-event-alignment",
       page_type: "interactive_example",
-      example: "state_event_alignment",
+      example: "state-event-alignment",
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
@@ -72,39 +72,9 @@ export default function StateEventAlignmentPage() {
 
   useEffect(() => {
     return initializeScrollDepthTracking({
-      page: "state-event-alignement",
+      page: "state-event-alignment",
       pageType: "learn_page",
     });
-  }, []);
-
-  useEffect(() => {
-    const trackedDepths = new Set<number>();
-
-    function handleScroll() {
-      const docHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-
-      if (docHeight <= 0) return;
-
-      const percent = Math.round((window.scrollY / docHeight) * 100);
-
-      [25, 50, 75, 100].forEach((threshold) => {
-        if (percent >= threshold && !trackedDepths.has(threshold)) {
-          trackedDepths.add(threshold);
-
-          track("scroll_depth", {
-            page: "state_event_alignment",
-            page_type: "interactive_example",
-            percent: threshold,
-          });
-        }
-      });
-    }
-
-    window.addEventListener("scroll", handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
@@ -562,7 +532,7 @@ function TryItCard() {
         href="/"
         onClick={() => {
           track("learn_cta_clicked", {
-            page: "state_event_alignment",
+            page: "state-event-alignment",
             cta: "open_workbench",
           });
         }}
