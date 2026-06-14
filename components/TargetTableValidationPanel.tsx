@@ -449,6 +449,7 @@ const sourceSystemColumn = detectColumn(columns, [
   findings.push(...detectRiskyAlignmentMethods(rows));
   findings.push(...detectSnapshotReproducibilityRisk(rows, detectedColumns));
   findings.push(...detectHistoricalConformanceRisk(rows));
+  findings.push(...detectStateEventAlignmentRisk(rows));
 
   function detectHistoricalConformanceRisk(rows: any[]): TargetFinding[] {
     const statusColumns = [
@@ -508,6 +509,115 @@ const sourceSystemColumn = detectColumn(columns, [
         ],
         recommendation:
           "Resolve cross-system historical conflicts before publishing the reporting model. Define which source owns each attribute, whether values should be conformed, and how conflicting history should be represented.",
+      },
+    ];
+  }
+
+  function detectStateEventAlignmentRisk(rows: any[]): TargetFinding[] {
+    const methodColumns = [
+      "alignment_method",
+      "event_alignment_method",
+      "join_method",
+      "modeling_method",
+      "generation_method",
+    ];
+
+    const statusColumns = [
+      "alignment_status",
+      "event_alignment_status",
+      "match_status",
+      "state_match_status",
+    ];
+
+    const existingMethodColumn = methodColumns.find((column) =>
+      rows.some((row) => row[column] !== undefined)
+    );
+
+    const existingStatusColumn = statusColumns.find((column) =>
+      rows.some((row) => row[column] !== undefined)
+    );
+
+    const riskyMethodValues = new Set([
+      "current_state_join",
+      "latest_state_join",
+      "no_event_time_alignment",
+      "event_join_without_valid_time",
+      "wrong_state_interval",
+    ]);
+
+    const riskyStatusValues = new Set([
+      "no_matching_state",
+      "multiple_matching_states",
+      "wrong_state",
+      "outside_state_interval",
+      "ambiguous_state_match",
+    ]);
+
+    const riskyMethodRows = existingMethodColumn
+      ? rows.filter((row) => {
+          const value = String(row[existingMethodColumn] ?? "")
+            .trim()
+            .toLowerCase();
+
+          return riskyMethodValues.has(value);
+        })
+      : [];
+
+    const riskyStatusRows = existingStatusColumn
+      ? rows.filter((row) => {
+          const value = String(row[existingStatusColumn] ?? "")
+            .trim()
+            .toLowerCase();
+
+          return riskyStatusValues.has(value);
+        })
+      : [];
+
+    if (riskyMethodRows.length === 0 && riskyStatusRows.length === 0) return [];
+
+    const affectedRows = [...riskyMethodRows, ...riskyStatusRows];
+
+    const exampleEvents = affectedRows
+      .slice(0, 3)
+      .map(
+        (row) =>
+          row.event_id ??
+          row.claim_id ??
+          row.transaction_id ??
+          row.event_date ??
+          row.event_timestamp ??
+          "unknown event"
+      )
+      .join(", ");
+
+    const evidence = [];
+
+    if (riskyMethodRows.length > 0 && existingMethodColumn) {
+      evidence.push(
+        `${riskyMethodRows.length} row${
+          riskyMethodRows.length === 1 ? "" : "s"
+        } use ${existingMethodColumn} with a risky state-event alignment method.`
+      );
+    }
+
+    if (riskyStatusRows.length > 0 && existingStatusColumn) {
+      evidence.push(
+        `${riskyStatusRows.length} row${
+          riskyStatusRows.length === 1 ? "" : "s"
+        } have ${existingStatusColumn} marked as no match, ambiguous match or wrong state.`
+      );
+    }
+
+    evidence.push(`Example affected events: ${exampleEvents}.`);
+
+    return [
+      {
+        id: "state-event-alignment-risk",
+        title: "State-event alignment risk detected",
+        severity: "high",
+        evidence,
+        recommendation:
+          "Align each event timestamp to the state interval that was valid when the event occurred. Avoid current-state joins and validate that each event resolves to exactly one intended historical state.",
       },
     ];
   }
@@ -913,6 +1023,11 @@ function detectDimensionColumns(columns: string[]) {
     "conformity_status",
     "historical_conformance_status",
     "mapping_status",
+    "alignment_status",
+    "event_alignment_status",
+    "match_status",
+    "state_match_status",
+    "event_alignment_method",
   ]);
 
   return columns.filter((column) => {

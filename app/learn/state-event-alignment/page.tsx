@@ -1,12 +1,68 @@
 "use client";
 
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
+
+const VALIDATION_CHECKS = [
+  "Detect events without matching state",
+  "Detect events with multiple matching states",
+  "Validate event timestamp inside valid interval",
+  "Check for current-state leakage",
+  "Compare aligned events against known examples",
+];
+
+const SOLUTIONS = [
+  {
+    title: "Point-in-Interval Join",
+    text: "Match each event timestamp against the valid_from and valid_to interval of the state table.",
+  },
+  {
+    title: "As-Known Alignment",
+    text: "Add visible-time logic when the event should only use state knowledge available at reporting time.",
+  },
+  {
+    title: "Coverage Handling",
+    text: "Define what should happen when an event has no matching state record.",
+  },
+  {
+    title: "Ambiguity Handling",
+    text: "Validate that each event resolves to one intended state, or document the tie-breaking rule.",
+  },
+];
+
+const EXPECTED_ROWS = [
+  ["CL-9001", "2024-08-15", "Premium = 120"],
+  ["State interval", "Jul → Dec", "correct_state"],
+];
+
+const WRONG_ROWS = [
+  ["CL-9001", "2024-08-15", "Premium = 100"],
+  ["State interval", "Jan → Jun", "wrong_state"],
+];
+
+const STATE_TABLE_ROWS = [
+  ["C-1001", "Premium = 100", "2024-01-01", "2024-06-30"],
+  ["C-1001", "Premium = 120", "2024-07-01", "2024-12-31"],
+];
+
+const EVENT_TABLE_ROWS = [
+  ["CL-9001", "C-1001", "Claim submitted", "2024-08-15"],
+];
+
+const GOOD_ALIGNMENT_ROWS = [
+  ["CL-9001", "2024-08-15", "Premium = 120", "correct"],
+];
+
+const BAD_ALIGNMENT_ROWS = [
+  ["CL-9001", "2024-08-15", "Premium = 100", "wrong"],
+];
 
 export default function StateEventAlignmentPage() {
   useEffect(() => {
     track("learn_page_opened", {
       page: "state_event_alignment",
+      page_type: "interactive_example",
+      example: "state_event_alignment",
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
@@ -62,6 +118,8 @@ export default function StateEventAlignmentPage() {
 
           <DarkExampleCard />
 
+          <ExampleDatasetCard />
+
           <WhiteCard
             eyebrow="Why it happens"
             title="Events are points in time, while states are valid over intervals."
@@ -95,22 +153,13 @@ export default function StateEventAlignmentPage() {
             title="Join the event timestamp into the valid state interval."
           >
             <div style={solutionGridStyle}>
-              <MiniCard
-                title="Point-in-interval join"
-                text="Match the event timestamp against the valid_from and valid_to interval of the state table."
-              />
-              <MiniCard
-                title="As-known alignment"
-                text="Add visible-time logic when the event should only use state knowledge available at reporting time."
-              />
-              <MiniCard
-                title="Coverage handling"
-                text="Define what should happen when an event has no matching state record."
-              />
-              <MiniCard
-                title="Ambiguity handling"
-                text="Validate that each event resolves to one intended state, or document the tie-breaking rule."
-              />
+              {SOLUTIONS.map((solution) => (
+                <MiniCard
+                  key={solution.title}
+                  title={solution.title}
+                  text={solution.text}
+                />
+              ))}
             </div>
           </WhiteCard>
 
@@ -118,15 +167,7 @@ export default function StateEventAlignmentPage() {
             eyebrow="Validation checks"
             title="Validate that every event resolves to the intended state."
           >
-            <CheckChipRow
-              checks={[
-                "Detect events without matching state",
-                "Detect events with multiple matching states",
-                "Validate event timestamp inside valid interval",
-                "Check for current-state leakage",
-                "Compare aligned events against known examples",
-              ]}
-            />
+          <CheckChipRow checks={VALIDATION_CHECKS} />
           </WhiteCard>
 
           <DetectionCard />
@@ -162,8 +203,7 @@ function DarkExampleCard() {
       <div style={darkEyebrowStyle}>Example</div>
 
       <h2 style={darkTitleStyle}>
-        A claim event must be aligned to the premium state valid on the event
-        date.
+        A claim event occurs in August. It must align to the state valid in August.
       </h2>
 
       <div style={alignmentGridStyle}>
@@ -172,13 +212,29 @@ function DarkExampleCard() {
         <StateCard label="State 2" value="Premium = 120" range="Jul – Dec" />
       </div>
 
+      <div style={questionCardStyle}>
+        <div style={questionIconStyle}>?</div>
+
+        <div>
+          <div style={questionBadgeStyle}>Reporting question</div>
+          <div style={questionTextStyle}>
+            Which premium state should the event use? The event date must fall
+            inside the selected state interval.
+          </div>
+        </div>
+      </div>
+
+      <div style={comparisonGridStyle}>
+        <ResultCard title="Expected Result (Aligned)" rows={EXPECTED_ROWS} tone="good" />
+        <ResultCard title="Common Wrong Result (Risk)" rows={WRONG_ROWS} tone="bad" />
+      </div>
+
       <div style={exampleNoteStyle}>
-        <div style={exampleNoteLabelStyle}>Alignment result</div>
+        <div style={exampleNoteLabelStyle}>Key idea</div>
 
         <p style={exampleNoteTextStyle}>
-          The event occurred on August 15, so it must align to the state valid
-          from July to December. Joining to the current state or the wrong
-          historical interval would produce incorrect attribution.
+          Events are points in time. States are intervals. A correct model aligns
+          the event timestamp to exactly one valid state interval.
         </p>
       </div>
     </section>
@@ -221,6 +277,161 @@ function EventCard({
   );
 }
 
+function ExampleDatasetCard() {
+  return (
+    <WhiteCard
+      eyebrow="Example datasets"
+      title="The same event produces different results depending on the selected state interval."
+    >
+      <div style={datasetGridStyle}>
+        <DatasetTable
+          title="State table"
+          columns={["contract_id", "premium", "valid_from", "valid_to"]}
+          rows={STATE_TABLE_ROWS}
+        />
+
+        <DatasetTable
+          title="Event table"
+          columns={["event_id", "contract_id", "event_type", "event_date"]}
+          rows={EVENT_TABLE_ROWS}
+        />
+      </div>
+
+      <div style={comparisonGridStyle}>
+        <DatasetTable
+          title="Good alignment"
+          columns={["event_id", "event_date", "premium", "status"]}
+          rows={GOOD_ALIGNMENT_ROWS}
+          tone="good"
+        />
+
+        <DatasetTable
+          title="Wrong alignment"
+          columns={["event_id", "event_date", "premium", "status"]}
+          rows={BAD_ALIGNMENT_ROWS}
+          tone="bad"
+        />
+      </div>
+
+      <div style={explanationBoxStyle}>
+        <strong>Why the wrong result is wrong:</strong> The claim happened on
+        August 15. The premium state valid on August 15 is the July–December
+        interval, so the event must align to Premium = 120.
+      </div>
+    </WhiteCard>
+  );
+}
+
+function DatasetTable({
+  title,
+  columns,
+  rows,
+  tone = "neutral",
+}: {
+  title: string;
+  columns: string[];
+  rows: string[][];
+  tone?: "neutral" | "good" | "bad";
+}) {
+  const border =
+    tone === "good" ? "#86efac" : tone === "bad" ? "#fecaca" : "#e2e8f0";
+
+  const background =
+    tone === "good" ? "#f0fdf4" : tone === "bad" ? "#fef2f2" : "#f8fafc";
+
+  return (
+    <div
+      style={{
+        ...datasetTableCardStyle,
+        border: `1px solid ${border}`,
+        background,
+      }}
+    >
+      <div style={datasetTableTitleStyle}>{title}</div>
+
+      <div style={datasetTableScrollStyle}>
+        <table style={datasetTableStyle}>
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th key={column} style={datasetThStyle}>
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={`${title}-${rowIndex}`}>
+                {row.map((cell, cellIndex) => (
+                  <td key={`${title}-${rowIndex}-${cellIndex}`} style={datasetTdStyle}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ResultCard({
+  title,
+  rows,
+  tone,
+}: {
+  title: string;
+  rows: string[][];
+  tone: "good" | "bad";
+}) {
+  const isGood = tone === "good";
+
+  return (
+    <section
+      style={{
+        ...resultCardStyle,
+        border: isGood ? "1px solid #86efac" : "1px solid #fecaca",
+        background: isGood ? "#f0fdf4" : "#fef2f2",
+      }}
+    >
+      <div style={resultHeaderStyle}>
+        <div
+          style={{
+            ...resultIconStyle,
+            background: isGood ? "#15803d" : "#b91c1c",
+          }}
+        >
+          {isGood ? "✓" : "×"}
+        </div>
+
+        <h3
+          style={{
+            ...resultTitleStyle,
+            color: isGood ? "#166534" : "#991b1b",
+          }}
+        >
+          {title}
+        </h3>
+      </div>
+
+      <div style={resultTableStyle}>
+        {rows.map(([label, value, result]) => (
+          <div key={`${label}-${value}-${result}`} style={resultRowStyle}>
+            <div>
+              <div style={resultPeriodStyle}>{label}</div>
+              <div style={resultMetaStyle}>{value}</div>
+            </div>
+            <div style={resultValueStyle}>{result}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function DetectionCard() {
   return (
     <section style={detectionCardStyle}>
@@ -229,15 +440,15 @@ function DetectionCard() {
       </div>
 
       <h2 style={detectionTitleStyle}>
-        The Workbench can surface state-event alignment risks.
+        The Workbench can surface symptoms that often indicate state-event alignment problems.
       </h2>
 
       <CheckChipRow
         checks={[
-          "JOIN_GAP",
-          "JOIN_AMBIGUITY",
-          "NO_VALID_MATCH",
-          "MULTIPLE_MATCHES",
+          "✓ JOIN_GAP",
+          "✓ JOIN_AMBIGUITY",
+          "✓ NO_VALID_MATCH",
+          "✓ MULTIPLE_MATCHES",
         ]}
       />
     </section>
@@ -738,4 +949,173 @@ const tryItButtonStyle: CSSProperties = {
   color: "#ffffff",
   textDecoration: "none",
   fontWeight: 900,
+};
+
+const questionCardStyle: CSSProperties = {
+  marginTop: 22,
+  display: "flex",
+  gap: 18,
+  alignItems: "center",
+  padding: "20px 22px",
+  borderRadius: 16,
+  background: "rgba(250, 204, 21, 0.1)",
+  border: "1px solid rgba(250, 204, 21, 0.55)",
+};
+
+const questionIconStyle: CSSProperties = {
+  width: 46,
+  height: 46,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  flexShrink: 0,
+  border: "2px solid #fde047",
+  color: "#fde047",
+  fontSize: 28,
+  fontWeight: 900,
+};
+
+const questionBadgeStyle: CSSProperties = {
+  color: "#fde047",
+  fontWeight: 900,
+  fontSize: 14,
+  marginBottom: 6,
+};
+
+const questionTextStyle: CSSProperties = {
+  color: "#f8fafc",
+  fontSize: 15,
+  lineHeight: 1.55,
+};
+
+const comparisonGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
+  marginTop: 22,
+};
+
+const resultCardStyle: CSSProperties = {
+  padding: "clamp(18px, 4vw, 24px)",
+  borderRadius: 16,
+  color: "#0f172a",
+  boxShadow: "0 18px 40px rgba(2, 6, 23, 0.22)",
+};
+
+const resultHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  marginBottom: 14,
+};
+
+const resultIconStyle: CSSProperties = {
+  width: 34,
+  height: 34,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  color: "#ffffff",
+  fontSize: 22,
+  fontWeight: 900,
+  flexShrink: 0,
+};
+
+const resultTitleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 16,
+  lineHeight: 1.2,
+  fontWeight: 900,
+};
+
+const resultTableStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+};
+
+const resultRowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 14,
+  padding: "10px 0",
+  borderBottom: "1px solid rgba(15, 23, 42, 0.14)",
+};
+
+const resultPeriodStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#0f172a",
+};
+
+const resultMetaStyle: CSSProperties = {
+  marginTop: 3,
+  fontSize: 12,
+  color: "#64748b",
+  fontWeight: 800,
+};
+
+const resultValueStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#0f172a",
+  textAlign: "right",
+};
+
+const datasetGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 16,
+  marginTop: 18,
+  marginBottom: 20,
+};
+
+const datasetTableCardStyle: CSSProperties = {
+  padding: 16,
+  borderRadius: 18,
+  overflow: "hidden",
+};
+
+const datasetTableTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  fontSize: 16,
+  color: "#0f172a",
+  marginBottom: 12,
+};
+
+const datasetTableScrollStyle: CSSProperties = {
+  overflowX: "auto",
+};
+
+const datasetTableStyle: CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  fontSize: 13,
+};
+
+const datasetThStyle: CSSProperties = {
+  textAlign: "left",
+  padding: "8px 10px",
+  borderBottom: "1px solid #cbd5e1",
+  color: "#475569",
+  fontWeight: 900,
+  whiteSpace: "nowrap",
+};
+
+const datasetTdStyle: CSSProperties = {
+  padding: "9px 10px",
+  borderBottom: "1px solid #e2e8f0",
+  color: "#0f172a",
+  fontWeight: 700,
+  whiteSpace: "nowrap",
+};
+
+const explanationBoxStyle: CSSProperties = {
+  marginTop: 18,
+  padding: 16,
+  borderRadius: 14,
+  background: "#fffbeb",
+  border: "1px solid #fde68a",
+  color: "#92400e",
+  fontSize: 14,
+  lineHeight: 1.6,
 };
