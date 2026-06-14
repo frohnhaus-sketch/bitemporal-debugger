@@ -131,6 +131,12 @@ function getTrafficSource(referer?: string | null) {
   }
 }
 
+function getEventReferrer(event: EventRow) {
+  const dataReferrer = getDataValue(event, "referrer");
+
+  return dataReferrer ?? event.referrer ?? event.referer ?? null;
+}
+
 function getDataValue(event: EventRow, key: string) {
   const value = event.data?.[key];
 
@@ -242,11 +248,11 @@ export default async function EventsPage() {
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from("events")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(500);
+    .limit(2000);
 
   if (error) {
     return (
@@ -265,6 +271,8 @@ export default async function EventsPage() {
   }
 
   const events = (data ?? []) as EventRow[];
+  const totalEvents = count ?? events.length;
+  const loadedEvents = events.length;
 
   const counts = events.reduce<Record<string, number>>((acc, e) => {
     acc[e.event] = (acc[e.event] ?? 0) + 1;
@@ -358,8 +366,13 @@ export default async function EventsPage() {
     (counts["debug_report_copied"] ?? 0) +
     (counts["Debug Report Copied"] ?? 0);
 
-  const totalReportsCopied =
-    reportsCopied + advisorBlueprintsCopied + modelReviewReportsCopied;
+  const exampleTablesCopied = counts["example_table_copied"] ?? 0;
+
+  const totalCopies =
+    reportsCopied +
+    advisorBlueprintsCopied +
+    modelReviewReportsCopied +
+    exampleTablesCopied;
 
   const workflowActions =
     advisorCompleted +
@@ -369,8 +382,8 @@ export default async function EventsPage() {
     targetValidationsCompleted +
     analysisRuns;
 
-  const advisorStartRate = pageViews
-    ? Math.round((advisorViewed / pageViews) * 100)
+  const advisorInteractionRate = advisorViewed
+    ? Math.round((advisorQuestionChanges / advisorViewed) * 100)
     : 0;
 
   const advisorCopyRate = advisorViewed
@@ -398,11 +411,11 @@ export default async function EventsPage() {
     : 0;
 
   const copyRate = workflowActions
-    ? Math.round((totalReportsCopied / workflowActions) * 100)
+    ? Math.round((totalCopies / workflowActions) * 100)
     : 0;
 
   const sourceCounts = events.reduce<Record<string, number>>((acc, event) => {
-    const source = getTrafficSource(event.referer ?? event.referrer);
+    const source = getTrafficSource(getEventReferrer(event));
     acc[source] = (acc[source] ?? 0) + 1;
     return acc;
   }, {});
@@ -544,7 +557,7 @@ export default async function EventsPage() {
             <MetricCard label="Collapsed" value={advisorCollapsed} />
             <MetricCard label="Question Changes" value={advisorQuestionChanges} />
             <MetricCard label="Blueprint Copies" value={advisorBlueprintsCopied} />
-            <MetricCard label="Advisor Start Rate" value={`${advisorStartRate}%`} />
+            <MetricCard label="Advisor Interaction Rate" value={`${advisorInteractionRate}%`} />
             <MetricCard label="Advisor Copy Rate" value={`${advisorCopyRate}%`} />
             <MetricCard label="Completed" value={advisorCompleted} />
             <MetricCard label="Recommendations" value={advisorRecommendations} />
@@ -587,7 +600,8 @@ export default async function EventsPage() {
 
           <MetricSection title="High Intent">
             <MetricCard label="Reports Copied" value={reportsCopied} />
-            <MetricCard label="Total Copies" value={totalReportsCopied} />
+            <MetricCard label="Example Tables Copied" value={exampleTablesCopied} />
+            <MetricCard label="Total Copies" value={totalCopies} />
             <MetricCard label="Copy Rate" value={`${copyRate}%`} />
             <MetricCard label="SQL Generated" value={sqlGenerated} />
           </MetricSection>
@@ -598,7 +612,8 @@ export default async function EventsPage() {
             <MetricCard label="Timeline Issues" value={timelineIssueClicks} />
             <MetricCard label="Timeline Gaps" value={timelineGapClicks} />
             <MetricCard label="Timeline Overlaps" value={timelineOverlapClicks} />
-            <MetricCard label="All Events" value={events.length} />
+            <MetricCard label="Total Events" value={totalEvents} />
+            <MetricCard label="Loaded Events" value={loadedEvents} />
           </MetricSection>
         </div>
 
@@ -713,7 +728,7 @@ export default async function EventsPage() {
                     </td>
 
                     <td style={tdStyle}>
-                      {getTrafficSource(event.referer ?? event.referrer)}
+                      {getTrafficSource(getEventReferrer(event))}
                     </td>
 
                     <td style={tdStyle}>

@@ -85,6 +85,36 @@ export default function StateStateAlignmentPage() {
     });
   }, []);
 
+  useEffect(() => {
+    const trackedDepths = new Set<number>();
+
+    function handleScroll() {
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+
+      if (docHeight <= 0) return;
+
+      const percent = Math.round((window.scrollY / docHeight) * 100);
+
+      [25, 50, 75, 100].forEach((threshold) => {
+        if (percent >= threshold && !trackedDepths.has(threshold)) {
+          trackedDepths.add(threshold);
+
+          track("scroll_depth", {
+            page: "state_state_alignment",
+            page_type: "interactive_example",
+            percent: threshold,
+          });
+        }
+      });
+    }
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const codeNoteStyle: CSSProperties = {
     marginTop: 10,
     marginBottom: 0,
