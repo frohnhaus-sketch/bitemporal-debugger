@@ -1,5 +1,6 @@
 "use client";
 
+import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
 import { useEffect } from "react";
 import { track } from "@/lib/analytics";
 
@@ -14,33 +15,10 @@ export default function AsKnownReportingPage() {
   }, []);
 
   useEffect(() => {
-    const trackedDepths = new Set<number>();
-
-    function handleScroll() {
-      const docHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-
-      if (docHeight <= 0) return;
-
-      const percent = Math.round((window.scrollY / docHeight) * 100);
-
-      [25, 50, 75, 100].forEach((threshold) => {
-        if (percent >= threshold && !trackedDepths.has(threshold)) {
-          trackedDepths.add(threshold);
-
-          track("scroll_depth", {
-            page: "as-known-reporting",
-            page_type: "interactive_example",
-            percent: threshold,
-          });
-        }
-      });
-    }
-
-    window.addEventListener("scroll", handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener("scroll", handleScroll);
+    return initializeScrollDepthTracking({
+      page: "as-known-reporting",
+      pageType: "learn_page",
+    });
   }, []);
 
   return (

@@ -1,5 +1,6 @@
 "use client";
 
+import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
 import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 
@@ -10,6 +11,13 @@ export default function HistoricalCoverageGapPage() {
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
+    });
+  }, []);
+
+  useEffect(() => {
+    return initializeScrollDepthTracking({
+      page: "historical-coverage-gap",
+      pageType: "learn_page",
     });
   }, []);
 

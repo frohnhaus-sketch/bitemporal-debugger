@@ -1,5 +1,6 @@
 "use client";
 
+import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 
@@ -66,6 +67,13 @@ export default function StateEventAlignmentPage() {
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
+    });
+  }, []);
+
+  useEffect(() => {
+    return initializeScrollDepthTracking({
+      page: "state-event-alignement",
+      pageType: "learn_page",
     });
   }, []);
 

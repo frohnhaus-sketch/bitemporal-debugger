@@ -1,5 +1,6 @@
 "use client";
 
+import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { track } from "@/lib/analytics";
@@ -95,6 +96,14 @@ export default function DimensionCompletionPage() {
       url: window.location.href,
     });
   }, []);
+
+  useEffect(() => {
+    return initializeScrollDepthTracking({
+      page: "dimension-completion",
+      pageType: "learn_page",
+    });
+  }, []);
+
   useEffect(() => {
     const trackedDepths = new Set<number>();
 

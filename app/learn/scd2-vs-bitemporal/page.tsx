@@ -1,5 +1,6 @@
 "use client";
 
+import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
 import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { track } from "@/lib/analytics";
@@ -43,6 +44,13 @@ export default function Scd2VsBitemporalPage() {
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
+    });
+  }, []);
+
+  useEffect(() => {
+    return initializeScrollDepthTracking({
+      page: "scd2-vs-bitemporal",
+      pageType: "learn_page",
     });
   }, []);
 
