@@ -14,6 +14,7 @@ import {
 
 export function AdvisorPanel() {
   const hasTrackedAdvisorOpened = useRef(false);
+  const hasStartedAdvisor = useRef(false);
   const hasInteractedWithAdvisor = useRef(false);
   const hasTrackedAdvisorCompleted = useRef(false);
   const lastTrackedRecommendationKey = useRef<string | null>(null);
@@ -51,6 +52,16 @@ export function AdvisorPanel() {
     [answers, blueprint]
   );
 
+  function trackAdvisorStarted() {
+    if (hasStartedAdvisor.current) return;
+
+    hasStartedAdvisor.current = true;
+
+    track("advisor_started", {
+      source: "advisor_question_changed",
+    });
+  }
+
   useEffect(() => {
     if (!hasInteractedWithAdvisor.current) return;
 
@@ -63,19 +74,6 @@ export function AdvisorPanel() {
       historizedDimensions: answers.historizedDimensions,
       recommendation: blueprint.recommendation,
     });
-
-    if (!hasTrackedAdvisorCompleted.current) {
-      hasTrackedAdvisorCompleted.current = true;
-
-      track("advisor_completed", {
-        reportingGoal: answers.reportingGoal,
-        sourceTypes: answers.sourceTypes.join(","),
-        historyCorrected: answers.historyCorrected,
-        multipleSystems: answers.multipleSystems,
-        changingRelationships: answers.changingRelationships,
-        historizedDimensions: answers.historizedDimensions,
-      });
-    }
 
     if (lastTrackedRecommendationKey.current === recommendationKey) return;
 
@@ -109,7 +107,9 @@ export function AdvisorPanel() {
   ].filter(Boolean);
 
   function toggleSourceType(sourceType: SourceType) {
+    trackAdvisorStarted();
     hasInteractedWithAdvisor.current = true;
+
     setAnswers((prev) => {
       const exists = prev.sourceTypes.includes(sourceType);
 
@@ -135,6 +135,7 @@ export function AdvisorPanel() {
     question: K,
     value: AdvisorAnswers[K]
   ) {
+    trackAdvisorStarted();
     hasInteractedWithAdvisor.current = true;
 
     track("advisor_question_changed", {
@@ -149,6 +150,20 @@ export function AdvisorPanel() {
   }
 
   async function copyMarkdownBlueprint() {
+    if (!hasTrackedAdvisorCompleted.current) {
+      hasTrackedAdvisorCompleted.current = true;
+    
+      track("advisor_completed", {
+        reportingGoal: answers.reportingGoal,
+        sourceTypes: answers.sourceTypes.join(","),
+        historyCorrected: answers.historyCorrected,
+        multipleSystems: answers.multipleSystems,
+        changingRelationships: answers.changingRelationships,
+        historizedDimensions: answers.historizedDimensions,
+        source: "blueprint_copy",
+      });
+    }
+
     track("advisor_blueprint_copied", {
       recommendation: blueprint.recommendation,
       reportingGoal: answers.reportingGoal,

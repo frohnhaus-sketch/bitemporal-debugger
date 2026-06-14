@@ -119,10 +119,13 @@ function getTrafficSource(referer?: string | null) {
   try {
     const host = new URL(referer).hostname.replace("www.", "");
 
+    if (host === "bitemporal-debugger.vercel.app") return "Internal";
     if (host.includes("reddit")) return "Reddit";
     if (host.includes("linkedin")) return "LinkedIn";
     if (host.includes("google")) return "Google";
-    if (host.includes("vercel")) return "Vercel";
+    if (host.includes("news.ycombinator.com")) return "Hacker News";
+    if (host.includes("hacker-news.firebaseio.com")) return "Hacker News";
+    if (host.includes("vercel")) return "Internal";
     if (host.includes("localhost")) return "Localhost";
 
     return host;
@@ -283,7 +286,9 @@ export default async function EventsPage() {
   const uniqueVisitors = new Set(events.map((e) => e.ip_hash).filter(Boolean)).size;
   const interactions = events.filter((e) => e.event !== "page_view").length;
 
-  const advisorViewed = counts["advisor_viewed"] ?? 0;
+  const advisorStarted = counts["advisor_started"] ?? 0;
+  const advisorQuestionChanges = counts["advisor_question_changed"] ?? 0;
+  const advisorInteractions = advisorQuestionChanges;
   const advisorToggled = counts["advisor_toggled"] ?? 0;
 
   const advisorExpanded = events.filter(
@@ -297,7 +302,6 @@ export default async function EventsPage() {
       event.event === "advisor_toggled" &&
       event.data?.open === false
   ).length;
-  const advisorQuestionChanges = counts["advisor_question_changed"] ?? 0;
   const advisorCompleted = counts["advisor_completed"] ?? 0;
   const advisorRecommendations = counts["advisor_recommendation_generated"] ?? 0;
   const advisorBlueprintsCopied = counts["advisor_blueprint_copied"] ?? 0;
@@ -325,8 +329,8 @@ export default async function EventsPage() {
       event.data?.cta === "explore_more_patterns"
   ).length;
 
-  const exampleOpenRate = advisorViewed
-    ? Math.round((exampleModelOpened / advisorViewed) * 100)
+  const exampleOpenRate = pageViews
+    ? Math.round((exampleModelOpened / pageViews) * 100)
     : 0;
 
   const reviewClickRate = exampleModelOpened
@@ -382,12 +386,12 @@ export default async function EventsPage() {
     targetValidationsCompleted +
     analysisRuns;
 
-  const advisorInteractionRate = advisorViewed
-    ? Math.round((advisorQuestionChanges / advisorViewed) * 100)
+  const advisorInteractionRate = pageViews
+    ? Math.round((advisorQuestionChanges / pageViews) * 100)
     : 0;
 
-  const advisorCopyRate = advisorViewed
-    ? Math.round((advisorBlueprintsCopied / advisorViewed) * 100)
+  const advisorCopyRate = advisorStarted
+    ? Math.round((advisorBlueprintsCopied / advisorStarted) * 100)
     : 0;
 
   const patternCatalogRate = pageViews
@@ -551,7 +555,8 @@ export default async function EventsPage() {
           </MetricSection>
 
           <MetricSection title="Advisor Funnel">
-            <MetricCard label="Advisor Viewed" value={advisorViewed} />
+            <MetricCard label="Advisor Started" value={advisorStarted} />
+            <MetricCard label="Advisor Interactions" value={advisorInteractions} />
             <MetricCard label="Advisor Toggles" value={advisorToggled} />
             <MetricCard label="Expanded" value={advisorExpanded} />
             <MetricCard label="Collapsed" value={advisorCollapsed} />
