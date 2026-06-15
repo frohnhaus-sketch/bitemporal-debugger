@@ -6,15 +6,6 @@ import { track } from "@/lib/analytics";
 
 export default function AsKnownReportingPage() {
   useEffect(() => {
-    track("learn_page_opened", {
-      page: "as_known_reporting",
-      path: window.location.pathname,
-      referrer: document.referrer,
-      url: window.location.href,
-    });
-  }, []);
-
-  useEffect(() => {
     return initializeScrollDepthTracking({
       page: "as-known-reporting",
       pageType: "learn_page",

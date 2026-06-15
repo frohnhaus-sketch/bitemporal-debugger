@@ -4,6 +4,12 @@ import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 
+const ALIGNED_TARGET_TABLE = `contract_id,event_id,event_date,contract_status,valid_from,valid_to,alignment_status
+C-1001,CL-9001,2024-08-15,Premium = 120,2024-07-01,2024-12-31,aligned`;
+
+const WRONG_TARGET_TABLE = `contract_id,event_id,event_date,contract_status,valid_from,valid_to,alignment_status
+C-1001,CL-9001,2024-08-15,Premium = 100,2024-01-01,2024-06-30,wrong_state`;
+
 const VALIDATION_CHECKS = [
   "Detect events without matching state",
   "Detect events with multiple matching states",
@@ -61,9 +67,9 @@ const BAD_ALIGNMENT_ROWS = [
 export default function StateEventAlignmentPage() {
   useEffect(() => {
     track("learn_page_opened", {
-      page: "state-event-alignment",
+      page: "state_event_alignment",
       page_type: "interactive_example",
-      example: "state-event-alignment",
+      example: "state_event_alignment",
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
@@ -86,7 +92,7 @@ export default function StateEventAlignmentPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Interactive Example</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>State ↔ Event Alignment</h1>
@@ -533,7 +539,7 @@ function TryItCard() {
         href="/"
         onClick={() => {
           track("learn_cta_clicked", {
-            page: "state-event-alignment",
+            page: "state_event_alignment",
             cta: "open_workbench",
           });
         }}

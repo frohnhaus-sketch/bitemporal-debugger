@@ -77,7 +77,7 @@ export default function HistoricalConformancePage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Interactive Example</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>Historical Conformance</h1>
@@ -442,7 +442,10 @@ function CopyTableCard({
 
       <button
         type="button"
-        onClick={handleCopy}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          handleCopy();
+        }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{

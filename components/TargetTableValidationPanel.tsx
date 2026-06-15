@@ -62,6 +62,15 @@ export function TargetTableValidationPanel() {
     });
   }, [result]);
 
+  const requiresValidTime =
+    !result ||
+    !(
+      result.columns.includes("event_id") ||
+      result.columns.includes("event_time") ||
+      result.columns.includes("event_type") ||
+      result.columns.includes("prioritization_status")
+    );
+
   return (
     <section
       id="target-table-validation"
@@ -148,12 +157,12 @@ export function TargetTableValidationPanel() {
               <ColumnCard
                 label="Valid from"
                 value={result.detectedColumns.validFrom}
-                required
+                required={requiresValidTime}
               />
               <ColumnCard
                 label="Valid to"
                 value={result.detectedColumns.validTo}
-                required
+                required={requiresValidTime}
               />
               <ColumnCard
                 label="Visible from"
@@ -355,7 +364,16 @@ const sourceSystemColumn = detectColumn(columns, [
     });
   }
 
-  if (!detectedColumns.validFrom || !detectedColumns.validTo) {
+  const hasEventSemantics =
+    rows.some((row) => row.event_id !== undefined) ||
+    rows.some((row) => row.event_time !== undefined) ||
+    rows.some((row) => row.event_type !== undefined) ||
+    rows.some((row) => row.prioritization_status !== undefined);
+
+  if (
+    !hasEventSemantics &&
+    (!detectedColumns.validFrom || !detectedColumns.validTo)
+  ) {
     findings.push({
       id: "missing-valid-time",
       title: "No complete valid-time interval detected",
@@ -461,6 +479,78 @@ const sourceSystemColumn = detectColumn(columns, [
   findings.push(...detectHistoricalConformanceRisk(rows));
   findings.push(...detectStateEventAlignmentRisk(rows));
   findings.push(...detectCoverageGapRisk(rows));
+  findings.push(...detectStateReductionRisk(rows));
+  findings.push(...detectEventPrioritizationRisk(rows));
+  findings.push(...detectRectangleDecompositionRisk(rows));
+  findings.push(...detectRelationshipHistoryRisk(rows));
+
+  function detectRelationshipHistoryRisk(rows: any[]): TargetFinding[] {
+    const statusColumn = "relationship_status";
+  
+    if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
+  
+    const riskyRows = rows.filter((row) => {
+      const value = String(row[statusColumn] ?? "").trim().toLowerCase();
+    
+      return [
+        "current_relationship_used",
+        "wrong_relationship",
+        "missing_relationship_history",
+        "current_broker_used",
+        "historical_attribution_wrong",
+      ].includes(value);
+    });
+  
+    if (riskyRows.length === 0) return [];
+  
+    return [
+      {
+        id: "relationship-history-risk",
+        title: "Relationship history risk detected",
+        severity: "high",
+        evidence: [
+          `${riskyRows.length} row${riskyRows.length === 1 ? "" : "s"} use a current or incorrect relationship for historical attribution.`,
+        ],
+        recommendation:
+          "Use the relationship that was valid at the reporting date instead of the current relationship.",
+      },
+    ];
+  }
+
+  function detectRectangleDecompositionRisk(rows: any[]): TargetFinding[] {
+    const statusColumn = "decomposition_status";
+
+    if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
+
+    const riskyRows = rows.filter((row) => {
+      const value = String(row[statusColumn] ?? "").trim().toLowerCase();
+
+      return [
+        "not_decomposed",
+        "overlapping_projection",
+        "ambiguous_rectangle",
+        "not_split",
+        "raw_projection",
+      ].includes(value);
+    });
+
+    if (riskyRows.length === 0) return [];
+
+    return [
+      {
+        id: "rectangle-decomposition-risk",
+        title: "Rectangle decomposition risk detected",
+        severity: "high",
+        evidence: [
+          `${riskyRows.length} row${
+            riskyRows.length === 1 ? "" : "s"
+          } are marked as not decomposed or ambiguous projections.`,
+        ],
+        recommendation:
+          "Decompose independently historized attributes into stable valid × visible rectangles before publishing the projected reporting table.",
+      },
+    ];
+  }
 
   function detectHistoricalConformanceRisk(rows: any[]): TargetFinding[] {
     const statusColumns = [
@@ -893,6 +983,15 @@ function sameDay(a: Date, b: Date) {
   );
 }
 
+function isSameOrNextDay(previousTo: Date, nextFrom: Date) {
+  if (sameDay(previousTo, nextFrom)) return true;
+
+  const nextAllowed = new Date(previousTo);
+  nextAllowed.setDate(nextAllowed.getDate() + 1);
+
+  return sameDay(nextAllowed, nextFrom);
+}
+
 function formatDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -1090,6 +1189,87 @@ function detectCoverageGapRisk(rows: any[]): TargetFinding[] {
   ];
 }
 
+function detectStateReductionRisk(rows: any[]): TargetFinding[] {
+  const statusColumn = "reduction_status";
+
+  if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
+
+  const riskyRows = rows.filter((row) => {
+    const value = String(row[statusColumn] ?? "").trim().toLowerCase();
+
+    return [
+      "redundant_state",
+      "technical_state",
+      "not_reduced",
+      "noise_kept",
+      "over_fragmented",
+    ].includes(value);
+  });
+
+  if (riskyRows.length === 0) return [];
+
+  return [
+    {
+      id: "state-reduction-risk",
+      title: "State reduction risk detected",
+      severity: "medium",
+      evidence: [
+        `${riskyRows.length} row${riskyRows.length === 1 ? "" : "s"} keep redundant or unreduced state versions.`,
+      ],
+      recommendation:
+        "Review whether these operational state changes should be collapsed before publishing the reporting model.",
+    },
+  ];
+}
+
+function detectEventPrioritizationRisk(rows: any[]): TargetFinding[] {
+  const statusColumn = "prioritization_status";
+
+  if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
+
+  const riskyRows = rows.filter((row) => {
+    const value = String(row[statusColumn] ?? "").trim().toLowerCase();
+
+    return [
+      "operational_noise_kept",
+      "technical_event_kept",
+      "not_prioritized",
+      "duplicate_milestone",
+      "workflow_noise_kept",
+      "raw_event_kept",
+    ].includes(value);
+  });
+
+  if (riskyRows.length === 0) return [];
+
+  const exampleEvents = riskyRows
+    .slice(0, 3)
+    .map(
+      (row) =>
+        row.event_id ??
+        row.event_type ??
+        row.event_time ??
+        "unknown event"
+    )
+    .join(", ");
+
+  return [
+    {
+      id: "event-prioritization-risk",
+      title: "Event prioritization risk detected",
+      severity: "medium",
+      evidence: [
+        `${riskyRows.length} row${
+          riskyRows.length === 1 ? "" : "s"
+        } keep operational or unprioritized event noise.`,
+        `Example affected events: ${exampleEvents}.`,
+      ],
+      recommendation:
+        "Review whether these operational events should be excluded, collapsed or ranked before publishing the reporting model.",
+    },
+  ];
+}
+
 function detectDimensionColumns(columns: string[]) {
   const excluded = new Set([
     "business_key",
@@ -1150,6 +1330,12 @@ function detectDimensionColumns(columns: string[]) {
     "match_status",
     "state_match_status",
     "event_alignment_method",
+    "prioritization_status",
+    "reporting_milestone",
+    "priority_rank",
+    "event_id",
+    "event_time",
+    "event_type",
   ]);
 
   return columns.filter((column) => {
@@ -1344,7 +1530,7 @@ function detectValidTimeGaps(
       .sort((a, b) => a.from!.getTime() - b.from!.getTime());
 
     for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i].from!.getTime() > sorted[i - 1].to!.getTime()) {
+      if (!isSameOrNextDay(sorted[i - 1].to!, sorted[i].from!)) {
         gapCount += 1;
       }
     }

@@ -38,7 +38,7 @@ export default function HistoricalOverlapPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Data Quality Pattern</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>Historical Overlap</h1>

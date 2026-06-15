@@ -27,6 +27,7 @@ const PATTERN_GROUPS = [
         name: "SCD2 vs Bitemporal Modeling",
         text: "Compares valid-time-only history with models that also preserve when information became known.",
         examples: ["SCD2 dimensions", "Visible time", "Corrected history"],
+        interactive: true,
       },
     ],
   },
@@ -38,6 +39,7 @@ const PATTERN_GROUPS = [
         name: "State ↔ State Alignment",
         text: "Aligns two historized state sources across overlapping validity periods.",
         examples: ["Contract ↔ Customer", "Policy ↔ Broker", "Product ↔ Price"],
+        interactive: true,
       },
       {
         name: "State ↔ Event Alignment",
@@ -48,6 +50,7 @@ const PATTERN_GROUPS = [
         name: "Historical Conformance",
         text: "Aligns competing timelines from multiple source systems.",
         examples: ["CRM + ERP", "Policy system + billing system"],
+        interactive: true,
       },
     ],
   },
@@ -59,11 +62,13 @@ const PATTERN_GROUPS = [
         name: "Dimension Completion",
         text: "Ensures dimension history covers all required fact periods.",
         examples: ["Late arriving dimensions", "Missing foreign keys"],
+        interactive: true,
       },
       {
         name: "Relationship History",
         text: "Models relationships that change over time.",
         examples: ["Customer ↔ Advisor", "Policy ↔ Broker"],
+        interactive: true,
       },
       {
         name: "Identity Resolution",
@@ -89,6 +94,7 @@ const PATTERN_GROUPS = [
         name: "Snapshot Reproducibility",
         text: "Ensures reports can be reproduced for the same reporting date.",
         examples: ["Month-end snapshots", "Audit reports"],
+        interactive: true,
       },
       {
         name: "As-Known Reporting",
@@ -99,6 +105,7 @@ const PATTERN_GROUPS = [
         name: "Historical Correction",
         text: "Preserves corrected history without losing what was known before.",
         examples: ["Backdated changes", "Retroactive corrections", "Restatements"],
+        interactive: true,
       },
       {
         name: "Historical Backfill",
@@ -115,16 +122,19 @@ const PATTERN_GROUPS = [
         name: "Historical Match Ambiguity",
         text: "Occurs when multiple historical records satisfy the same temporal join.",
         examples: ["Duplicate fact rows", "Join explosion", "Multiple valid matches"],
+        interactive: true,
       },
       {
         name: "Historical Coverage Gap",
         text: "Occurs when required history is missing for a reporting period.",
         examples: ["Missing dimension row", "Uncovered fact interval"],
+        interactive: true,
       },
       {
         name: "Historical Overlap",
         text: "Occurs when multiple records are active at the same time.",
         examples: ["Overlapping SCD2 rows", "Ambiguous current state"],
+        interactive: true,
       },
     ],
   },
@@ -135,21 +145,20 @@ const PATTERN_GROUPS = [
       {
         name: "Rectangle Decomposition",
         text: "Creates stable reporting intervals from independently historized attributes.",
-        examples: [
-          "Coverage timelines",
-          "Risk attributes",
-          "Contract projections",
-        ],
+        examples: ["Coverage timelines", "Risk attributes", "Contract projections"],
+        interactive: true,
       },
       {
         name: "Event Prioritization",
         text: "Selects business-relevant events from noisy operational event streams.",
         examples: ["Status changes", "Workflow events", "Event ranking"],
+        interactive: true,
       },
       {
         name: "State Reduction",
         text: "Removes irrelevant or redundant historical state changes before reporting.",
         examples: ["Status cleanup", "Noise reduction", "Reporting states"],
+        interactive: true,
       },
       {
         name: "Event-to-State Projection",
@@ -331,16 +340,54 @@ export default function PatternsPage() {
                       border: "1px solid #dbeafe",
                     }}
                   >
-                    <h3
+                    <div
                       style={{
-                        margin: 0,
-                        fontSize: 17,
-                        color: "#0f172a",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        gap: 8,
                       }}
                     >
-                      {pattern.name}
-                    </h3>
-
+                      <h3
+                        style={{
+                          margin: 0,
+                          fontSize: 17,
+                          color: "#0f172a",
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {pattern.name}
+                      </h3>
+                      {[
+                        "SCD2 vs Bitemporal Modeling",
+                        "State ↔ State Alignment",
+                        "Historical Conformance",
+                        "Dimension Completion",
+                        "Relationship History",
+                        "Snapshot Reproducibility",
+                        "Historical Correction",
+                        "Historical Match Ambiguity",
+                        "Historical Coverage Gap",
+                        "Historical Overlap",
+                        "Rectangle Decomposition",
+                        "Event Prioritization",
+                        "State Reduction",
+                      ].includes(pattern.name) && (
+                        <span
+                          title="Interactive Pattern"
+                          style={{
+                            color: "#f59e0b",
+                            fontSize: 20,
+                            lineHeight: 1,
+                            flexShrink: 0,
+                            cursor: "help",
+                            userSelect: "none",
+                          }}
+                        >
+                          ★
+                        </span>
+                      )}
+                    </div>
                     <p
                       style={{
                         margin: "8px 0 12px",

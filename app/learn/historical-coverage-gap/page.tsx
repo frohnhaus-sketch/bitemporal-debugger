@@ -30,7 +30,7 @@ export default function HistoricalCoverageGapPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Data Quality Pattern</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>Historical Coverage Gap</h1>
@@ -247,8 +247,8 @@ function PatternTestCaseCard() {
         <CopyTableCard
           title="Coverage-aware target table"
           description="Copy this table to validate an output where the April gap is explicitly marked."
-          tableName="covered_target"
-          value={COVERED_TARGET_TABLE}
+          tableName="coverage_aware_target"
+          value={COVERAGE_AWARE_TARGET_TABLE}
           tone="good"
         />
 
@@ -288,7 +288,7 @@ function CopyTableCard({
 }: {
   title: string;
   description: string;
-  tableName: "covered_target" | "wrong_target";
+  tableName: "coverage_aware_target" | "wrong_target";
   value: string;
   tone: "good" | "bad";
 }) {
@@ -726,7 +726,7 @@ const solutionGridStyle: CSSProperties = {
   marginTop: 18,
 };
 
-const COVERED_TARGET_TABLE = `customer_id,snapshot_date,customer_status,valid_from,valid_to,coverage_status
+const COVERAGE_AWARE_TARGET_TABLE = `customer_id,snapshot_date,customer_status,valid_from,valid_to,coverage_status
 C1,2024-01-31,Active,2024-01-01,2024-01-31,covered
 C1,2024-02-29,Active,2024-02-01,2024-02-29,covered
 C1,2024-03-31,Active,2024-03-01,2024-03-31,covered

@@ -104,7 +104,7 @@ export default function Scd2VsBitemporalPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Interactive Example</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>SCD2 vs Bitemporal Modeling</h1>
@@ -296,7 +296,7 @@ function DarkExampleCard() {
 
   return (
     <section style={darkCardStyle}>
-      <div style={darkEyebrowStyle}>Interactive example</div>
+      <div style={darkEyebrowStyle}>Interactive Pattern</div>
 
       <h2 style={darkTitleStyle}>
         In March, the platform shows Standard. In May, a correction says March

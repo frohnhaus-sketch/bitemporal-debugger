@@ -1,7 +1,7 @@
 "use client";
 
 import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 
 const EXPECTED_ROWS = [
@@ -15,6 +15,12 @@ const WRONG_ROWS = [
   ["Policy", "P123"],
   ["Broker", "Broker A / Current Broker"],
 ];
+
+const HISTORIZED_RELATIONSHIP_TARGET_TABLE = `policy_id,broker_id,snapshot_date,valid_from,valid_to,relationship_status
+P123,Broker B,2024-08-31,2024-07-01,2024-12-31,historized_relationship`;
+
+const WRONG_TARGET_TABLE = `policy_id,broker_id,snapshot_date,valid_from,valid_to,relationship_status
+P123,Broker A,2024-08-31,2024-01-01,2024-12-31,current_relationship_used`;
 
 export default function RelationshipHistoryPage() {
   useEffect(() => {
@@ -42,7 +48,7 @@ export default function RelationshipHistoryPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Dimension Pattern</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>Relationship History</h1>
@@ -81,6 +87,8 @@ export default function RelationshipHistoryPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <PatternTestCaseCard />
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -292,6 +300,150 @@ function ResultCard({
       </div>
     </section>
   );
+}
+
+function PatternTestCaseCard() {
+  return (
+    <section style={testCaseCardStyle}>
+      <div style={testCaseEyebrowStyle}>Test case</div>
+
+      <h2 style={testCaseTitleStyle}>
+        Try this Relationship History case in Target Table Validation
+      </h2>
+
+      <p style={testCaseTextStyle}>
+        Use these sample target tables to test whether historical attribution uses the correct relationship at the snapshot date.
+      </p>
+
+      <ol style={testCaseStepsStyle}>
+        <li>Copy one of the target tables below.</li>
+        <li>Open Target Table Validation.</li>
+        <li>Paste the copied table as your target output.</li>
+        <li>Check whether August is attributed to Broker B or incorrectly to Broker A.</li>
+      </ol>
+
+      <div style={testCaseGridStyle}>
+        <CopyTableCard
+          title="Historized relationship target"
+          description="Expected output: August is attributed to Broker B."
+          tableName="historized_relationship_target"
+          value={HISTORIZED_RELATIONSHIP_TARGET_TABLE}
+          tone="good"
+        />
+
+        <CopyTableCard
+          title="Wrong target table"
+          description="Risky output: attribution uses the current or wrong broker."
+          tableName="wrong_target"
+          value={WRONG_TARGET_TABLE}
+          tone="bad"
+        />
+      </div>
+
+      <a
+        href="/#target-table-validation"
+        onClick={() => {
+          track("example_model_cta_clicked", {
+            example: "relationship_history",
+            cta: "open_target_validation",
+            source: "test_case_card",
+            page_type: "interactive_example",
+          });
+        }}
+        style={testCaseButtonStyle}
+      >
+        Open Target Table Validation →
+      </a>
+    </section>
+  );
+}
+
+function CopyTableCard({
+  title,
+  description,
+  tableName,
+  value,
+  tone,
+}: {
+  title: string;
+  description: string;
+  tableName: "historized_relationship_target" | "wrong_target";
+  value: string;
+  tone: "good" | "bad";
+}) {
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const isGood = tone === "good";
+
+  async function handleCopy() {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        copyWithFallback(value);
+      }
+    } catch {
+      copyWithFallback(value);
+    }
+
+    setCopied(true);
+
+    track("example_table_copied", {
+      example: "relationship_history",
+      table: tableName,
+    });
+
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  return (
+    <div
+      style={{
+        ...copyTableCardStyle,
+        border: isGood ? "1px solid #86efac" : "1px solid #fecaca",
+        background: isGood ? "#f0fdf4" : "#fef2f2",
+      }}
+    >
+      <div style={copyTableTitleStyle}>{title}</div>
+      <p style={copyTableDescriptionStyle}>{description}</p>
+
+      <pre style={copyTablePreviewStyle}>{value}</pre>
+
+      <button
+        type="button"
+        onPointerDown={(event) => {
+          event.preventDefault();
+          handleCopy();
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          ...copyTableButtonStyle,
+          background: copied ? "#16a34a" : isGood ? "#15803d" : "#b91c1c",
+          transform: hovered ? "translateY(-1px)" : "translateY(0)",
+          boxShadow: hovered ? "0 10px 22px rgba(15, 23, 42, 0.22)" : "none",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        {copied ? "✓ Copied" : "Copy table"}
+      </button>
+    </div>
+  );
+}
+
+function copyWithFallback(value: string) {
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textarea);
 }
 
 function WhiteCard({
@@ -758,6 +910,74 @@ const tryItButtonStyle: CSSProperties = {
   fontWeight: 900,
 };
 
+const testCaseCardStyle: CSSProperties = whiteCardStyle;
+
+const testCaseEyebrowStyle: CSSProperties = eyebrowStyle;
+
+const testCaseTitleStyle: CSSProperties = cardTitleStyle;
+
+const testCaseTextStyle: CSSProperties = paragraphStyle;
+
+const testCaseStepsStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  paddingLeft: 26,
+  color: "#334155",
+  fontSize: 16,
+  lineHeight: 1.7,
+  listStyleType: "decimal",
+};
+
+const testCaseGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 16,
+};
+
+const copyTableCardStyle: CSSProperties = {
+  padding: 16,
+  borderRadius: 18,
+  overflow: "hidden",
+};
+
+const copyTableTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  fontSize: 16,
+  color: "#0f172a",
+  marginBottom: 6,
+};
+
+const copyTableDescriptionStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  color: "#475569",
+  fontSize: 14,
+  lineHeight: 1.5,
+};
+
+const copyTablePreviewStyle: CSSProperties = {
+  maxHeight: 180,
+  overflow: "auto",
+  padding: 12,
+  borderRadius: 12,
+  background: "#020617",
+  color: "#e2e8f0",
+  fontSize: 12,
+  lineHeight: 1.5,
+  whiteSpace: "pre",
+};
+
+const copyTableButtonStyle: CSSProperties = {
+  marginTop: 12,
+  border: 0,
+  borderRadius: 12,
+  padding: "10px 14px",
+  color: "#ffffff",
+  fontWeight: 900,
+  cursor: "pointer",
+  transition: "all 160ms ease",
+};
+
 const questionCardStyle: CSSProperties = {
   marginTop: 22,
   display: "flex",
@@ -859,4 +1079,15 @@ const resultValueStyle: CSSProperties = {
   fontWeight: 900,
   color: "#0f172a",
   textAlign: "right",
+};
+
+const testCaseButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  marginTop: 18,
+  padding: "12px 18px",
+  borderRadius: 14,
+  background: "#2563eb",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: 900,
 };

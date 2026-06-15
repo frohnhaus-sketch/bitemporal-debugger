@@ -1,8 +1,19 @@
 "use client";
 
 import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
+
+const PRIORITIZED_TARGET_TABLE = `contract_id,event_id,event_time,event_type,reporting_milestone,priority_rank,prioritization_status
+C1,E4,2024-01-01T10:03:00,Offer sent,offer_sent,1,selected
+C1,E5,2024-01-01T10:05:00,Contract activated,contract_activated,1,selected`;
+
+const WRONG_TARGET_TABLE = `contract_id,event_id,event_time,event_type,reporting_milestone,priority_rank,prioritization_status
+C1,E1,2024-01-01T10:00:00,Draft created,draft_created,1,operational_noise_kept
+C1,E2,2024-01-01T10:01:00,Validation failed,validation_failed,1,operational_noise_kept
+C1,E3,2024-01-01T10:02:00,Validation passed,validation_passed,1,operational_noise_kept
+C1,E4,2024-01-01T10:03:00,Offer sent,offer_sent,1,selected
+C1,E5,2024-01-01T10:05:00,Contract activated,contract_activated,1,selected`;
 
 export default function EventPrioritizationPage() {
   useEffect(() => {
@@ -30,7 +41,7 @@ export default function EventPrioritizationPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Advanced Modeling Pattern</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>Event Prioritization</h1>
@@ -70,6 +81,8 @@ export default function EventPrioritizationPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <PatternTestCaseCard />
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -232,6 +245,150 @@ function EventRow({
       </div>
     </div>
   );
+}
+
+function PatternTestCaseCard() {
+  return (
+    <section style={testCaseCardStyle}>
+      <div style={testCaseEyebrowStyle}>Test case</div>
+
+      <h2 style={testCaseTitleStyle}>
+        Try this Event Prioritization case in Target Table Validation
+      </h2>
+
+      <p style={testCaseTextStyle}>
+        Use these sample target tables to test the validator:
+      </p>
+
+      <ol style={testCaseStepsStyle}>
+        <li>Copy one of the target tables below.</li>
+        <li>Open Target Table Validation.</li>
+        <li>Paste the copied table as your target output.</li>
+        <li>Check whether operational noise was removed or kept as reporting events.</li>
+      </ol>
+
+      <div style={testCaseGridStyle}>
+        <CopyTableCard
+          title="Prioritized target table"
+          description="Copy this table to validate the expected reporting milestones."
+          tableName="prioritized_target"
+          value={PRIORITIZED_TARGET_TABLE}
+          tone="good"
+        />
+
+        <CopyTableCard
+          title="Wrong target table"
+          description="Copy this table to validate a noisy output where operational events remain."
+          tableName="wrong_target"
+          value={WRONG_TARGET_TABLE}
+          tone="bad"
+        />
+      </div>
+
+      <a
+        href="/#target-table-validation"
+        onClick={() => {
+          track("example_model_cta_clicked", {
+            example: "event_prioritization",
+            cta: "open_target_validation",
+            source: "test_case_card",
+            page_type: "interactive_example",
+          });
+        }}
+        style={testCaseButtonStyle}
+      >
+        Open Target Table Validation →
+      </a>
+    </section>
+  );
+}
+
+function CopyTableCard({
+  title,
+  description,
+  tableName,
+  value,
+  tone,
+}: {
+  title: string;
+  description: string;
+  tableName: "prioritized_target" | "wrong_target";
+  value: string;
+  tone: "good" | "bad";
+}) {
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const isGood = tone === "good";
+
+  async function handleCopy() {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        copyWithFallback(value);
+      }
+    } catch {
+      copyWithFallback(value);
+    }
+
+    setCopied(true);
+
+    track("example_table_copied", {
+      example: "event_prioritization",
+      table: tableName,
+    });
+
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  return (
+    <div
+      style={{
+        ...copyTableCardStyle,
+        border: isGood ? "1px solid #86efac" : "1px solid #fecaca",
+        background: isGood ? "#f0fdf4" : "#fef2f2",
+      }}
+    >
+      <div style={copyTableTitleStyle}>{title}</div>
+      <p style={copyTableDescriptionStyle}>{description}</p>
+
+      <pre style={copyTablePreviewStyle}>{value}</pre>
+
+      <button
+        type="button"
+        onPointerDown={(event) => {
+          event.preventDefault();
+          handleCopy();
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          ...copyTableButtonStyle,
+          background: copied ? "#16a34a" : isGood ? "#15803d" : "#b91c1c",
+          transform: hovered ? "translateY(-1px)" : "translateY(0)",
+          boxShadow: hovered ? "0 10px 22px rgba(15, 23, 42, 0.22)" : "none",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        {copied ? "✓ Copied" : "Copy table"}
+      </button>
+    </div>
+  );
+}
+
+function copyWithFallback(value: string) {
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textarea);
 }
 
 function WhiteCard({
@@ -674,6 +831,82 @@ const tryItTextStyle: CSSProperties = {
 
 const tryItButtonStyle: CSSProperties = {
   display: "inline-flex",
+  padding: "12px 18px",
+  borderRadius: 14,
+  background: "#2563eb",
+  color: "#ffffff",
+  textDecoration: "none",
+  fontWeight: 900,
+};
+
+const testCaseCardStyle: CSSProperties = whiteCardStyle;
+const testCaseEyebrowStyle: CSSProperties = eyebrowStyle;
+const testCaseTitleStyle: CSSProperties = cardTitleStyle;
+const testCaseTextStyle: CSSProperties = paragraphStyle;
+
+const testCaseStepsStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 18,
+  paddingLeft: 26,
+  color: "#334155",
+  fontSize: 16,
+  lineHeight: 1.7,
+  listStyleType: "decimal",
+};
+
+const testCaseGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 16,
+};
+
+const copyTableCardStyle: CSSProperties = {
+  padding: 16,
+  borderRadius: 18,
+  overflow: "hidden",
+};
+
+const copyTableTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  fontSize: 16,
+  color: "#0f172a",
+  marginBottom: 6,
+};
+
+const copyTableDescriptionStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 12,
+  color: "#475569",
+  fontSize: 14,
+  lineHeight: 1.5,
+};
+
+const copyTablePreviewStyle: CSSProperties = {
+  maxHeight: 180,
+  overflow: "auto",
+  padding: 12,
+  borderRadius: 12,
+  background: "#020617",
+  color: "#e2e8f0",
+  fontSize: 12,
+  lineHeight: 1.5,
+  whiteSpace: "pre",
+};
+
+const copyTableButtonStyle: CSSProperties = {
+  marginTop: 12,
+  border: 0,
+  borderRadius: 12,
+  padding: "10px 14px",
+  color: "#ffffff",
+  fontWeight: 900,
+  cursor: "pointer",
+  transition: "all 160ms ease",
+};
+
+const testCaseButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  marginTop: 18,
   padding: "12px 18px",
   borderRadius: 14,
   background: "#2563eb",

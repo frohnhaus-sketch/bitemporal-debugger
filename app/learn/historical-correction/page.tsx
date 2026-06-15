@@ -75,7 +75,7 @@ export default function HistoricalCorrectionPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Interactive Example</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>Historical Correction</h1>
@@ -217,7 +217,7 @@ function DarkExampleCard() {
 
   return (
     <section style={darkCardStyle}>
-      <div style={darkEyebrowStyle}>Interactive example</div>
+      <div style={darkEyebrowStyle}>Interactive Pattern</div>
 
       <h2 style={darkTitleStyle}>
         A January report shows Retail. In March, a correction says January should have been Premium.

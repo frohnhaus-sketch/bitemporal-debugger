@@ -48,23 +48,6 @@ C-1001,Customer A,1300000,2024-03-31,2024-03-01,2024-03-31,2024-06-15,9999-12-31
 const WRONG_TARGET_TABLE = `contract_id,customer_key,premium_amount,snapshot_date,valid_from,valid_to,reproducibility_method
 C-1001,Customer A,1300000,2024-03-31,2024-03-01,2024-03-31,current_rebuild_only`;
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    function update() {
-      setIsMobile(window.innerWidth < 760);
-    }
-
-    update();
-    window.addEventListener("resize", update);
-
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  return isMobile;
-}
-
 function useReloadOnBackForwardCache() {
   useEffect(() => {
     function handlePageShow(event: PageTransitionEvent) {
@@ -111,7 +94,7 @@ export default function SnapshotReproducibilityPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Reporting Pattern</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>Snapshot Reproducibility</h1>

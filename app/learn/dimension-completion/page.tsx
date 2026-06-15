@@ -113,7 +113,7 @@ export default function DimensionCompletionPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Interactive Example</div>
+            <div style={badgeStyle}>Interactive Pattern</div>
           </div>
 
           <h1 style={h1Style}>Dimension Completion</h1>
