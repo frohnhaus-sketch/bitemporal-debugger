@@ -4,6 +4,18 @@ import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
 import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 
+const EXPECTED_ROWS = [
+  ["Snapshot Date", "2024-08-31"],
+  ["Policy", "P123"],
+  ["Broker", "Broker B"],
+];
+
+const WRONG_ROWS = [
+  ["Snapshot Date", "2024-08-31"],
+  ["Policy", "P123"],
+  ["Broker", "Broker A / Current Broker"],
+];
+
 export default function RelationshipHistoryPage() {
   useEffect(() => {
     track("learn_page_opened", {
@@ -176,6 +188,31 @@ function DarkExampleCard() {
         <TimelineItem label="Policy P123" value="Broker B" range="Jul – Dec" />
       </div>
 
+      <div style={questionCardStyle}>
+        <div style={questionIconStyle}>?</div>
+
+        <div>
+          <div style={questionBadgeStyle}>Reporting question</div>
+          <div style={questionTextStyle}>
+            Who should receive attribution for an August snapshot: Broker A, Broker B,
+            or the current broker?
+          </div>
+        </div>
+      </div>
+
+      <div style={comparisonGridStyle}>
+        <ResultCard
+          title="Expected Result (Historical)"
+          rows={EXPECTED_ROWS}
+          tone="good"
+        />
+        <ResultCard
+          title="Common Wrong Result (Risk)"
+          rows={WRONG_ROWS}
+          tone="bad"
+        />
+      </div>
+
       <div style={exampleNoteStyle}>
         <div style={exampleNoteLabelStyle}>Snapshot date: August 31</div>
 
@@ -203,6 +240,57 @@ function TimelineItem({
       <div style={timelineValueStyle}>{value}</div>
       <div style={timelineRangeStyle}>{range}</div>
     </div>
+  );
+}
+
+function ResultCard({
+  title,
+  rows,
+  tone,
+}: {
+  title: string;
+  rows: string[][];
+  tone: "good" | "bad";
+}) {
+  const isGood = tone === "good";
+
+  return (
+    <section
+      style={{
+        ...resultCardStyle,
+        border: isGood ? "1px solid #86efac" : "1px solid #fecaca",
+        background: isGood ? "#f0fdf4" : "#fef2f2",
+      }}
+    >
+      <div style={resultHeaderStyle}>
+        <div
+          style={{
+            ...resultIconStyle,
+            background: isGood ? "#15803d" : "#b91c1c",
+          }}
+        >
+          {isGood ? "✓" : "×"}
+        </div>
+
+        <h3
+          style={{
+            ...resultTitleStyle,
+            color: isGood ? "#166534" : "#991b1b",
+          }}
+        >
+          {title}
+        </h3>
+      </div>
+
+      <div style={resultTableStyle}>
+        {rows.map(([label, value]) => (
+          <div key={`${label}-${value}`} style={resultRowStyle}>
+            <div style={resultPeriodStyle}>{label}</div>
+            <div style={resultValueStyle}>{value}</div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -668,4 +756,107 @@ const tryItButtonStyle: CSSProperties = {
   color: "#ffffff",
   textDecoration: "none",
   fontWeight: 900,
+};
+
+const questionCardStyle: CSSProperties = {
+  marginTop: 22,
+  display: "flex",
+  gap: 18,
+  alignItems: "center",
+  padding: "20px 22px",
+  borderRadius: 16,
+  background: "rgba(250, 204, 21, 0.1)",
+  border: "1px solid rgba(250, 204, 21, 0.55)",
+};
+
+const questionIconStyle: CSSProperties = {
+  width: 46,
+  height: 46,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  flexShrink: 0,
+  border: "2px solid #fde047",
+  color: "#fde047",
+  fontSize: 28,
+  fontWeight: 900,
+};
+
+const questionBadgeStyle: CSSProperties = {
+  color: "#fde047",
+  fontWeight: 900,
+  fontSize: 14,
+  marginBottom: 6,
+};
+
+const questionTextStyle: CSSProperties = {
+  color: "#f8fafc",
+  fontSize: 15,
+  lineHeight: 1.55,
+};
+
+const comparisonGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
+  marginTop: 22,
+};
+
+const resultCardStyle: CSSProperties = {
+  padding: "clamp(18px, 4vw, 24px)",
+  borderRadius: 16,
+  color: "#0f172a",
+  boxShadow: "0 18px 40px rgba(2, 6, 23, 0.22)",
+};
+
+const resultHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  marginBottom: 14,
+};
+
+const resultIconStyle: CSSProperties = {
+  width: 34,
+  height: 34,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  color: "#ffffff",
+  fontSize: 22,
+  fontWeight: 900,
+  flexShrink: 0,
+};
+
+const resultTitleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 16,
+  lineHeight: 1.2,
+  fontWeight: 900,
+};
+
+const resultTableStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+};
+
+const resultRowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 14,
+  padding: "10px 0",
+  borderBottom: "1px solid rgba(15, 23, 42, 0.14)",
+};
+
+const resultPeriodStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#0f172a",
+};
+
+const resultValueStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#0f172a",
+  textAlign: "right",
 };
