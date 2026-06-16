@@ -34,8 +34,64 @@ type TargetValidationResult = {
   };
 };
 
+const TARGET_VALIDATION_EXAMPLES = [
+  {
+    id: "snapshot_output",
+    title: "Snapshot Output",
+    button: "Load Snapshot Output Demo",
+    description:
+      "Monthly snapshot output with duplicate grain, missing month coverage and reproducibility risk.",
+    input: `contract_id,customer_id,snapshot_date,status,premium_amount,customer_segment,valid_from,valid_to,snapshot_method,coverage_status
+C-1001,U-10,2024-01-31,active,120.00,Bronze,2024-01-01,2024-02-01,current_rebuild_only,ok
+C-1001,U-10,2024-02-29,active,120.00,Bronze,2024-02-01,2024-03-01,current_rebuild_only,ok
+C-1001,U-10,2024-04-30,active,135.00,Gold,2024-04-01,2024-05-01,current_rebuild_only,ok
+C-1002,U-20,2024-01-31,active,90.00,Silver,2024-01-01,2024-02-01,current_rebuild_only,ok
+C-1002,U-20,2024-01-31,active,90.00,Silver,2024-01-01,2024-02-01,current_rebuild_only,ok
+C-1002,U-20,2024-02-29,cancelled,90.00,Silver,2024-02-01,2024-03-01,current_rebuild_only,ok`,
+  },
+  {
+    id: "dimension_completion_output",
+    title: "Dimension Completion Output",
+    button: "Load Dimension Completion Demo",
+    description:
+      "Fact snapshots with missing customer dimension values and historical coverage gaps.",
+    input: `contract_id,customer_id,snapshot_date,status,premium_amount,customer_segment,region,valid_from,valid_to,completion_method,coverage_status
+C-2001,U-30,2024-01-31,active,150.00,,North,2024-01-01,2024-02-01,not_completed,coverage_gap
+C-2001,U-30,2024-02-29,active,150.00,,North,2024-02-01,2024-03-01,not_completed,coverage_gap
+C-2001,U-30,2024-03-31,active,150.00,Gold,North,2024-03-01,2024-04-01,completed,ok
+C-2002,U-40,2024-01-31,active,80.00,Silver,,2024-01-01,2024-02-01,not_completed,coverage_gap
+C-2002,U-40,2024-02-29,active,80.00,Silver,West,2024-02-01,2024-03-01,completed,ok`,
+  },
+  {
+    id: "event_prioritization_output",
+    title: "Event Prioritization Output",
+    button: "Load Event Prioritization Demo",
+    description:
+      "Event output with operational noise, duplicate milestones and prioritization issues.",
+    input: `event_id,contract_id,event_time,event_type,reporting_milestone,priority_rank,prioritization_status
+E-001,C-3001,2024-01-03T10:00:00,created,contract_created,1,ok
+E-002,C-3001,2024-01-03T10:05:00,technical_update,contract_created,2,technical_event_kept
+E-003,C-3001,2024-02-10T09:00:00,status_changed,contract_active,1,ok
+E-004,C-3001,2024-02-10T09:01:00,workflow_sync,contract_active,2,workflow_noise_kept
+E-005,C-3002,2024-03-01T11:00:00,cancelled,contract_cancelled,1,duplicate_milestone
+E-006,C-3002,2024-03-01T11:02:00,cancelled,contract_cancelled,1,duplicate_milestone`,
+  },
+];
+
 export function TargetTableValidationPanel() {
   const [input, setInput] = useState("");
+  const [activeExampleId, setActiveExampleId] = useState<string | null>(null);
+  function loadExampleValidation(
+    example: (typeof TARGET_VALIDATION_EXAMPLES)[number]
+  ) {
+    setInput(example.input);
+    setActiveExampleId(example.id);
+
+    track("validation_example_loaded", {
+      example: example.id,
+      inputLength: example.input.length,
+    });
+  }
 
   const result = useMemo(() => {
     if (!input.trim()) return null;
@@ -106,6 +162,97 @@ export function TargetTableValidationPanel() {
         whether the generated historical table has a stable grain, valid-time
         consistency and snapshot coverage.
       </p>
+
+      <div
+        style={{
+          marginBottom: 18,
+          padding: 16,
+          borderRadius: 14,
+          background: "#eff6ff",
+          border: "1px solid #bfdbfe",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 800,
+            color: "#1d4ed8",
+            textTransform: "uppercase",
+            letterSpacing: 0.7,
+            marginBottom: 6,
+          }}
+        >
+          Try an example output
+        </div>
+        
+        <div
+          style={{
+            fontSize: 16,
+            fontWeight: 900,
+            color: "#0f172a",
+            marginBottom: 6,
+          }}
+        >
+          Validate generated tables from notebooks or pipelines
+        </div>
+        
+        <p
+          style={{
+            margin: "0 0 14px",
+            color: "#475569",
+            fontSize: 14,
+            lineHeight: 1.5,
+          }}
+        >
+          Load sample target-table outputs to see checks for snapshot grain,
+          dimension completion, missing coverage, event prioritization and
+          reproducibility risks.
+        </p>
+        
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 10,
+          }}
+        >
+          {TARGET_VALIDATION_EXAMPLES.map((example) => (
+            <button
+              key={example.id}
+              type="button"
+              onClick={() => loadExampleValidation(example)}
+              style={{
+                textAlign: "left",
+                padding: 14,
+                borderRadius: 12,
+                background: activeExampleId === example.id ? "#2563eb" : "#ffffff",
+                color: activeExampleId === example.id ? "#ffffff" : "#0f172a",
+                border:
+                  activeExampleId === example.id
+                    ? "1px solid #1d4ed8"
+                    : "1px solid #bfdbfe",
+                cursor: "pointer",
+                fontWeight: 800,
+              }}
+            >
+              <div style={{ fontSize: 14, marginBottom: 6 }}>
+                {example.button}
+              </div>
+            
+              <div
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                  fontWeight: 600,
+                  color: activeExampleId === example.id ? "#dbeafe" : "#475569",
+                }}
+              >
+                {example.description}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <textarea
         value={input}

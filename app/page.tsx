@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ModelReviewPanel } from "@/components/ModelReviewPanel";
@@ -18,40 +18,14 @@ const TOPIC_TAGS = [
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
-
-  const [showExampleModel, setShowExampleModel] = useState(false);
-
-  const exampleModelRef = useRef<HTMLDivElement>(null);
+  const advisorRef = useRef<HTMLDivElement>(null);
+  const patternsRef = useRef<HTMLDivElement>(null);
   const validateModelRef = useRef<HTMLDivElement>(null);
+  const targetValidationRef = useRef<HTMLDivElement>(null);
+  const advancedValidationRef = useRef<HTMLDivElement>(null);
 
-  function openExampleModel() {
-    setShowExampleModel(true);
-
-    track("activation_cta_clicked", {
-      cta: "see_example_model",
-      source: "activation_section",
-    });
-
-    track("example_model_opened", {
-      source: "activation_section",
-      example: "dimension_completion",
-    });
-
-    setTimeout(() => {
-      exampleModelRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 80);
-  }
-
-  function scrollToValidateModel() {
-    track("activation_cta_clicked", {
-      cta: "review_my_model",
-      source: "activation_section",
-    });
-
-    validateModelRef.current?.scrollIntoView({
+  function scrollToSection(ref: React.RefObject<HTMLDivElement | null>) {
+    ref.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
@@ -173,36 +147,279 @@ export default function Home() {
             </div>
           </div>
         </section>
-                      
-        <PatternEntrySection isMobile={isMobile} />
-                      
-        <div id="advisor-section">
+        <WorkflowSection
+          isMobile={isMobile}
+          onOpenAdvisor={() => scrollToSection(advisorRef)}
+          onOpenPatterns={() => scrollToSection(patternsRef)}
+          onOpenModelReview={() => scrollToSection(validateModelRef)}
+          onOpenTargetValidation={() => scrollToSection(targetValidationRef)}
+          onOpenAdvancedInvestigation={() =>
+            scrollToSection(advancedValidationRef)
+          }
+        />
+
+        <div id="advisor-section" ref={advisorRef}>
           <AdvisorPanel />
         </div>
 
-        <ActivationSection
-          isMobile={isMobile}
-          showExampleModel={showExampleModel}
-          onSeeExampleModel={openExampleModel}
-          onValidateOwnModel={scrollToValidateModel}
-          exampleModelRef={exampleModelRef}
-        />
+        <div ref={patternsRef}>
+          <PatternEntrySection isMobile={isMobile} />
+        </div>
 
         <div id="model-review-section" ref={validateModelRef}>
           <ModelReviewPanel />
         </div>
 
-        <div id="target-table-validation">
+        <div id="target-table-validation" ref={targetValidationRef}>
           <TargetTableValidationPanel />
         </div>
 
-        <TwoSourceValidationWorkflow />
+        <div ref={advancedValidationRef}>
+          <AdvancedInvestigationSection isMobile={isMobile}>
+            <TwoSourceValidationWorkflow />
+          </AdvancedInvestigationSection>
+        </div>
 
         <Footer />
       </div>
 
       <Analytics />
     </main>
+  );
+}
+
+function WorkflowSection({
+  isMobile,
+  onOpenAdvisor,
+  onOpenPatterns,
+  onOpenModelReview,
+  onOpenTargetValidation,
+  onOpenAdvancedInvestigation,
+}: {
+  isMobile: boolean;
+  onOpenAdvisor: () => void;
+  onOpenPatterns: () => void;
+  onOpenModelReview: () => void;
+  onOpenTargetValidation: () => void;
+  onOpenAdvancedInvestigation: () => void;
+}) {
+  const steps = [
+    {
+      step: "design_model",
+      title: "Design your model",
+      text: "Use the Advisor to identify historical modeling patterns, architecture options, risks and engineering decisions.",
+      button: "Open Advisor →",
+      onClick: onOpenAdvisor,
+    },
+    {
+      step: "learn_pattern",
+      title: "Learn the pattern",
+      text: "Explore practical examples for SCD2, bitemporal modeling, snapshot reporting, dimension completion and temporal joins.",
+      button: "Browse Pattern Catalog →",
+      onClick: onOpenPatterns,
+    },
+    {
+      step: "review_model",
+      title: "Review your model",
+      text: "Describe your model logic and get feedback on assumptions, historical risks and missing validation checks.",
+      button: "Review My Model →",
+      onClick: onOpenModelReview,
+    },
+    {
+      step: "validate_output",
+      title: "Validate generated output",
+      text: "Paste a generated historical target table and validate coverage, overlaps, gaps and snapshot consistency.",
+      button: "Open Validation →",
+      onClick: onOpenTargetValidation,
+    },
+  ];
+
+  return (
+    <section
+      style={{
+        marginBottom: 24,
+        padding: isMobile ? 18 : 26,
+        borderRadius: 24,
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        boxShadow: "0 22px 60px rgba(15, 23, 42, 0.28)",
+      }}
+    >
+      <div style={{ maxWidth: 850, marginBottom: 22 }}>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 900,
+            color: "#2563eb",
+            textTransform: "uppercase",
+            letterSpacing: 0.8,
+            marginBottom: 8,
+          }}
+        >
+          Start here
+        </div>
+
+        <h2
+          style={{
+            margin: 0,
+            fontSize: isMobile ? 26 : 36,
+            letterSpacing: "-0.045em",
+            color: "#0f172a",
+          }}
+        >
+          Historical modeling workflow
+        </h2>
+
+        <p
+          style={{
+            margin: "12px 0 0",
+            maxWidth: 820,
+            color: "#475569",
+            fontSize: 16,
+            lineHeight: 1.6,
+          }}
+        >
+          Start with the question you are facing right now. The workbench helps
+          you move from modeling problem to pattern, implementation decision,
+          validation and advanced debugging.
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobile
+            ? "1fr"
+            : "repeat(auto-fit, minmax(230px, 1fr))",
+          gap: 14,
+        }}
+      >
+          {steps.map((item) => (
+        <div
+          key={item.step}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            padding: 18,
+            borderRadius: 18,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 18,
+              color: "#0f172a",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {item.title}
+          </h3>
+          <p
+            style={{
+              margin: "10px 0 18px",
+              color: "#475569",
+              fontSize: 14,
+              lineHeight: 1.55,
+              flex: 1,
+            }}
+          >
+            {item.text}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              track("workflow_step_clicked", {
+                step: item.step,
+              });
+              item.onClick();
+            }}
+            style={{
+              alignSelf: "flex-start",
+              border: "none",
+              borderRadius: 13,
+              padding: "12px 14px",
+              background: "#0f172a",
+              color: "#ffffff",
+              fontWeight: 900,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            {item.button}
+          </button>
+        </div>
+      ))}
+      </div>
+      <div
+        style={{
+          marginTop: 24,
+          padding: 18,
+          borderRadius: 18,
+          background: "#eff6ff",
+          border: "1px solid #bfdbfe",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 900,
+            color: "#2563eb",
+            textTransform: "uppercase",
+            marginBottom: 8,
+          }}
+        >
+          Advanced Investigation
+        </div>
+        
+        <h3
+          style={{
+            margin: 0,
+            fontSize: 20,
+            color: "#0f172a",
+          }}
+        >
+          Debug historical source behavior
+        </h3>
+        
+        <p
+          style={{
+            marginTop: 10,
+            color: "#475569",
+            lineHeight: 1.6,
+          }}
+        >
+          Compare historized sources, inspect temporal joins,
+          investigate gaps, overlaps, ambiguous matches and
+          visible-time behavior.
+        </p>
+        
+        <button
+          type="button"
+          onClick={() => {
+            track("workflow_step_clicked", {
+              step: "advanced_investigation",
+            });
+          
+            onOpenAdvancedInvestigation();
+          }}
+          style={{
+            marginTop: 14,
+            border: "none",
+            borderRadius: 13,
+            padding: "12px 14px",
+            background: "#2563eb",
+            color: "#ffffff",
+            fontWeight: 900,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          Open Advanced Investigation →
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -272,7 +489,7 @@ function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
               color: "#ffffff",
             }}
           >
-            Learn the patterns behind historical data models.
+            Historical Modeling Pattern Catalog
           </h2>
 
           <p
@@ -285,8 +502,8 @@ function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
               lineHeight: 1.55,
             }}
           >
-            Browse recurring modeling patterns for historized sources, temporal
-            joins, snapshot reporting and bitemporal validation.
+            Browse practical patterns for historized sources, temporal joins, snapshot
+            reporting and bitemporal validation.
           </p>
         </div>
 
@@ -371,409 +588,65 @@ function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
   );
 }
 
-function ActivationSection({
+function AdvancedInvestigationSection({
   isMobile,
-  showExampleModel,
-  onSeeExampleModel,
-  onValidateOwnModel,
-  exampleModelRef,
+  children,
 }: {
   isMobile: boolean;
-  showExampleModel: boolean;
-  onSeeExampleModel: () => void;
-  onValidateOwnModel: () => void;
-  exampleModelRef: RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
 }) {
   return (
     <section
       style={{
-        marginTop: 18,
+        marginTop: 24,
         marginBottom: 28,
-        background: "#ffffff",
-        borderRadius: 22,
-        padding: isMobile ? 18 : 28,
-        boxShadow: "0 22px 60px rgba(15, 23, 42, 0.28)",
-        border: "1px solid #e2e8f0",
+        padding: isMobile ? 18 : 26,
+        borderRadius: 24,
+        background: "rgba(15, 23, 42, 0.72)",
+        border: "1px solid rgba(148, 163, 184, 0.32)",
+        color: "#e2e8f0",
       }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-          gap: 18,
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 900,
-              color: "#2563eb",
-              letterSpacing: 0.6,
-              marginBottom: 8,
-            }}
-          >
-            TYPICAL USE CASES
-          </div>
-
-          <h2
-            style={{
-              margin: 0,
-              fontSize: isMobile ? 24 : 32,
-              letterSpacing: "-0.04em",
-              color: "#0f172a",
-            }}
-          >
-            See how the recommendation looks in a real model.
-          </h2>
-
-          <p
-            style={{
-              margin: "12px 0 0",
-              fontSize: 16,
-              lineHeight: 1.55,
-              color: "#475569",
-            }}
-          >
-            Most historical modeling problems are easier to understand once you
-            see the fact table, dimension table, join logic and snapshot logic
-            together.
-          </p>
-        </div>
-
+      <div style={{ maxWidth: 820, marginBottom: 22 }}>
         <div
           style={{
-            display: "grid",
-            gap: 12,
+            fontSize: 12,
+            fontWeight: 900,
+            color: "#93c5fd",
+            textTransform: "uppercase",
+            letterSpacing: 0.8,
+            marginBottom: 8,
           }}
         >
-          <InfoBox
-            title="Typical use cases"
-            items={[
-              "Month-end reporting",
-              "Snapshot reproducibility",
-              "Corrected history",
-              "Late arriving dimensions",
-            ]}
-          />
-
-          <InfoBox
-            title="Typical challenges"
-            items={[
-              "Dimension completion",
-              "Historical joins",
-              "Relationship history",
-              "Missing dimension rows",
-            ]}
-          />
+          Advanced investigation
         </div>
-      </div>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          gap: 12,
-          marginTop: 22,
-        }}
-      >
-        <button
-          onClick={onSeeExampleModel}
+        <h2
           style={{
-            border: "none",
-            borderRadius: 14,
-            padding: "15px 20px",
-            background: "#2563eb",
+            margin: 0,
+            fontSize: isMobile ? 26 : 34,
+            letterSpacing: "-0.045em",
             color: "#ffffff",
-            fontWeight: 900,
-            fontSize: 15,
-            cursor: "pointer",
-            boxShadow: "0 14px 30px rgba(37, 99, 235, 0.28)",
           }}
         >
-          See Example Model
-        </button>
+          Debug historical source behavior
+        </h2>
 
-        <button
-          onClick={onValidateOwnModel}
+        <p
           style={{
-            border: "1px solid #cbd5e1",
-            borderRadius: 14,
-            padding: "15px 20px",
-            background: "#ffffff",
-            color: "#0f172a",
-            fontWeight: 900,
-            fontSize: 15,
-            cursor: "pointer",
+            margin: "12px 0 0",
+            color: "#cbd5e1",
+            fontSize: 16,
+            lineHeight: 1.6,
           }}
         >
-          Review My Model
-        </button>
+          Use this when you need to compare two historized sources, inspect
+          temporal joins, investigate gaps, overlaps, ambiguous matches or
+          visible-time behavior.
+        </p>
       </div>
 
-      {showExampleModel && (
-        <div ref={exampleModelRef}>
-          <ExampleModel isMobile={isMobile} />
-        </div>
-      )}
+      {children}
     </section>
-  );
-}
-
-function InfoBox({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div
-      style={{
-        border: "1px solid #e2e8f0",
-        borderRadius: 16,
-        padding: 16,
-        background: "#f8fafc",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 900,
-          color: "#0f172a",
-          marginBottom: 10,
-        }}
-      >
-        {title}
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {items.map((item) => (
-          <span
-            key={item}
-            style={{
-              padding: "7px 10px",
-              borderRadius: 999,
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              color: "#334155",
-              fontSize: 12,
-              fontWeight: 800,
-            }}
-          >
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ExampleModel({ isMobile }: { isMobile: boolean }) {
-  return (
-    <div
-      style={{
-        marginTop: 26,
-        borderTop: "1px solid #e2e8f0",
-        paddingTop: 24,
-      }}
-    >
-      <div
-        style={{
-          display: "inline-flex",
-          padding: "7px 11px",
-          borderRadius: 999,
-          background: "#eff6ff",
-          color: "#1d4ed8",
-          fontSize: 12,
-          fontWeight: 900,
-          marginBottom: 12,
-        }}
-      >
-        EXAMPLE MODEL · DIMENSION COMPLETION
-      </div>
-      <h3
-        style={{
-          margin: 0,
-          fontSize: isMobile ? 22 : 28,
-          letterSpacing: "-0.035em",
-          color: "#0f172a",
-        }}
-      >
-        Completing customer history for month-end contract snapshots
-      </h3>
-      <p
-        style={{
-          margin: "10px 0 20px",
-          color: "#475569",
-          fontSize: 15,
-          lineHeight: 1.55,
-          maxWidth: 820,
-        }}
-      >
-        A contract fact exists for every month-end snapshot. The customer
-        dimension changes independently and may not contain a row for every
-        contract snapshot period. Dimension completion fills the missing
-        historical context before the snapshot model is joined.
-      </p>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-          gap: 14,
-        }}
-      >
-        <ModelCard
-          title="Fact table"
-          subtitle="contract_month_snapshot"
-          rows={[
-            "contract_id",
-            "customer_id",
-            "snapshot_month",
-            "premium_amount",
-            "status",
-          ]}
-        />
-        <ModelCard
-          title="Historized dimension"
-          subtitle="dim_customer_scd2"
-          rows={[
-            "customer_id",
-            "customer_segment",
-            "valid_from",
-            "valid_to",
-            "visible_from",
-            "visible_to",
-          ]}
-        />
-        <ModelCard
-          title="Join logic"
-          subtitle="as-of snapshot join"
-          rows={[
-            "fact.customer_id = dim.customer_id",
-            "snapshot_month >= valid_from",
-            "snapshot_month < valid_to",
-            "report_run_time >= visible_from",
-          ]}
-        />
-        <ModelCard
-          title="Snapshot logic"
-          subtitle="month-end reproducibility"
-          rows={[
-            "One fact row per contract and month",
-            "Dimension state resolved as of month-end",
-            "Corrected history controlled by visible time",
-            "Missing dimension periods are completed first",
-          ]}
-        />
-      </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          gap: 12,
-          marginTop: 24,
-        }}
-      >
-        <button
-          onClick={() => {
-            track("example_model_cta_clicked", {
-              cta: "review_my_model",
-            });
-          
-            document
-              .getElementById("model-review-section")
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-          style={{
-            border: "none",
-            borderRadius: 14,
-            padding: "15px 20px",
-            background: "#2563eb",
-            color: "#ffffff",
-            fontWeight: 900,
-            fontSize: 15,
-            cursor: "pointer",
-            boxShadow: "0 14px 30px rgba(37, 99, 235, 0.24)",
-          }}
-        >
-          Review My Model
-        </button>
-        <button
-          onClick={() => {
-            track("example_model_cta_clicked", {
-              cta: "explore_more_patterns",
-            });
-          
-            window.location.href = "/patterns";
-          }}
-          style={{
-            border: "1px solid #cbd5e1",
-            borderRadius: 14,
-            padding: "15px 20px",
-            background: "#ffffff",
-            color: "#0f172a",
-            fontWeight: 900,
-            fontSize: 15,
-            cursor: "pointer",
-          }}
-        >
-          Explore More Patterns
-        </button>
-      </div>
-    </div>
-  );
-}
-function ModelCard({
-  title,
-  subtitle,
-  rows,
-}: {
-  title: string;
-  subtitle: string;
-  rows: string[];
-}) {
-  return (
-    <div
-      style={{
-        border: "1px solid #e2e8f0",
-        borderRadius: 16,
-        padding: 16,
-        background: "#f8fafc",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 900,
-          color: "#0f172a",
-        }}
-      >
-        {title}
-      </div>
-      <div
-        style={{
-          marginTop: 4,
-          marginBottom: 12,
-          fontSize: 12,
-          color: "#64748b",
-          fontWeight: 800,
-        }}
-      >
-        {subtitle}
-      </div>
-      <div style={{ display: "grid", gap: 7 }}>
-        {rows.map((row) => (
-          <code
-            key={row}
-            style={{
-              display: "block",
-              padding: "8px 10px",
-              borderRadius: 10,
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              color: "#334155",
-              fontSize: 12,
-            }}
-          >
-            {row}
-          </code>
-        ))}
-      </div>
-    </div>
   );
 }
