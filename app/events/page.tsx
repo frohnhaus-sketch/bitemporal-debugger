@@ -389,8 +389,15 @@ export default async function EventsPage() {
   const scrollDepthEvents = counts["scroll_depth"] ?? 0;
 
   const exampleModelOpened = counts["example_model_opened"] ?? 0;
-  const activationCtaClicks = counts["activation_cta_clicked"] ?? 0;
+
+  const activationSectionCtaClicks = counts["activation_cta_clicked"] ?? 0;
   const exampleModelCtaClicks = counts["example_model_cta_clicked"] ?? 0;
+
+  const seeExampleModelClicks = humanEvents.filter(
+    (event) =>
+      event.event === "activation_cta_clicked" &&
+      event.data?.cta === "see_example_model"
+  ).length;
 
   const reviewMyModelClicks = humanEvents.filter(
     (event) =>
@@ -613,12 +620,22 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
   .sort((a, b) => b.avgMaxScroll - a.avgMaxScroll);
 
   const activationCtaRows = Object.entries(
-    countBy(humanEvents, (event) =>
-      event.event === "activation_cta_clicked" ||
-      event.event === "example_model_cta_clicked"
-        ? `${event.event}: ${getDataValue(event, "cta")}`
-        : null
-    )
+    countBy(humanEvents, (event) => {
+      if (
+        event.event !== "activation_cta_clicked" &&
+        event.event !== "example_model_cta_clicked"
+      ) {
+        return null;
+      }
+    
+      const cta = getDataValue(event, "cta") ?? "unknown";
+      const source =
+        event.event === "activation_cta_clicked"
+          ? "Activation Section"
+          : "Example Model";
+    
+      return `${source}: ${cta.replaceAll("_", " ")}`;
+    })
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
@@ -695,9 +712,10 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
           </MetricSection>
 
           <MetricSection title="Activation Funnel">
+            <MetricCard label="Activation Section CTAs" value={activationSectionCtaClicks} />
+            <MetricCard label="See Example Clicks" value={seeExampleModelClicks} />
             <MetricCard label="Example Models Opened" value={exampleModelOpened} />
-            <MetricCard label="Activation CTA Clicks" value={activationCtaClicks} />
-            <MetricCard label="Example CTA Clicks" value={exampleModelCtaClicks} />
+            <MetricCard label="Example Model CTAs" value={exampleModelCtaClicks} />
             <MetricCard label="Review My Model Clicks" value={reviewMyModelClicks} />
             <MetricCard label="Explore Pattern Clicks" value={exploreMorePatternsClicks} />
             <MetricCard label="Example Open Rate" value={`${exampleOpenRate}%`} />
@@ -745,8 +763,6 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
             <MetricCard label="Timeline Overlaps" value={timelineOverlapClicks} />
             <MetricCard label="Total Events" value={totalEvents} />
             <MetricCard label="Loaded Events" value={loadedEvents} />
-            <MetricCard label="Human Events" value={humanEventCount} />
-            <MetricCard label="Bot Events" value={botEvents.length} />
           </MetricSection>
         </div>
 

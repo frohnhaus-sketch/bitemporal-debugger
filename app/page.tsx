@@ -27,6 +27,11 @@ export default function Home() {
   function openExampleModel() {
     setShowExampleModel(true);
 
+    track("activation_cta_clicked", {
+      cta: "see_example_model",
+      source: "activation_section",
+    });
+
     track("example_model_opened", {
       source: "activation_section",
       example: "dimension_completion",
@@ -43,6 +48,7 @@ export default function Home() {
   function scrollToValidateModel() {
     track("activation_cta_clicked", {
       cta: "review_my_model",
+      source: "activation_section",
     });
 
     validateModelRef.current?.scrollIntoView({
