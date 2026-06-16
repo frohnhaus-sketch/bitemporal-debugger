@@ -329,30 +329,51 @@ export default async function EventsPage() {
   }
 
   const events = (data ?? []) as EventRow[];
+  function isBotEvent(event: EventRow) {
+    const ua = event.user_agent?.toLowerCase() ?? "";
+
+    return (
+      ua.includes("google-inspectiontool") ||
+      ua.includes("googlebot") ||
+      ua.includes("bingbot") ||
+      ua.includes("crawler") ||
+      ua.includes("spider") ||
+      ua.includes("bot")
+    );
+  }
+
+  const humanEvents = events.filter((event) => !isBotEvent(event));
+  const botEvents = events.filter(isBotEvent);
   const totalEvents = count ?? events.length;
   const loadedEvents = events.length;
+  const humanEventCount = humanEvents.length;
 
-  const counts = events.reduce<Record<string, number>>((acc, e) => {
+  const counts = humanEvents.reduce<Record<string, number>>((acc, e) => {
     acc[e.event] = (acc[e.event] ?? 0) + 1;
     return acc;
   }, {});
 
-  const pageViews = counts["page_view"] ?? 0;
-  const uniqueVisitors = new Set(events.map((e) => e.ip_hash).filter(Boolean)).size;
-  const interactions = events.filter((e) => e.event !== "page_view").length;
+  const pageViews =
+  (counts["page_view"] ?? 0) +
+  (counts["learn_page_opened"] ?? 0) +
+  (counts["patterns_page_opened"] ?? 0);
+  const uniqueVisitors = new Set(humanEvents.map((e) => e.ip_hash).filter(Boolean)).size;
+  const interactions = humanEvents.filter(
+    (e) => !["page_view", "learn_page_opened", "patterns_page_opened"].includes(e.event)
+  ).length;
 
   const advisorStarted = counts["advisor_started"] ?? 0;
   const advisorQuestionChanges = counts["advisor_question_changed"] ?? 0;
   const advisorInteractions = advisorQuestionChanges;
   const advisorToggled = counts["advisor_toggled"] ?? 0;
 
-  const advisorExpanded = events.filter(
+  const advisorExpanded = humanEvents.filter(
     (event) =>
       event.event === "advisor_toggled" &&
       event.data?.open === true
   ).length;
 
-  const advisorCollapsed = events.filter(
+  const advisorCollapsed = humanEvents.filter(
     (event) =>
       event.event === "advisor_toggled" &&
       event.data?.open === false
@@ -371,14 +392,14 @@ export default async function EventsPage() {
   const activationCtaClicks = counts["activation_cta_clicked"] ?? 0;
   const exampleModelCtaClicks = counts["example_model_cta_clicked"] ?? 0;
 
-  const reviewMyModelClicks = events.filter(
+  const reviewMyModelClicks = humanEvents.filter(
     (event) =>
       (event.event === "activation_cta_clicked" ||
         event.event === "example_model_cta_clicked") &&
       event.data?.cta === "review_my_model"
   ).length;
 
-  const exploreMorePatternsClicks = events.filter(
+  const exploreMorePatternsClicks = humanEvents.filter(
     (event) =>
       event.event === "example_model_cta_clicked" &&
       event.data?.cta === "explore_more_patterns"
@@ -473,7 +494,11 @@ export default async function EventsPage() {
     ? Math.round((totalCopies / workflowActions) * 100)
     : 0;
 
-  const sourceCounts = events.reduce<Record<string, number>>((acc, event) => {
+  const entryEvents = humanEvents.filter((event) =>
+    ["page_view", "patterns_page_opened", "learn_page_opened"].includes(event.event)
+  );
+
+  const sourceCounts = entryEvents.reduce<Record<string, number>>((acc, event) => {
     const source = getTrafficSource(getEventReferrer(event));
     acc[source] = (acc[source] ?? 0) + 1;
     return acc;
@@ -486,7 +511,7 @@ export default async function EventsPage() {
   const eventTypeRows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
   const topAdvisorQuestions = Object.entries(
-    countBy(events, (event) =>
+    countBy(humanEvents, (event) =>
       event.event === "advisor_question_changed"
         ? getDataValue(event, "question")
         : null
@@ -496,7 +521,7 @@ export default async function EventsPage() {
     .slice(0, 8);
 
   const topAdvisorValues = Object.entries(
-    countBy(events, (event) =>
+    countBy(humanEvents, (event) =>
       event.event === "advisor_question_changed"
         ? `${getDataValue(event, "question")}: ${getDataValue(event, "value")}`
         : null
@@ -506,7 +531,7 @@ export default async function EventsPage() {
     .slice(0, 10);
 
   const topPatterns = Object.entries(
-    countBy(events, (event) =>
+    countBy(humanEvents, (event) =>
       event.event === "pattern_learn_more_clicked" ||
       event.event === "pattern_card_clicked"
         ? getDataValue(event, "pattern")
@@ -517,7 +542,7 @@ export default async function EventsPage() {
     .slice(0, 10);
 
   const topPatternGroups = Object.entries(
-    countBy(events, (event) =>
+    countBy(humanEvents, (event) =>
       event.event === "pattern_learn_more_clicked" ||
       event.event === "pattern_card_clicked"
         ? getDataValue(event, "group")
@@ -527,7 +552,7 @@ export default async function EventsPage() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
 
-const scrollByVisitorAndPage = events.reduce<Record<string, number>>(
+const scrollByVisitorAndPage = humanEvents.reduce<Record<string, number>>(
   (acc, event) => {
     if (event.event !== "scroll_depth") return acc;
 
@@ -588,7 +613,7 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
   .sort((a, b) => b.avgMaxScroll - a.avgMaxScroll);
 
   const activationCtaRows = Object.entries(
-    countBy(events, (event) =>
+    countBy(humanEvents, (event) =>
       event.event === "activation_cta_clicked" ||
       event.event === "example_model_cta_clicked"
         ? `${event.event}: ${getDataValue(event, "cta")}`
@@ -599,7 +624,7 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
     .slice(0, 10);
 
   const topAdvisorRecommendations = Object.entries(
-    countBy(events, (event) =>
+    countBy(humanEvents, (event) =>
       event.event === "advisor_recommendation_generated"
         ? getDataValue(event, "recommendation")
         : null
@@ -651,6 +676,8 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
             <MetricCard label="Unique Visitors" value={uniqueVisitors} />
             <MetricCard label="Page Views" value={pageViews} />
             <MetricCard label="Interactions" value={interactions} />
+            <MetricCard label="Human Events" value={humanEventCount} />
+            <MetricCard label="Bot Events" value={botEvents.length} />
           </MetricSection>
 
           <MetricSection title="Advisor Funnel">
@@ -718,6 +745,8 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
             <MetricCard label="Timeline Overlaps" value={timelineOverlapClicks} />
             <MetricCard label="Total Events" value={totalEvents} />
             <MetricCard label="Loaded Events" value={loadedEvents} />
+            <MetricCard label="Human Events" value={humanEventCount} />
+            <MetricCard label="Bot Events" value={botEvents.length} />
           </MetricSection>
         </div>
 
@@ -801,7 +830,7 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
               </thead>
 
               <tbody>
-                {events.slice(0, 100).map((event, index) => (
+                {humanEvents.slice(0, 100).map((event, index) => (
                   <tr
                     key={event.id ?? index}
                     style={{
