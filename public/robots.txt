@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://bitemporal-debugger.vercel.app/sitemap.xml
