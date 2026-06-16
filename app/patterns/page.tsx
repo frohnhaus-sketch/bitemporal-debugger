@@ -3,167 +3,211 @@
 import { useEffect, useRef } from "react";
 import { track } from "@/lib/analytics";
 
-const PATTERN_GROUPS = [
+type PatternCategory = "challenge" | "modeling" | "engineering";
+
+type PatternItem = {
+  name: string;
+  text: string;
+  examples: string[];
+  href?: string;
+  interactive?: boolean;
+  category: PatternCategory;
+};
+
+const PATTERN_GROUPS: {
+  title: string;
+  description: string;
+  category: PatternCategory;
+  patterns: PatternItem[];
+}[] = [
   {
-    title: "Foundations",
-    description: "Basic building blocks of historical data models.",
+    title: "Engineering Challenges",
+    description:
+      "Historical modeling problems, risks and validation findings engineers need to detect and explain.",
+    category: "challenge",
     patterns: [
-      {
-        name: "State Modeling",
-        text: "Represents the state of a business entity over a valid time interval.",
-        examples: ["Customer", "Contract", "Policy", "Product"],
-      },
-      {
-        name: "Event Modeling",
-        text: "Represents discrete business events that happened at a point in time.",
-        examples: ["Order created", "Claim filed", "Payment received"],
-      },
-      {
-        name: "Bitemporal Modeling",
-        text: "Separates business-valid time from system-visible time.",
-        examples: ["Corrected history", "Audit reporting", "As-known reporting"],
-      },
-      {
-        name: "SCD2 vs Bitemporal Modeling",
-        text: "Compares valid-time-only history with models that also preserve when information became known.",
-        examples: ["SCD2 dimensions", "Visible time", "Corrected history"],
-        interactive: true,
-      },
-    ],
-  },
-  {
-    title: "Alignment Patterns",
-    description: "Patterns for connecting histories across sources.",
-    patterns: [
-      {
-        name: "State ↔ State Alignment",
-        text: "Aligns two historized state sources across overlapping validity periods.",
-        examples: ["Contract ↔ Customer", "Policy ↔ Broker", "Product ↔ Price"],
-        interactive: true,
-      },
-      {
-        name: "State ↔ Event Alignment",
-        text: "Maps events to the state that was valid when the event happened.",
-        examples: ["Claim ↔ Policy", "Mutation ↔ Contract"],
-      },
-      {
-        name: "Historical Conformance",
-        text: "Aligns competing timelines from multiple source systems.",
-        examples: ["CRM + ERP", "Policy system + billing system"],
-        interactive: true,
-      },
-    ],
-  },
-  {
-    title: "Dimension Patterns",
-    description: "Patterns for historized dimensions and relationships.",
-    patterns: [
-      {
-        name: "Dimension Completion",
-        text: "Ensures dimension history covers all required fact periods.",
-        examples: ["Late arriving dimensions", "Missing foreign keys"],
-        interactive: true,
-      },
-      {
-        name: "Relationship History",
-        text: "Models relationships that change over time.",
-        examples: ["Customer ↔ Advisor", "Policy ↔ Broker"],
-        interactive: true,
-      },
-      {
-        name: "Identity Resolution",
-        text: "Resolves multiple identifiers for the same business entity.",
-        examples: ["Customer merge", "Contract migration"],
-      },
-    ],
-  },
-  {
-    title: "Reporting Patterns",
-    description: "Patterns for reproducible historical reporting.",
-    patterns: [
-      {
-        name: "Snapshot Fact Modeling",
-        text: "Builds reproducible reporting facts for periodic snapshots.",
-        examples: [
-          "Month-end portfolio",
-          "Active contracts",
-          "Customer balances",
-        ],
-      },
-      {
-        name: "Snapshot Reproducibility",
-        text: "Ensures reports can be reproduced for the same reporting date.",
-        examples: ["Month-end snapshots", "Audit reports"],
-        interactive: true,
-      },
-      {
-        name: "As-Known Reporting",
-        text: "Answers historical questions using only the information known at the reporting time.",
-        examples: ["Visible time", "Audit reports", "As-of knowledge"],
-      },
-      {
-        name: "Historical Correction",
-        text: "Preserves corrected history without losing what was known before.",
-        examples: ["Backdated changes", "Retroactive corrections", "Restatements"],
-        interactive: true,
-      },
-      {
-        name: "Historical Backfill",
-        text: "Reconstructs history after data already exists.",
-        examples: ["CDC replay", "Historical reload"],
-      },
-    ],
-  },
-  {
-    title: "Data Quality Patterns",
-    description: "Patterns for detecting historical modeling risks.",
-    patterns: [
-      {
-        name: "Historical Match Ambiguity",
-        text: "Occurs when multiple historical records satisfy the same temporal join.",
-        examples: ["Duplicate fact rows", "Join explosion", "Multiple valid matches"],
-        interactive: true,
-      },
       {
         name: "Historical Coverage Gap",
         text: "Occurs when required history is missing for a reporting period.",
         examples: ["Missing dimension row", "Uncovered fact interval"],
+        href: "/learn/historical-coverage-gap",
         interactive: true,
+        category: "challenge",
       },
       {
         name: "Historical Overlap",
         text: "Occurs when multiple records are active at the same time.",
         examples: ["Overlapping SCD2 rows", "Ambiguous current state"],
+        href: "/learn/historical-overlap",
         interactive: true,
+        category: "challenge",
+      },
+      {
+        name: "Historical Match Ambiguity",
+        text: "Occurs when multiple historical records satisfy the same temporal join.",
+        examples: ["Duplicate fact rows", "Join explosion", "Multiple valid matches"],
+        href: "/learn/historical-match-ambiguity",
+        interactive: true,
+        category: "challenge",
+      },
+      {
+        name: "Snapshot Reproducibility Risk",
+        text: "Occurs when reports cannot be reproduced for the same reporting date.",
+        examples: ["Month-end snapshots", "Audit reports", "Restatements"],
+        href: "/learn/snapshot-reproducibility",
+        interactive: true,
+        category: "challenge",
       },
     ],
   },
   {
-    title: "Advanced Patterns",
-    description: "Advanced historical modeling techniques.",
+    title: "Modeling Patterns",
+    description:
+      "Target modeling approaches for historized sources, dimensions, relationships and reporting models.",
+    category: "modeling",
     patterns: [
       {
-        name: "Rectangle Decomposition",
-        text: "Creates stable reporting intervals from independently historized attributes.",
-        examples: ["Coverage timelines", "Risk attributes", "Contract projections"],
-        interactive: true,
+        name: "State Modeling",
+        text: "Represents the state of a business entity over a valid time interval.",
+        examples: ["Customer", "Contract", "Policy", "Product"],
+        href: "/learn/state-modeling",
+        category: "modeling",
       },
+      {
+        name: "Event Modeling",
+        text: "Represents discrete business events that happened at a point in time.",
+        examples: ["Order created", "Claim filed", "Payment received"],
+        href: "/learn/event-modeling",
+        category: "modeling",
+      },
+      {
+        name: "Bitemporal Modeling",
+        text: "Separates business-valid time from system-visible time.",
+        examples: ["Corrected history", "Audit reporting", "As-known reporting"],
+        href: "/learn/bitemporal-modeling",
+        category: "modeling",
+      },
+      {
+        name: "SCD2 vs Bitemporal Modeling",
+        text: "Compares valid-time-only history with models that also preserve when information became known.",
+        examples: ["SCD2 dimensions", "Visible time", "Corrected history"],
+        href: "/learn/scd2-vs-bitemporal",
+        interactive: true,
+        category: "modeling",
+      },
+      {
+        name: "State ↔ State Alignment",
+        text: "Aligns two historized state sources across overlapping validity periods.",
+        examples: ["Contract ↔ Customer", "Policy ↔ Broker", "Product ↔ Price"],
+        href: "/learn/state-state-alignment",
+        interactive: true,
+        category: "modeling",
+      },
+      {
+        name: "State ↔ Event Alignment",
+        text: "Maps events to the state that was valid when the event happened.",
+        examples: ["Claim ↔ Policy", "Mutation ↔ Contract"],
+        href: "/learn/state-event-alignment",
+        category: "modeling",
+      },
+      {
+        name: "Historical Conformance",
+        text: "Aligns competing timelines from multiple source systems.",
+        examples: ["CRM + ERP", "Policy system + billing system"],
+        href: "/learn/historical-conformance",
+        interactive: true,
+        category: "modeling",
+      },
+      {
+        name: "Dimension Completion",
+        text: "Ensures dimension history covers all required fact periods.",
+        examples: ["Late arriving dimensions", "Missing foreign keys"],
+        href: "/learn/dimension-completion",
+        interactive: true,
+        category: "modeling",
+      },
+      {
+        name: "Relationship History",
+        text: "Models relationships that change over time.",
+        examples: ["Customer ↔ Advisor", "Policy ↔ Broker"],
+        href: "/learn/relationship-history",
+        interactive: true,
+        category: "modeling",
+      },
+      {
+        name: "Identity Resolution",
+        text: "Resolves multiple identifiers for the same business entity.",
+        examples: ["Customer merge", "Contract migration"],
+        href: "/learn/identity-resolution",
+        category: "modeling",
+      },
+      {
+        name: "Snapshot Fact Modeling",
+        text: "Builds reproducible reporting facts for periodic snapshots.",
+        examples: ["Month-end portfolio", "Active contracts", "Customer balances"],
+        href: "/learn/snapshot-fact-modeling",
+        category: "modeling",
+      },
+      {
+        name: "As-Known Reporting",
+        text: "Answers historical questions using only the information known at the reporting time.",
+        examples: ["Visible time", "Audit reports", "As-of knowledge"],
+        href: "/learn/as-known-reporting",
+        category: "modeling",
+      },
+      {
+        name: "Historical Correction",
+        text: "Preserves corrected history without losing what was known before.",
+        examples: ["Backdated changes", "Retroactive corrections", "Restatements"],
+        href: "/learn/historical-correction",
+        interactive: true,
+        category: "modeling",
+      },
+    ],
+  },
+  {
+    title: "Engineering Patterns",
+    description:
+      "Implementation techniques for transforming, reducing, aligning and rebuilding historical data.",
+    category: "engineering",
+    patterns: [
       {
         name: "Event Prioritization",
         text: "Selects business-relevant events from noisy operational event streams.",
         examples: ["Status changes", "Workflow events", "Event ranking"],
+        href: "/learn/event-prioritization",
         interactive: true,
-      },
-      {
-        name: "State Reduction",
-        text: "Removes irrelevant or redundant historical state changes before reporting.",
-        examples: ["Status cleanup", "Noise reduction", "Reporting states"],
-        interactive: true,
+        category: "engineering",
       },
       {
         name: "Event-to-State Projection",
         text: "Derives valid state intervals from ordered business events.",
         examples: ["Event streams", "Status history", "Snapshot derivation"],
+        href: "/learn/event-to-state-projection",
+        category: "engineering",
+      },
+      {
+        name: "State Reduction",
+        text: "Removes irrelevant or redundant historical state changes before reporting.",
+        examples: ["Status cleanup", "Noise reduction", "Reporting states"],
+        href: "/learn/state-reduction",
+        interactive: true,
+        category: "engineering",
+      },
+      {
+        name: "Rectangle Decomposition",
+        text: "Creates stable reporting intervals from independently historized attributes.",
+        examples: ["Coverage timelines", "Risk attributes", "Contract projections"],
+        href: "/learn/rectangle-decomposition",
+        interactive: true,
+        category: "engineering",
+      },
+      {
+        name: "Historical Backfill",
+        text: "Reconstructs history after data already exists.",
+        examples: ["CDC replay", "Historical reload"],
+        href: "/learn/historical-backfill",
+        category: "engineering",
       },
     ],
   },
@@ -261,7 +305,7 @@ export default function PatternsPage() {
               color: "#ffffff",
             }}
           >
-            Historical Modeling Pattern Catalog
+            Historical Modeling Knowledge Catalog
           </h1>
 
           <p
@@ -273,9 +317,8 @@ export default function PatternsPage() {
               lineHeight: 1.55,
             }}
           >
-            A practical vocabulary for common problems in SCD2 dimensions,
-            snapshots, temporal joins, late-arriving data and historical
-            reporting.
+            A practical vocabulary for historical modeling challenges, target
+            modeling patterns and engineering implementation techniques.
           </p>
         </section>
 
@@ -358,23 +401,9 @@ export default function PatternsPage() {
                       >
                         {pattern.name}
                       </h3>
-                      {[
-                        "SCD2 vs Bitemporal Modeling",
-                        "State ↔ State Alignment",
-                        "Historical Conformance",
-                        "Dimension Completion",
-                        "Relationship History",
-                        "Snapshot Reproducibility",
-                        "Historical Correction",
-                        "Historical Match Ambiguity",
-                        "Historical Coverage Gap",
-                        "Historical Overlap",
-                        "Rectangle Decomposition",
-                        "Event Prioritization",
-                        "State Reduction",
-                      ].includes(pattern.name) && (
+                      {pattern.interactive && (
                         <span
-                          title="Interactive Pattern"
+                          title="Interactive example available"
                           style={{
                             color: "#f59e0b",
                             fontSize: 20,
@@ -422,159 +451,13 @@ export default function PatternsPage() {
                           {example}
                         </span>
                       ))}
-                    </div>                    
-                    {pattern.name === "Dimension Completion" && (
+                    </div>
+                    {pattern.href && (
                       <LearnMoreLink
-                        href="/learn/dimension-completion"
+                        href={pattern.href}
                         pattern={pattern.name}
                         group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Snapshot Reproducibility" && (
-                      <LearnMoreLink
-                        href="/learn/snapshot-reproducibility"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "State ↔ Event Alignment" && (
-                      <LearnMoreLink
-                        href="/learn/state-event-alignment"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "State ↔ State Alignment" && (
-                      <LearnMoreLink
-                        href="/learn/state-state-alignment"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Relationship History" && (
-                      <LearnMoreLink
-                        href="/learn/relationship-history"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Historical Coverage Gap" && (
-                      <LearnMoreLink
-                        href="/learn/historical-coverage-gap"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Historical Overlap" && (
-                      <LearnMoreLink
-                        href="/learn/historical-overlap"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Historical Match Ambiguity" && (
-                      <LearnMoreLink
-                        href="/learn/historical-match-ambiguity"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Historical Conformance" && (
-                      <LearnMoreLink
-                        href="/learn/historical-conformance"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Historical Correction" && (
-                      <LearnMoreLink
-                        href="/learn/historical-correction"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Identity Resolution" && (
-                      <LearnMoreLink
-                        href="/learn/identity-resolution"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Historical Backfill" && (
-                      <LearnMoreLink
-                        href="/learn/historical-backfill"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Bitemporal Modeling" && (
-                      <LearnMoreLink
-                        href="/learn/bitemporal-modeling"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "State Modeling" && (
-                      <LearnMoreLink
-                        href="/learn/state-modeling"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Event Modeling" && (
-                      <LearnMoreLink
-                        href="/learn/event-modeling"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Rectangle Decomposition" && (
-                      <LearnMoreLink
-                        href="/learn/rectangle-decomposition"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Event Prioritization" && (
-                      <LearnMoreLink
-                        href="/learn/event-prioritization"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "State Reduction" && (
-                      <LearnMoreLink
-                        href="/learn/state-reduction"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Event-to-State Projection" && (
-                      <LearnMoreLink
-                        href="/learn/event-to-state-projection"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "Snapshot Fact Modeling" && (
-                      <LearnMoreLink
-                        href="/learn/snapshot-fact-modeling"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "As-Known Reporting" && (
-                      <LearnMoreLink
-                        href="/learn/as-known-reporting"
-                        pattern={pattern.name}
-                        group={group.title}
-                      />
-                    )}
-                    {pattern.name === "SCD2 vs Bitemporal Modeling" && (
-                      <LearnMoreLink
-                        href="/learn/scd2-vs-bitemporal"
-                        pattern={pattern.name}
-                        group={group.title}
+                        category={pattern.category}
                       />
                     )}
                   </article>
@@ -592,10 +475,12 @@ function LearnMoreLink({
   href,
   pattern,
   group,
+  category,
 }: {
   href: string;
   pattern: string;
   group: string;
+  category: PatternCategory;
 }) {
   return (
     <a
@@ -606,8 +491,23 @@ function LearnMoreLink({
         track("pattern_learn_more_clicked", {
           pattern,
           group,
+          category,
           href,
         });
+
+        track(
+          category === "challenge"
+            ? "challenge_learn_more_clicked"
+            : category === "modeling"
+            ? "modeling_pattern_learn_more_clicked"
+            : "engineering_pattern_learn_more_clicked",
+          {
+            pattern,
+            group,
+            category,
+            href,
+          }
+        );
       }}
       style={{
         display: "inline-flex",

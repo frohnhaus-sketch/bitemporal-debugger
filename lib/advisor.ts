@@ -37,6 +37,9 @@ export type AdvisorBlueprint = {
   architecture: string[];
   operations: string[];
   patterns: string[];
+  engineeringChallenges: string[];
+  modelingPatterns: string[];
+  engineeringPatterns: string[];
   validationChecklist: string[];
   notebookStructure: string[];
   risks: string[];
@@ -211,6 +214,9 @@ export function generateAdvisorBlueprint(
   const architecture: string[] = [];
   const operations: string[] = [];
   const patterns: string[] = [];
+  const engineeringChallenges: string[] = [];
+  const modelingPatterns: string[] = [];
+  const engineeringPatterns: string[] = [];  
   const validationChecklist: string[] = [];
   const notebookStructure: string[] = [
     "01_load_sources",
@@ -451,8 +457,30 @@ export function generateAdvisorBlueprint(
     );
   }
 
-  const uniquePatterns = sortByPreferredOrder(unique(patterns), PATTERN_ORDER);
+  const categorized = categorizeAdvisorRecommendations(patterns, risks);
+
+  const uniqueEngineeringChallenges = sortByPreferredOrder(
+    unique([...engineeringChallenges, ...categorized.engineeringChallenges]),
+    CHALLENGE_ORDER
+  ).slice(0, 5);
+
+  const uniqueModelingPatterns = sortByPreferredOrder(
+    unique([...modelingPatterns, ...categorized.modelingPatterns]),
+    MODELING_PATTERN_ORDER
+  ).slice(0, 6);
+
+  const uniqueEngineeringPatterns = sortByPreferredOrder(
+    unique([...engineeringPatterns, ...categorized.engineeringPatterns]),
+    ENGINEERING_PATTERN_ORDER
+  ).slice(0, 4);
+
+  const uniquePatterns = [
+    ...uniqueModelingPatterns,
+    ...uniqueEngineeringPatterns,
+  ];
+
   const uniqueRisks = sortByPreferredOrder(unique(risks), RISK_ORDER);
+
   const uniqueValidationChecks = sortByPreferredOrder(
     unique(validationChecks),
     VALIDATION_ORDER
@@ -467,12 +495,148 @@ export function generateAdvisorBlueprint(
     architecture: unique(architecture),
     operations: unique(operations),
     patterns: uniquePatterns,
+    engineeringChallenges: uniqueEngineeringChallenges,
+    modelingPatterns: uniqueModelingPatterns,
+    engineeringPatterns: uniqueEngineeringPatterns,
     validationChecklist: unique(validationChecklist),
     notebookStructure: unique(notebookStructure),
     risks: uniqueRisks,
     validationChecks: uniqueValidationChecks,
     communityEvidence,
   };
+}
+
+const CHALLENGE_ORDER = [
+  "Historical Coverage Gap",
+  "Historical Overlap",
+  "Historical Match Ambiguity",
+  "Snapshot Reproducibility Risk",
+  "Late Arriving Dimensions",
+  "Event-to-State Mismatch",
+  "Cross-System Timeline Drift",
+];
+
+const MODELING_PATTERN_ORDER = [
+  "State Modeling",
+  "Event Modeling",
+  "Bitemporal Modeling",
+  "SCD2 vs Bitemporal Modeling",
+  "State ↔ State Alignment",
+  "State ↔ Event Alignment",
+  "Historical Conformance",
+  "Dimension Completion",
+  "Relationship History",
+  "Identity Resolution",
+  "Snapshot Fact Modeling",
+  "Snapshot Reproducibility",
+  "As-Known Reporting",
+  "Historical Correction",
+];
+
+const ENGINEERING_PATTERN_ORDER = [
+  "Event Prioritization",
+  "Event-to-State Projection",
+  "State Reduction",
+  "Rectangle Decomposition",
+  "Historical Backfill",
+];
+
+function categorizeAdvisorRecommendations(patterns: string[], risks: string[]) {
+  const engineeringChallenges: string[] = [];
+  const modelingPatterns: string[] = [];
+  const engineeringPatterns: string[] = [];
+
+  patterns.forEach((pattern) => {
+    if (isBrokenAdvisorPattern(pattern)) return;
+
+    if (CHALLENGE_ORDER.includes(pattern)) {
+      engineeringChallenges.push(pattern);
+      return;
+    }
+
+    if (MODELING_PATTERN_ORDER.includes(pattern)) {
+      modelingPatterns.push(pattern);
+      return;
+    }
+
+    if (ENGINEERING_PATTERN_ORDER.includes(pattern)) {
+      engineeringPatterns.push(pattern);
+      return;
+    }
+  });
+
+  risks.forEach((risk) => {
+    if (
+      risk === "Historical gaps" ||
+      risk === "Missing snapshot coverage" ||
+      risk === "Missing dimension coverage"
+    ) {
+      engineeringChallenges.push("Historical Coverage Gap");
+    }
+
+    if (risk === "Historical overlaps") {
+      engineeringChallenges.push("Historical Overlap");
+    }
+
+    if (risk === "Event-to-state mismatch") {
+      engineeringChallenges.push("Event-to-State Mismatch");
+      engineeringPatterns.push("Event-to-State Projection");
+    }
+
+    if (risk === "Cross-system timeline drift") {
+      engineeringChallenges.push("Cross-System Timeline Drift");
+      modelingPatterns.push("Historical Conformance");
+    }
+
+    if (
+      risk === "Snapshot drift" ||
+      risk === "Non-reproducible audit results"
+    ) {
+      engineeringChallenges.push("Snapshot Reproducibility Risk");
+      modelingPatterns.push("Snapshot Reproducibility");
+    }
+
+    if (risk === "Late arriving dimensions") {
+      engineeringChallenges.push("Late Arriving Dimensions");
+      modelingPatterns.push("Dimension Completion");
+      engineeringPatterns.push("Historical Backfill");
+    }
+
+    if (risk === "Incorrect event ordering") {
+      engineeringPatterns.push("Event Prioritization");
+    }
+
+    if (risk === "Duplicate events") {
+      engineeringPatterns.push("Event Prioritization");
+    }
+
+    if (risk === "Lost correction history") {
+      modelingPatterns.push("Historical Correction");
+      modelingPatterns.push("Bitemporal Modeling");
+    }
+
+    if (risk === "Identity mismatch") {
+      modelingPatterns.push("Identity Resolution");
+    }
+
+    if (risk === "Incorrect historical relationships") {
+      modelingPatterns.push("Relationship History");
+    }
+  });
+
+  return {
+    engineeringChallenges,
+    modelingPatterns,
+    engineeringPatterns,
+  };
+}
+
+function isBrokenAdvisorPattern(pattern: string) {
+  return (
+    pattern === "CDC History Modeling" ||
+    pattern === "Reference Data Conformance" ||
+    pattern === "SCD1 Dimension Modeling"
+  );
 }
 
 export function generateAdvisorMarkdown(
@@ -512,11 +676,25 @@ This recommendation was generated from the following modeling inputs:
 - Time-dependent relationships: ${formatYesNo(answers.changingRelationships)}
 - Dimension behavior: ${formatDimensionNeed(answers.historizedDimensions)}
 
-## Required Patterns
+## Engineering Challenges
 
-${toMarkdownList(blueprint.patterns)}
+What can go wrong in this historical model:
 
-## Community Evidence
+${toMarkdownList(blueprint.engineeringChallenges)}
+
+## Recommended Modeling Patterns
+
+What the target historical model should look like:
+
+${toMarkdownList(blueprint.modelingPatterns)}
+
+## Recommended Engineering Patterns
+
+How to implement the required historical transformation:
+
+${toMarkdownList(blueprint.engineeringPatterns)}
+
+## Common Use Cases
 
 ${generateCommunityEvidenceMarkdown(blueprint.communityEvidence)}
 
@@ -543,7 +721,7 @@ ${generateImplementationStructureMarkdown(answers)}
 }
 
 function generateCommunityEvidenceMarkdown(evidence: CommunityEvidence[]) {
-  if (evidence.length === 0) return "- No community evidence mapped";
+  if (evidence.length === 0) return "- No Common Use Cases mapped";
 
   return evidence
     .map(

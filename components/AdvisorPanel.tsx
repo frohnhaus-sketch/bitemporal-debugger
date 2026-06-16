@@ -26,7 +26,7 @@ export function AdvisorPanel() {
 
     track("advisor_viewed", {
       defaultReportingGoal: "SNAPSHOT",
-      defaultSourceTypes: "State Records,Events",
+      defaultSourceTypes: "",
       defaultHistoryCorrected: "YES",
       defaultMultipleSystems: "YES",
       defaultChangingRelationships: "YES",
@@ -36,7 +36,7 @@ export function AdvisorPanel() {
 
   const [answers, setAnswers] = useState<AdvisorAnswers>({
     reportingGoal: "SNAPSHOT",
-    sourceTypes: ["State Records", "Events"],
+    sourceTypes: [],
     historyCorrected: "YES",
     multipleSystems: "YES",
     changingRelationships: "YES",
@@ -45,11 +45,39 @@ export function AdvisorPanel() {
 
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
+  const [advisorStep, setAdvisorStep] = useState(0);
+
+  const [hasGeneratedRecommendation, setHasGeneratedRecommendation] =
+    useState(false);
+
+  const totalAdvisorSteps = 6;
+  const advisorProgress = Math.round(((advisorStep + 1) / totalAdvisorSteps) * 100);
+  const isLastAdvisorStep = advisorStep === totalAdvisorSteps - 1;
+
   const blueprint = useMemo(() => generateAdvisorBlueprint(answers), [answers]);
 
   const markdown = useMemo(
     () => generateAdvisorMarkdown(answers, blueprint),
     [answers, blueprint]
+  );
+
+  const advisorItems = useMemo(
+    () => ({
+      engineeringChallenges: blueprint.engineeringChallenges
+        .map((name) => getAdvisorItem(name))
+        .filter((item): item is AdvisorItem => item !== null),
+      modelingPatterns: blueprint.modelingPatterns
+        .map((name) => getAdvisorItem(name))
+        .filter((item): item is AdvisorItem => item !== null),
+      engineeringPatterns: blueprint.engineeringPatterns
+        .map((name) => getAdvisorItem(name))
+        .filter((item): item is AdvisorItem => item !== null),
+    }),
+    [
+      blueprint.engineeringChallenges,
+      blueprint.modelingPatterns,
+      blueprint.engineeringPatterns,
+    ]
   );
 
   function trackAdvisorStarted() {
@@ -87,7 +115,9 @@ export function AdvisorPanel() {
       multipleSystems: answers.multipleSystems,
       changingRelationships: answers.changingRelationships,
       historizedDimensions: answers.historizedDimensions,
-      patternCount: blueprint.patterns.length,
+      challengeCount: advisorItems.engineeringChallenges.length,
+      modelingPatternCount: advisorItems.modelingPatterns.length,
+      engineeringPatternCount: advisorItems.engineeringPatterns.length,
       riskCount: blueprint.risks.length,
       validationCheckCount: blueprint.validationChecks.length,
     });
@@ -106,10 +136,22 @@ export function AdvisorPanel() {
       : null,
   ].filter(Boolean);
 
+  const advisorSummaryChips = [
+    getReportingGoalLabel(answers.reportingGoal),
+    ...answers.sourceTypes,
+    getDimensionLabel(answers.historizedDimensions),
+    answers.historyCorrected === "YES" ? "Corrected history" : null,
+    answers.multipleSystems === "YES" ? "Multiple systems" : null,
+    answers.changingRelationships === "YES"
+      ? "Changing relationships"
+      : null,
+  ].filter(Boolean) as string[];
+
   function toggleSourceType(sourceType: SourceType) {
     trackAdvisorStarted();
     hasInteractedWithAdvisor.current = true;
 
+    setHasGeneratedRecommendation(false);
     setAnswers((prev) => {
       const exists = prev.sourceTypes.includes(sourceType);
 
@@ -143,6 +185,7 @@ export function AdvisorPanel() {
       value: Array.isArray(value) ? value.join(",") : String(value),
     });
 
+    setHasGeneratedRecommendation(false);
     setAnswers((prev) => ({
       ...prev,
       [question]: value,
@@ -185,6 +228,49 @@ export function AdvisorPanel() {
     }, 2000);
   }
 
+  function goToPreviousAdvisorStep() {
+    setAdvisorStep((step) => Math.max(0, step - 1));
+
+    track("advisor_step_changed", {
+      direction: "back",
+      fromStep: advisorStep + 1,
+      toStep: Math.max(0, advisorStep - 1) + 1,
+    });
+  }
+
+  function goToNextAdvisorStep() {
+  if (isLastAdvisorStep) {
+    setHasGeneratedRecommendation(true);
+
+    track("advisor_recommendation_requested", {
+      step: advisorStep + 1,
+      reportingGoal: answers.reportingGoal,
+      sourceTypes: answers.sourceTypes.join(","),
+      historyCorrected: answers.historyCorrected,
+      multipleSystems: answers.multipleSystems,
+      changingRelationships: answers.changingRelationships,
+      historizedDimensions: answers.historizedDimensions,
+      recommendation: blueprint.recommendation,
+      challengeCount: advisorItems.engineeringChallenges.length,
+      modelingPatternCount: advisorItems.modelingPatterns.length,
+      engineeringPatternCount: advisorItems.engineeringPatterns.length,
+    });
+
+    return;
+  }
+
+    setAdvisorStep((step) => Math.min(totalAdvisorSteps - 1, step + 1));
+
+    track("advisor_step_changed", {
+      direction: "next",
+      fromStep: advisorStep + 1,
+      toStep: Math.min(totalAdvisorSteps - 1, advisorStep + 1) + 1,
+    });
+  }
+
+  const canProceedAdvisorStep =
+    advisorStep !== 1 || answers.sourceTypes.length > 0;
+
   return (
     <details
       open
@@ -218,151 +304,269 @@ export function AdvisorPanel() {
           Answer a few questions and get a recommended historical modeling strategy.
         </p>
       </summary>
-
-      <div style={{ display: "grid", gap: 18, marginTop: 24 }}>
-        <QuestionBlock
-          title="1. What should the final reporting model support?"
-          description="Choose the main reporting behavior the historical model needs to produce."
+      <div
+        style={{
+          marginTop: 24,
+          padding: 18,
+          borderRadius: 16,
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            marginBottom: 12,
+          }}
         >
-          <select
-            value={answers.reportingGoal}
-            onChange={(e) =>
-              updateAnswer("reportingGoal", e.target.value as ReportingGoal)
-            }
-            style={inputStyle}
-          >
-            <option value="CURRENT_STATE">Only current state</option>
-            <option value="POINT_IN_TIME">Point-in-time reporting</option>
-            <option value="SNAPSHOT">Periodic snapshot reporting</option>
-            <option value="EVENT">Event-based reporting</option>
-            <option value="AUDIT">Audit / correction history</option>
-          </select>
-        </QuestionBlock>
-
-        <QuestionBlock
-          title="2. What kind of source data do you have?"
-          description="Select all source behaviors that exist in your historical model."
-          examples={[
-            "State = valid intervals",
-            "Event = point-in-time changes",
-            "Journal / CDC = change log",
-            "Reference Data = product, region or category lookups",
-            "Business Relationships = customer ↔ advisor, contract ↔ owner",
-          ]}
-        >
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {SOURCE_TYPES.map((sourceType) => {
-              const active = answers.sourceTypes.includes(sourceType);
-
-              return (
-                <button
-                  key={sourceType}
-                  type="button"
-                  onClick={() => toggleSourceType(sourceType)}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: 999,
-                    border: "1px solid #cbd5e1",
-                    background: active ? "#2563eb" : "#f8fafc",
-                    color: active ? "#ffffff" : "#0f172a",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                  }}
-                >
-                  {sourceType}
-                </button>
-              );
-            })}
+          <div>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 900,
+                color: "#2563eb",
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
+              }}
+            >
+              Question {advisorStep + 1} of {totalAdvisorSteps}
+            </div>
+            
+            <div
+              style={{
+                marginTop: 4,
+                color: "#64748b",
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              {advisorProgress}% complete
+            </div>
           </div>
-        </QuestionBlock>
-
-        <QuestionBlock
-          title="3. Can source history change after it was first loaded?"
-          description="Use Yes if historical records can arrive late, be backdated, corrected or replaced after reports were already produced."
-          examples={[
-            "Backdated contract change",
-            "Corrected customer status",
-            "Late-arriving source record",
-          ]}
-        >
-          <select
-            value={answers.historyCorrected}
-            onChange={(e) =>
-              updateAnswer("historyCorrected", e.target.value as YesNoUnknown)
-            }
-            style={inputStyle}
+            
+          <div
+            style={{
+              minWidth: 120,
+              height: 8,
+              borderRadius: 999,
+              background: "#e2e8f0",
+              overflow: "hidden",
+            }}
           >
-            <option value="YES">Yes, history can change later</option>
-            <option value="NO">No, history is stable once loaded</option>
-            <option value="UNKNOWN">Unknown / not sure</option>
-          </select>
-        </QuestionBlock>
-
-        <QuestionBlock
-          title="4. Does the final model combine multiple systems?"
-          description="Use Yes when the reporting product joins or conforms data from different operational systems, not just multiple tables from the same source."
-          examples={[
-            "Policy system + customer master",
-            "Contract system + CRM",
-            "SAP + Salesforce",
-          ]}
+            <div
+              style={{
+                width: `${advisorProgress}%`,
+                height: "100%",
+                background: "#2563eb",
+              }}
+            />
+          </div>
+        </div>
+            
+        <div style={{ display: "grid", gap: 18 }}>
+          {advisorStep === 0 && (
+            <QuestionBlock
+              title="What should the final reporting model support?"
+              description="Choose the main reporting behavior the historical model needs to produce."
+            >
+              <select
+                value={answers.reportingGoal}
+                onChange={(e) =>
+                  updateAnswer("reportingGoal", e.target.value as ReportingGoal)
+                }
+                style={inputStyle}
+              >
+                <option value="CURRENT_STATE">Only current state</option>
+                <option value="POINT_IN_TIME">Point-in-time reporting</option>
+                <option value="SNAPSHOT">Periodic snapshot reporting</option>
+                <option value="EVENT">Event-based reporting</option>
+                <option value="AUDIT">Audit / correction history</option>
+              </select>
+            </QuestionBlock>
+          )}
+      
+          {advisorStep === 1 && (
+            <QuestionBlock
+              title="What kind of source data do you have?"
+              description="Select all source behaviors that exist in your historical model."
+              examples={[
+                "State = valid intervals",
+                "Event = point-in-time changes",
+                "Journal / CDC = change log",
+                "Reference Data = product, region or category lookups",
+                "Business Relationships = customer ↔ advisor, contract ↔ owner",
+              ]}
+            >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {SOURCE_TYPES.map((sourceType) => {
+                  const active = answers.sourceTypes.includes(sourceType);
+                
+                  return (
+                    <button
+                      key={sourceType}
+                      type="button"
+                      onClick={() => toggleSourceType(sourceType)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        border: "1px solid #cbd5e1",
+                        background: active ? "#2563eb" : "#ffffff",
+                        color: active ? "#ffffff" : "#0f172a",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {sourceType}
+                    </button>
+                  );
+                })}
+              </div>
+            </QuestionBlock>
+          )}
+      
+          {advisorStep === 2 && (
+            <QuestionBlock
+              title="Can source history change after it was first loaded?"
+              description="Use Yes if historical records can arrive late, be backdated, corrected or replaced after reports were already produced."
+              examples={[
+                "Backdated contract change",
+                "Corrected customer status",
+                "Late-arriving source record",
+              ]}
+            >
+              <select
+                value={answers.historyCorrected}
+                onChange={(e) =>
+                  updateAnswer("historyCorrected", e.target.value as YesNoUnknown)
+                }
+                style={inputStyle}
+              >
+                <option value="YES">Yes, history can change later</option>
+                <option value="NO">No, history is stable once loaded</option>
+                <option value="UNKNOWN">Unknown / not sure</option>
+              </select>
+            </QuestionBlock>
+          )}
+      
+          {advisorStep === 3 && (
+            <QuestionBlock
+              title="Does the final model combine multiple systems?"
+              description="Use Yes when the reporting product joins or conforms data from different operational systems, not just multiple tables from the same source."
+              examples={[
+                "Policy system + customer master",
+                "Contract system + CRM",
+                "SAP + Salesforce",
+              ]}
+            >
+              <select
+                value={answers.multipleSystems}
+                onChange={(e) =>
+                  updateAnswer("multipleSystems", e.target.value as "YES" | "NO")
+                }
+                style={inputStyle}
+              >
+                <option value="YES">Yes, multiple systems are combined</option>
+                <option value="NO">No, mostly one source system</option>
+              </select>
+            </QuestionBlock>
+          )}
+      
+          {advisorStep === 4 && (
+            <QuestionBlock
+              title="Can business relationships change over time?"
+              description="Use Yes when an entity can be linked to different related entities depending on the reporting date."
+              examples={[
+                "Customer changes advisor",
+                "Contract changes owner",
+                "Employee changes department",
+              ]}
+            >
+              <select
+                value={answers.changingRelationships}
+                onChange={(e) =>
+                  updateAnswer("changingRelationships", e.target.value as "YES" | "NO")
+                }
+                style={inputStyle}
+              >
+                <option value="YES">Yes, relationships are time-dependent</option>
+                <option value="NO">No, relationships are mostly stable</option>
+              </select>
+            </QuestionBlock>
+          )}
+      
+          {advisorStep === 5 && (
+            <QuestionBlock
+              title="When looking at a report from last year, which attributes should be shown?"
+              description="Choose how customer, product or relationship attributes should behave in historical reports."
+              examples={[
+                "Customer segment",
+                "Product category",
+                "Advisor assignment",
+              ]}
+            >
+              <select
+                value={answers.historizedDimensions}
+                onChange={(e) =>
+                  updateAnswer("historizedDimensions", e.target.value as DimensionNeed)
+                }
+                style={inputStyle}
+              >
+                <option value="NO">No descriptive attributes are needed</option>
+                <option value="SCD1">Always show today's attributes (SCD1)</option>
+                <option value="SCD2">Show attributes that were valid back then (SCD2)</option>
+                <option value="BITEMPORAL">Show attributes that were known back then (Bitemporal)</option>
+              </select>
+            </QuestionBlock>
+          )}
+        </div>
+        
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            marginTop: 18,
+          }}
         >
-          <select
-            value={answers.multipleSystems}
-            onChange={(e) =>
-              updateAnswer("multipleSystems", e.target.value as "YES" | "NO")
-            }
-            style={inputStyle}
+          <button
+            type="button"
+            onClick={goToPreviousAdvisorStep}
+            disabled={advisorStep === 0}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid #cbd5e1",
+              background: advisorStep === 0 ? "#f1f5f9" : "#ffffff",
+              color: advisorStep === 0 ? "#94a3b8" : "#0f172a",
+              cursor: advisorStep === 0 ? "not-allowed" : "pointer",
+              fontWeight: 800,
+            }}
           >
-            <option value="YES">Yes, multiple systems are combined</option>
-            <option value="NO">No, mostly one source system</option>
-          </select>
-        </QuestionBlock>
-
-        <QuestionBlock
-          title="5. Can business relationships change over time?"
-          description="Use Yes when an entity can be linked to different related entities depending on the reporting date."
-          examples={[
-            "Customer changes advisor",
-            "Contract changes owner",
-            "Employee changes department",
-          ]}
-        >
-          <select
-            value={answers.changingRelationships}
-            onChange={(e) =>
-              updateAnswer("changingRelationships", e.target.value as "YES" | "NO")
-            }
-            style={inputStyle}
+            Back
+          </button>
+          
+          <button
+            type="button"
+            onClick={canProceedAdvisorStep ? goToNextAdvisorStep : undefined}
+            disabled={!canProceedAdvisorStep}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid #1d4ed8",
+              background: canProceedAdvisorStep ? "#2563eb" : "#cbd5e1",
+              color: "#ffffff",
+              cursor: canProceedAdvisorStep ? "pointer" : "not-allowed",
+              fontWeight: 900,
+            }}
           >
-            <option value="YES">Yes, relationships are time-dependent</option>
-            <option value="NO">No, relationships are mostly stable</option>
-          </select>
-        </QuestionBlock>
-        <QuestionBlock
-          title="6. When looking at a report from last year, which attributes should be shown?"
-          description="Choose how customer, product or relationship attributes should behave in historical reports."
-          examples={[
-            "Customer segment",
-            "Product category",
-            "Advisor assignment",
-          ]}
-        >
-          <select
-            value={answers.historizedDimensions}
-            onChange={(e) =>
-              updateAnswer("historizedDimensions", e.target.value as DimensionNeed)
-            }
-            style={inputStyle}
-          >
-            <option value="NO">No descriptive attributes are needed</option>
-            <option value="SCD1">Always show today's attributes (SCD1)</option>
-            <option value="SCD2">Show attributes that were valid back then (SCD2)</option>
-            <option value="BITEMPORAL">Show attributes that were known back then (Bitemporal)</option>
-          </select>
-        </QuestionBlock>
+            {isLastAdvisorStep ? "Generate Recommendation" : "Next"}
+          </button>
+        </div>
       </div>
-
+    {hasGeneratedRecommendation && (
       <div
         style={{
           marginTop: 28,
@@ -386,19 +590,32 @@ export function AdvisorPanel() {
         >
           {blueprint.recommendation}
         </div>
-
         <div
           style={{
-            marginTop: 10,
-            color: "#334155",
-            fontSize: 14,
-            lineHeight: 1.5,
+            marginTop: 12,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          Recommended because your selections indicate{" "}
-          <strong>{selectedSummary.join(", ")}</strong>.
+          {advisorSummaryChips.map((chip) => (
+            <span
+              key={chip}
+              style={{
+                padding: "6px 10px",
+                borderRadius: 999,
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                color: "#1d4ed8",
+                fontSize: 12,
+                fontWeight: 800,
+              }}
+            >
+              {chip}
+            </span>
+          ))}
         </div>
-        {blueprint.patterns.length > 0 && (
+        {blueprint.architecture.length > 0 && (
           <div style={{ marginTop: 18 }}>
             <div
               style={{
@@ -410,76 +627,111 @@ export function AdvisorPanel() {
                 letterSpacing: 0.5,
               }}
             >
-              Recommended Patterns
+              Typical Architecture
             </div>
             
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-                gap: 10,
+                gap: 8,
               }}
             >
-              {blueprint.patterns.slice(0, 6).map((pattern) => (
-                <a
-                  key={pattern}
-                  href={getLearnHrefForAdvisorPattern(pattern)}
-                  onClick={() => {
-                    track("related_pattern_clicked", {
-                      from: "advisor_recommendation",
-                      to: getAdvisorPatternKey(pattern),
-                    });
-                  }}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    padding: 12,
-                    borderRadius: 14,
-                    background: "#ffffff",
-                    border: "1px solid #bfdbfe",
-                    color: "#1d4ed8",
-                    textDecoration: "none",
-                    fontSize: 13,
-                    fontWeight: 900,
-                  }}
-                >
-                  <span>{pattern}</span>
-                  <span>›</span>
-                </a>
+              {blueprint.architecture.map((item, index) => (
+                <div key={item}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: 12,
+                      borderRadius: 14,
+                      background: "#ffffff",
+                      border: "1px solid #bfdbfe",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 999,
+                        display: "grid",
+                        placeItems: "center",
+                        flexShrink: 0,
+                        background: "#dbeafe",
+                        color: "#1d4ed8",
+                        fontSize: 12,
+                        fontWeight: 900,
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          color: "#0f172a",
+                          fontSize: 13,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {item}
+                      </div>
+                      
+                      <div
+                        style={{
+                          marginTop: 3,
+                          color: "#64748b",
+                          fontSize: 12,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {getArchitectureDescription(item)}
+                      </div>
+                    </div>
+                  </div>
+                    
+                  {index < blueprint.architecture.length - 1 && (
+                    <div
+                      style={{
+                        marginLeft: 13,
+                        height: 10,
+                        borderLeft: "2px solid #bfdbfe",
+                      }}
+                    />
+                  )}
+                </div>
               ))}
-
-              {blueprint.patterns.length > 6 && (
-                <a
-                  href="/patterns"
-                  onClick={() => {
-                    track("related_pattern_clicked", {
-                      from: "advisor_recommendation",
-                      to: "pattern_catalog",
-                    });
-                  }}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    padding: 12,
-                    borderRadius: 14,
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
-                    color: "#1d4ed8",
-                    textDecoration: "none",
-                    fontSize: 13,
-                    fontWeight: 900,
-                  }}
-                >
-                  <span>Browse all patterns</span>
-                  <span>›</span>
-                </a>
-              )}
             </div>
           </div>
         )}
+        <AdvisorRecommendationSection
+          title="Engineering Challenges"
+          description="What can go wrong in this historical model."
+          items={advisorItems.engineeringChallenges}
+          recommendation={blueprint.recommendation}
+          eventName="advisor_challenge_opened"
+          actionLabel="Open Challenge →"
+          validationLabel="Open Validation →"
+        />
 
+        <AdvisorRecommendationSection
+          title="Recommended Modeling Patterns"
+          description="What the target historical model should look like."
+          items={advisorItems.modelingPatterns}
+          recommendation={blueprint.recommendation}
+          eventName="advisor_modeling_pattern_clicked"
+          actionLabel="Learn Pattern →"
+          validationLabel="Open Validation →"
+        />
+
+        <AdvisorRecommendationSection
+          title="Recommended Engineering Patterns"
+          description="How to implement the required historical transformation."
+          items={advisorItems.engineeringPatterns}
+          recommendation={blueprint.recommendation}
+          eventName="advisor_engineering_pattern_clicked"
+          actionLabel="Learn Method →"
+          validationLabel="Open Validation →"
+        />
         {blueprint.communityEvidence.length > 0 && (
           <details style={{ marginTop: 18 }}>
             <summary
@@ -493,7 +745,7 @@ export function AdvisorPanel() {
                 marginBottom: 8,
               }}
             >
-              Community Evidence
+              Common Use Cases
             </summary>
             
             <div
@@ -561,7 +813,6 @@ export function AdvisorPanel() {
                   >
                     {item.summary}
                   </div>
-                  
                   <div
                     style={{
                       color: "#64748b",
@@ -572,11 +823,10 @@ export function AdvisorPanel() {
                       marginBottom: 6,
                     }}
                   >
-                    Common community topics
+                    Common problems solved
                   </div>
-                  
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {item.observedIn.slice(0, 3).map((evidence) => (
+                    {item.observedIn.map((evidence) => (
                       <span
                         key={evidence}
                         style={{
@@ -642,7 +892,7 @@ export function AdvisorPanel() {
                   {risk}
                 </span>
               ))}
-              {blueprint.risks.length > 8 && (
+              {blueprint.risks.length > 5 && (
                 <span
                   style={{
                     padding: "6px 10px",
@@ -654,7 +904,7 @@ export function AdvisorPanel() {
                     fontWeight: 800,
                   }}
                 >
-                  +{blueprint.risks.length - 8} more
+                  +{blueprint.risks.length - 5} more
                 </span>
               )}
             </div>
@@ -710,7 +960,6 @@ export function AdvisorPanel() {
             </div>
           </details>
         )}
-      </div>
 
       <div
         style={{
@@ -783,8 +1032,10 @@ export function AdvisorPanel() {
           </div>
         </details>
       </div>
-    </details>
-  );
+    </div>
+  )}
+</details>
+);
 }
 
 const SOURCE_TYPES: SourceType[] = [
@@ -795,26 +1046,480 @@ const SOURCE_TYPES: SourceType[] = [
   "Business Relationships",
 ];
 
-function getLearnHrefForAdvisorPattern(pattern: string) {
-  const normalized = pattern.toLowerCase();
+type AdvisorItem = {
+  name: string;
+  href: string;
+  category: "challenge" | "modeling" | "engineering";
+};
 
-  if (normalized.includes("state modeling")) return "/learn/state-modeling";
-  if (normalized.includes("event modeling")) return "/learn/event-modeling";
-  if (normalized.includes("state ↔ event")) return "/learn/state-event-alignment";
-  if (normalized.includes("state ↔ state")) return "/learn/state-state-alignment";
-  if (normalized.includes("relationship")) return "/learn/relationship-history";
-  if (normalized.includes("dimension completion")) return "/learn/dimension-completion";
-  if (normalized.includes("snapshot reproducibility")) return "/learn/snapshot-reproducibility";
-  if (normalized.includes("snapshot fact")) return "/learn/snapshot-fact-modeling";
-  if (normalized.includes("bitemporal")) return "/learn/bitemporal-modeling";
-  if (normalized.includes("historical conformance")) return "/learn/historical-conformance";
-  if (normalized.includes("historical correction")) return "/learn/historical-correction";
-  if (normalized.includes("backfill")) return "/learn/historical-backfill";
-  if (normalized.includes("state reduction")) return "/learn/state-reduction";
-  if (normalized.includes("event prioritization")) return "/learn/event-prioritization";
-  if (normalized.includes("rectangle")) return "/learn/rectangle-decomposition";
+function getAdvisorItem(name: string): AdvisorItem | null {
+  const normalized = name.toLowerCase();
 
-  return "/patterns";
+  if (
+    normalized.includes("cdc history modeling") ||
+    normalized.includes("reference data conformance") ||
+    normalized.includes("scd1 dimension modeling")
+  ) {
+    return null;
+  }
+
+  if (name === "Historical Coverage Gap") {
+    return {
+      name,
+      href: "/learn/historical-coverage-gap",
+      category: "challenge",
+    };
+  }
+
+  if (name === "Historical Overlap") {
+    return {
+      name,
+      href: "/learn/historical-overlap",
+      category: "challenge",
+    };
+  }
+
+  if (name === "Historical Match Ambiguity") {
+    return {
+      name,
+      href: "/learn/historical-match-ambiguity",
+      category: "challenge",
+    };
+  }
+
+  if (name === "Snapshot Reproducibility Risk") {
+    return {
+      name,
+      href: "/learn/snapshot-reproducibility",
+      category: "challenge",
+    };
+  }
+
+  if (name === "Late Arriving Dimensions") {
+    return {
+      name,
+      href: "/learn/dimension-completion",
+      category: "challenge",
+    };
+  }
+
+  if (name === "Event-to-State Mismatch") {
+    return {
+      name,
+      href: "/learn/state-event-alignment",
+      category: "challenge",
+    };
+  }
+
+  if (name === "Cross-System Timeline Drift") {
+    return {
+      name,
+      href: "/learn/historical-conformance",
+      category: "challenge",
+    };
+  }
+
+  if (name === "State Modeling") {
+    return { name, href: "/learn/state-modeling", category: "modeling" };
+  }
+
+  if (name === "Event Modeling") {
+    return { name, href: "/learn/event-modeling", category: "modeling" };
+  }
+
+  if (name === "Bitemporal Modeling") {
+    return { name, href: "/learn/bitemporal-modeling", category: "modeling" };
+  }
+
+  if (name === "SCD2 vs Bitemporal Modeling") {
+    return { name, href: "/learn/scd2-vs-bitemporal", category: "modeling" };
+  }
+
+  if (name === "State ↔ State Alignment") {
+    return { name, href: "/learn/state-state-alignment", category: "modeling" };
+  }
+
+  if (name === "State ↔ Event Alignment") {
+    return { name, href: "/learn/state-event-alignment", category: "modeling" };
+  }
+
+  if (name === "Historical Conformance") {
+    return { name, href: "/learn/historical-conformance", category: "modeling" };
+  }
+
+  if (name === "Dimension Completion") {
+    return { name, href: "/learn/dimension-completion", category: "modeling" };
+  }
+
+  if (name === "Relationship History") {
+    return { name, href: "/learn/relationship-history", category: "modeling" };
+  }
+
+  if (name === "Identity Resolution") {
+    return { name, href: "/learn/identity-resolution", category: "modeling" };
+  }
+
+  if (name === "Snapshot Fact Modeling") {
+    return { name, href: "/learn/snapshot-fact-modeling", category: "modeling" };
+  }
+
+  if (name === "Snapshot Reproducibility") {
+    return { name, href: "/learn/snapshot-reproducibility", category: "modeling" };
+  }
+
+  if (name === "As-Known Reporting") {
+    return { name, href: "/learn/as-known-reporting", category: "modeling" };
+  }
+
+  if (name === "Historical Correction") {
+    return { name, href: "/learn/historical-correction", category: "modeling" };
+  }
+
+  if (name === "Event Prioritization") {
+    return { name, href: "/learn/event-prioritization", category: "engineering" };
+  }
+
+  if (name === "Event-to-State Projection") {
+    return {
+      name,
+      href: "/learn/event-to-state-projection",
+      category: "engineering",
+    };
+  }
+
+  if (name === "State Reduction") {
+    return { name, href: "/learn/state-reduction", category: "engineering" };
+  }
+
+  if (name === "Rectangle Decomposition") {
+    return {
+      name,
+      href: "/learn/rectangle-decomposition",
+      category: "engineering",
+    };
+  }
+
+  if (name === "Historical Backfill") {
+    return { name, href: "/learn/historical-backfill", category: "engineering" };
+  }
+
+  return null;
+}
+
+function AdvisorRecommendationSection({
+  title,
+  description,
+  items,
+  recommendation,
+  eventName,
+  actionLabel,
+  validationLabel,
+}: {
+  title: string;
+  description: string;
+  items: AdvisorItem[];
+  recommendation: string;
+  eventName:
+    | "advisor_challenge_opened"
+    | "advisor_modeling_pattern_clicked"
+    | "advisor_engineering_pattern_clicked";
+  actionLabel: string;
+  validationLabel: string;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 800,
+          color: "#475569",
+          marginBottom: 4,
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
+        }}
+      >
+        {title}
+      </div>
+
+      <p
+        style={{
+          margin: "0 0 10px",
+          color: "#64748b",
+          fontSize: 12,
+          lineHeight: 1.45,
+        }}
+      >
+        {description}
+      </p>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+          gap: 12,
+        }}
+      >
+        {items.slice(0, 6).map((item) => (
+          <div
+            key={`${item.category}-${item.name}`}
+            style={{
+              padding: 14,
+              borderRadius: 16,
+              background: "#ffffff",
+              border: "1px solid #bfdbfe",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 900,
+                color: "#0f172a",
+                marginBottom: 6,
+              }}
+            >
+              {item.name}
+            </div>
+
+            <div
+              style={{
+                color: "#475569",
+                fontSize: 12,
+                lineHeight: 1.45,
+                marginBottom: 12,
+              }}
+            >
+              {getAdvisorPatternDescription(item.name)}
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <a
+                href={item.href}
+                onClick={() => {
+                  track(eventName, {
+                    pattern: item.name,
+                    pattern_key: getAdvisorPatternKey(item.name),
+                    category: item.category,
+                    recommendation,
+                    action: "learn",
+                    source: "advisor_recommendation",
+                  });
+
+                  track("advisor_pattern_clicked", {
+                    pattern: item.name,
+                    pattern_key: getAdvisorPatternKey(item.name),
+                    category: item.category,
+                    recommendation,
+                    action: "learn",
+                    source: "advisor_recommendation",
+                  });
+                }}
+                style={{
+                  display: "inline-flex",
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  textDecoration: "none",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                {actionLabel}
+              </a>
+
+              <a
+                href="/#target-table-validation"
+                onClick={() => {
+                  track("advisor_validation_opened", {
+                    pattern: item.name,
+                    pattern_key: getAdvisorPatternKey(item.name),
+                    category: item.category,
+                    recommendation,
+                    action: "open_validation",
+                    source: "advisor_recommendation",
+                  });
+                }}
+                style={{
+                  display: "inline-flex",
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  background: "#eff6ff",
+                  color: "#1d4ed8",
+                  border: "1px solid #bfdbfe",
+                  textDecoration: "none",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                {validationLabel}
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getArchitectureDescription(item: string) {
+  if (item === "Historized Core Layer") {
+    return "Preserves source history in a standardized historical structure.";
+  }
+
+  if (item === "Periodic Snapshot Fact Table") {
+    return "Stores one reporting view per snapshot date for stable period reporting.";
+  }
+
+  if (item === "SCD2 Reporting Dimensions") {
+    return "Provides attributes as they were valid at the reporting date.";
+  }
+
+  if (item === "Reporting Consumption Layer") {
+    return "Exposes simplified tables for BI, analytics or downstream reporting.";
+  }
+
+  if (item === "Bitemporal model with correction visibility") {
+    return "Tracks both business validity and when corrections became known.";
+  }
+
+  if (item === "Bitemporal dimension or reporting layer") {
+    return "Supports as-known reporting and reproducible historical attributes.";
+  }
+
+  if (item === "Historized relationship bridge") {
+    return "Represents changing relationships between entities over time.";
+  }
+
+  if (item === "Event-centric historical fact model") {
+    return "Models business events as the primary analytical grain.";
+  }
+
+  if (item === "Bitemporal audit model") {
+    return "Preserves previous and corrected versions for auditability.";
+  }
+
+  if (item === "Current-state curated table") {
+    return "Keeps only the latest selected state per business entity.";
+  }
+
+  if (item === "Point-in-time historical query layer") {
+    return "Allows reports to ask what was true at a selected historical date.";
+  }
+
+  if (item === "Fact table with SCD2 dimensions") {
+    return "Joins facts to dimension versions by business-valid time.";
+  }
+
+  if (item === "Fact table with current dimensions") {
+    return "Attaches latest descriptive attributes without preserving attribute history.";
+  }
+
+  return "Architecture component recommended for the selected historical modeling scenario.";
+}
+
+function getAdvisorPatternDescription(pattern: string) {
+  if (pattern === "State Modeling") {
+    return "Model source records as historical state intervals.";
+  }
+
+  if (pattern === "Event Modeling") {
+    return "Represent business changes as point-in-time events.";
+  }
+
+  if (pattern === "State ↔ State Alignment") {
+    return "Align independently historized state sources across valid-time intervals.";
+  }
+
+  if (pattern === "State ↔ Event Alignment") {
+    return "Attach events to the state that was valid when the event occurred.";
+  }
+
+  if (pattern === "Relationship History") {
+    return "Model changing relationships such as customer-advisor or policy-broker assignments.";
+  }
+
+  if (pattern === "Identity Resolution") {
+    return "Resolve multiple identifiers that refer to the same business entity.";
+  }
+
+  if (pattern === "Historical Conformance") {
+    return "Align competing histories from multiple source systems into one reporting view.";
+  }
+
+  if (pattern === "Historical Correction") {
+    return "Preserve corrected history without losing what was known before.";
+  }
+
+  if (pattern === "Dimension Completion") {
+    return "Ensure dimension history covers all required fact or snapshot periods.";
+  }
+
+  if (pattern === "Bitemporal Modeling") {
+    return "Separate business-valid time from system-visible time.";
+  }
+
+  if (pattern === "Snapshot Reproducibility") {
+    return "Make sure reports can be rebuilt for the same reporting date.";
+  }
+
+  if (pattern === "Event Prioritization") {
+    return "Select business-relevant events from noisy operational event streams.";
+  }
+
+  if (pattern === "Historical Coverage Gap") {
+    return "Missing historical coverage can cause facts, snapshots or dimensions to disappear from reports.";
+  }
+
+  if (pattern === "Historical Overlap") {
+    return "Overlapping valid intervals can create ambiguous current state or duplicate report rows.";
+  }
+
+  if (pattern === "Historical Match Ambiguity") {
+    return "Multiple valid matches can cause join explosions and inconsistent historical results.";
+  }
+
+  if (pattern === "Snapshot Reproducibility Risk") {
+    return "Historical reports may change when the same reporting period is rebuilt later.";
+  }
+
+  if (pattern === "Late Arriving Dimensions") {
+    return "Dimension records may become available after related facts or snapshots were already produced.";
+  }
+
+  if (pattern === "Event-to-State Projection") {
+    return "Convert ordered events into valid state intervals for reporting and joins.";
+  }
+
+  if (pattern === "State Reduction") {
+    return "Remove irrelevant historical state changes before exposing the reporting model.";
+  }
+
+  if (pattern === "Rectangle Decomposition") {
+    return "Split independently changing histories into stable reporting intervals.";
+  }
+
+  if (pattern === "Historical Backfill") {
+    return "Rebuild or reconstruct historical records after data already exists.";
+  }
+
+  if (pattern === "Snapshot Fact Modeling") {
+    return "Create stable periodic fact rows for reporting dates such as month-end.";
+  }
+
+  if (pattern === "As-Known Reporting") {
+    return "Report using only the information that was visible at the historical reporting time.";
+  }
+
+  if (pattern === "Event-to-State Mismatch") {
+    return "Events may be attached to the wrong historical state or dimension version.";
+  }
+
+  if (pattern === "Cross-System Timeline Drift") {
+    return "Different systems may represent the same business change on different timelines.";
+  }
+  return "Review this pattern before implementing the historical model.";
 }
 
 function getAdvisorPatternKey(pattern: string) {

@@ -14,7 +14,7 @@ Checkliste:
  Keine leeren Bereiche
  Risks sinnvoll
  Validation Checks sinnvoll
- Community Evidence sinnvoll
+ Common Use Cases sinnvoll
  Markdown Preview lesbar
 Tag 2
 Pattern Catalog fertig machen

@@ -19,7 +19,7 @@ Implementation Patterns
 ↓
 Validation Patterns
 ↓
-Community Evidence
+Common Use Cases
 ```
 
 Core patterns describe the problem.
@@ -28,7 +28,7 @@ Implementation patterns describe how the problem is solved.
 
 Validation patterns describe how the solution can fail.
 
-Community evidence demonstrates that the problem exists outside a specific project.
+Common Use Cases demonstrates that the problem exists outside a specific project.
 
 ---
 
