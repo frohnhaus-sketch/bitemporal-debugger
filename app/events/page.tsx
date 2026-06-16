@@ -108,9 +108,7 @@ function Panel({
 }
 
 function formatEventName(event: string) {
-  return event
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return event.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function getTrafficSource(referer?: string | null) {
@@ -152,7 +150,7 @@ function getDataValue(event: EventRow, key: string) {
 
 function countBy<T extends string>(
   items: EventRow[],
-  getKey: (event: EventRow) => T | null
+  getKey: (event: EventRow) => T | null,
 ) {
   return items.reduce<Record<string, number>>((acc, item) => {
     const key = getKey(item);
@@ -182,7 +180,9 @@ function TopList({
   const max = Math.max(1, ...rows.map(([, count]) => count));
 
   if (rows.length === 0) {
-    return <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>{emptyText}</p>;
+    return (
+      <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>{emptyText}</p>
+    );
   }
 
   return (
@@ -247,12 +247,16 @@ function EngagementTable({
   emptyText: string;
 }) {
   if (rows.length === 0) {
-    return <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>{emptyText}</p>;
+    return (
+      <p style={{ margin: 0, color: "#94a3b8", fontSize: 13 }}>{emptyText}</p>
+    );
   }
 
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      <table
+        style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
+      >
         <thead>
           <tr style={{ color: "#94a3b8", borderBottom: "1px solid #1e293b" }}>
             <th style={thStyle}>Page</th>
@@ -354,12 +358,17 @@ export default async function EventsPage() {
   }, {});
 
   const pageViews =
-  (counts["page_view"] ?? 0) +
-  (counts["learn_page_opened"] ?? 0) +
-  (counts["patterns_page_opened"] ?? 0);
-  const uniqueVisitors = new Set(humanEvents.map((e) => e.ip_hash).filter(Boolean)).size;
+    (counts["page_view"] ?? 0) +
+    (counts["learn_page_opened"] ?? 0) +
+    (counts["patterns_page_opened"] ?? 0);
+  const uniqueVisitors = new Set(
+    humanEvents.map((e) => e.ip_hash).filter(Boolean),
+  ).size;
   const interactions = humanEvents.filter(
-    (e) => !["page_view", "learn_page_opened", "patterns_page_opened"].includes(e.event)
+    (e) =>
+      !["page_view", "learn_page_opened", "patterns_page_opened"].includes(
+        e.event,
+      ),
   ).length;
 
   const advisorStarted = counts["advisor_started"] ?? 0;
@@ -368,274 +377,221 @@ export default async function EventsPage() {
   const advisorToggled = counts["advisor_toggled"] ?? 0;
 
   const advisorExpanded = humanEvents.filter(
-    (event) =>
-      event.event === "advisor_toggled" &&
-      event.data?.open === true
+    (event) => event.event === "advisor_toggled" && event.data?.open === true,
   ).length;
 
   const advisorCollapsed = humanEvents.filter(
-    (event) =>
-      event.event === "advisor_toggled" &&
-      event.data?.open === false
+    (event) => event.event === "advisor_toggled" && event.data?.open === false,
   ).length;
   const advisorCompleted = counts["advisor_completed"] ?? 0;
-  const advisorRecommendations = counts["advisor_recommendation_generated"] ?? 0;
+  const advisorRecommendations =
+    counts["advisor_recommendation_generated"] ?? 0;
   const advisorBlueprintsCopied = counts["advisor_blueprint_copied"] ?? 0;
-
   const patternsPageOpened = counts["patterns_page_opened"] ?? 0;
   const patternCardClicks = counts["pattern_card_clicked"] ?? 0;
   const patternLearnMoreClicks = counts["pattern_learn_more_clicked"] ?? 0;
   const patternCategoryViews = counts["pattern_category_viewed"] ?? 0;
   const scrollDepthEvents = counts["scroll_depth"] ?? 0;
-
-  const exampleModelOpened = counts["example_model_opened"] ?? 0;
-
-  const activationSectionCtaClicks = counts["activation_cta_clicked"] ?? 0;
-  const exampleModelCtaClicks = counts["example_model_cta_clicked"] ?? 0;
-
-  const seeExampleModelClicks = humanEvents.filter(
-    (event) =>
-      event.event === "activation_cta_clicked" &&
-      event.data?.cta === "see_example_model"
-  ).length;
-
-  const reviewMyModelClicks = humanEvents.filter(
-    (event) =>
-      (event.event === "activation_cta_clicked" ||
-        event.event === "example_model_cta_clicked") &&
-      event.data?.cta === "review_my_model"
-  ).length;
-
-  const exploreMorePatternsClicks = humanEvents.filter(
-    (event) =>
-      event.event === "example_model_cta_clicked" &&
-      event.data?.cta === "explore_more_patterns"
-  ).length;
-
-  const exampleOpenRate = pageViews
-    ? Math.round((exampleModelOpened / pageViews) * 100)
-    : 0;
-
-  const reviewClickRate = exampleModelOpened
-    ? Math.round((reviewMyModelClicks / exampleModelOpened) * 100)
-    : 0;
-
+  const workflowStepClicks = counts["workflow_step_clicked"] ?? 0;
+  const reviewExamplesLoaded = counts["review_example_loaded"] ?? 0;
+  const validationExamplesLoaded = counts["validation_example_loaded"] ?? 0;
   const modelReviewsCompleted = counts["model_review_completed"] ?? 0;
   const modelReviewReportsCopied = counts["model_review_report_copied"] ?? 0;
-
   const targetValidationsCompleted = counts["target_validation_completed"] ?? 0;
-
   const analysisRuns = counts["analysis_completed"] ?? 0;
-
   const examplesLoaded =
     (counts["example_loaded"] ?? 0) +
     (counts["temporal_join_demo_loaded"] ?? 0);
-
   const csvUploads = counts["csv_uploaded"] ?? 0;
-
   const sqlGenerated =
-    (counts["sql_generated"] ?? 0) +
-    (counts["query_generated"] ?? 0);
-
+    (counts["sql_generated"] ?? 0) + (counts["query_generated"] ?? 0);
   const issueSelections =
-    (counts["issue_selected"] ?? 0) +
-    (counts["join_issue_selected"] ?? 0);
-
+    (counts["issue_selected"] ?? 0) + (counts["join_issue_selected"] ?? 0);
   const timelineIssueClicks = counts["timeline_issue_selected"] ?? 0;
   const timelineGapClicks = counts["timeline_gap_selected"] ?? 0;
   const timelineOverlapClicks = counts["timeline_overlap_selected"] ?? 0;
-
   const timelineInteractions =
     timelineIssueClicks + timelineGapClicks + timelineOverlapClicks;
-
   const reportsCopied =
     (counts["modeling_report_copied"] ?? 0) +
     (counts["debug_report_copied"] ?? 0) +
     (counts["Debug Report Copied"] ?? 0);
-
   const exampleTablesCopied = counts["example_table_copied"] ?? 0;
-
   const totalCopies =
     reportsCopied +
     advisorBlueprintsCopied +
     modelReviewReportsCopied +
     exampleTablesCopied;
-
   const workflowActions =
     advisorCompleted +
-    advisorRecommendations +
     advisorBlueprintsCopied +
     modelReviewsCompleted +
     targetValidationsCompleted +
     analysisRuns;
-
   const advisorInteractionRate = pageViews
     ? Math.round((advisorQuestionChanges / pageViews) * 100)
     : 0;
-
   const advisorCopyRate = advisorStarted
     ? Math.round((advisorBlueprintsCopied / advisorStarted) * 100)
     : 0;
-
   const patternCatalogRate = pageViews
     ? Math.round((patternsPageOpened / pageViews) * 100)
     : 0;
-
   const patternOpenRate = patternsPageOpened
     ? Math.round((patternLearnMoreClicks / patternsPageOpened) * 100)
     : 0;
-
   const workflowRate = pageViews
     ? Math.round((workflowActions / pageViews) * 100)
     : 0;
-
   const analyzeRate = pageViews
     ? Math.round((analysisRuns / pageViews) * 100)
     : 0;
-
-  const uploadRate = pageViews
-    ? Math.round((csvUploads / pageViews) * 100)
-    : 0;
-
+  const uploadRate = pageViews ? Math.round((csvUploads / pageViews) * 100) : 0;
   const copyRate = workflowActions
     ? Math.round((totalCopies / workflowActions) * 100)
     : 0;
-
   const entryEvents = humanEvents.filter((event) =>
-    ["page_view", "patterns_page_opened", "learn_page_opened"].includes(event.event)
+    ["page_view", "patterns_page_opened", "learn_page_opened"].includes(
+      event.event,
+    ),
   );
-
-  const sourceCounts = entryEvents.reduce<Record<string, number>>((acc, event) => {
-    const source = getTrafficSource(getEventReferrer(event));
-    acc[source] = (acc[source] ?? 0) + 1;
-    return acc;
-  }, {});
-
+  const sourceCounts = entryEvents.reduce<Record<string, number>>(
+    (acc, event) => {
+      const source = getTrafficSource(getEventReferrer(event));
+      acc[source] = (acc[source] ?? 0) + 1;
+      return acc;
+    },
+    {},
+  );
   const topSources = Object.entries(sourceCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
-
   const eventTypeRows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-
   const topAdvisorQuestions = Object.entries(
     countBy(humanEvents, (event) =>
       event.event === "advisor_question_changed"
         ? getDataValue(event, "question")
-        : null
-    )
+        : null,
+    ),
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
-
   const topAdvisorValues = Object.entries(
     countBy(humanEvents, (event) =>
       event.event === "advisor_question_changed"
         ? `${getDataValue(event, "question")}: ${getDataValue(event, "value")}`
-        : null
-    )
+        : null,
+    ),
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
-
   const topPatterns = Object.entries(
     countBy(humanEvents, (event) =>
       event.event === "pattern_learn_more_clicked" ||
       event.event === "pattern_card_clicked"
         ? getDataValue(event, "pattern")
-        : null
-    )
+        : null,
+    ),
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
-
   const topPatternGroups = Object.entries(
     countBy(humanEvents, (event) =>
       event.event === "pattern_learn_more_clicked" ||
       event.event === "pattern_card_clicked"
         ? getDataValue(event, "group")
-        : null
-    )
+        : null,
+    ),
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
 
-const scrollByVisitorAndPage = humanEvents.reduce<Record<string, number>>(
-  (acc, event) => {
-    if (event.event !== "scroll_depth") return acc;
+  const scrollByVisitorAndPage = humanEvents.reduce<Record<string, number>>(
+    (acc, event) => {
+      if (event.event !== "scroll_depth") return acc;
 
-    const page = normalizeScrollPage(getDataValue(event, "page"));
-    const visitor = event.ip_hash ? String(event.ip_hash) : "unknown";
-    const percent = Number(getDataValue(event, "percent") ?? 0);
+      const page = normalizeScrollPage(getDataValue(event, "page"));
+      const visitor = event.ip_hash ? String(event.ip_hash) : "unknown";
+      const percent = Number(getDataValue(event, "percent") ?? 0);
 
-    if (!page || !visitor || !percent) return acc;
+      if (!page || !visitor || !percent) return acc;
 
-    const key = `${page}|||${visitor}`;
+      const key = `${page}|||${visitor}`;
 
-    acc[key] = Math.max(acc[key] ?? 0, percent);
+      acc[key] = Math.max(acc[key] ?? 0, percent);
+
+      return acc;
+    },
+    {},
+  );
+
+  const scrollEngagementByPage = Object.entries(scrollByVisitorAndPage).reduce<
+    Record<
+      string,
+      {
+        visitors: number;
+        totalMaxScroll: number;
+        reached75: number;
+        reached100: number;
+      }
+    >
+  >((acc, [key, maxScroll]) => {
+    const [page] = key.split("|||");
+
+    if (!acc[page]) {
+      acc[page] = {
+        visitors: 0,
+        totalMaxScroll: 0,
+        reached75: 0,
+        reached100: 0,
+      };
+    }
+
+    acc[page].visitors += 1;
+    acc[page].totalMaxScroll += maxScroll;
+
+    if (maxScroll >= 75) acc[page].reached75 += 1;
+    if (maxScroll >= 100) acc[page].reached100 += 1;
 
     return acc;
-  },
-  {}
-);
+  }, {});
 
-const scrollEngagementByPage = Object.entries(scrollByVisitorAndPage).reduce<
-  Record<
-    string,
-    {
-      visitors: number;
-      totalMaxScroll: number;
-      reached75: number;
-      reached100: number;
-    }
-  >
->((acc, [key, maxScroll]) => {
-  const [page] = key.split("|||");
+  const scrollEngagementRows = Object.entries(scrollEngagementByPage)
+    .map(([page, stats]) => ({
+      page,
+      visitors: stats.visitors,
+      avgMaxScroll: Math.round(stats.totalMaxScroll / stats.visitors),
+      reached75Rate: Math.round((stats.reached75 / stats.visitors) * 100),
+      reached100Rate: Math.round((stats.reached100 / stats.visitors) * 100),
+    }))
+    .sort((a, b) => b.avgMaxScroll - a.avgMaxScroll);
 
-  if (!acc[page]) {
-    acc[page] = {
-      visitors: 0,
-      totalMaxScroll: 0,
-      reached75: 0,
-      reached100: 0,
-    };
-  }
+  const workflowStepRows = Object.entries(
+    countBy(humanEvents, (event) =>
+      event.event === "workflow_step_clicked"
+        ? getDataValue(event, "step")
+        : null,
+    ),
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
 
-  acc[page].visitors += 1;
-  acc[page].totalMaxScroll += maxScroll;
+  const reviewExampleRows = Object.entries(
+    countBy(humanEvents, (event) =>
+      event.event === "review_example_loaded"
+        ? getDataValue(event, "example")
+        : null,
+    ),
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
 
-  if (maxScroll >= 75) acc[page].reached75 += 1;
-  if (maxScroll >= 100) acc[page].reached100 += 1;
-
-  return acc;
-}, {});
-
-const scrollEngagementRows = Object.entries(scrollEngagementByPage)
-  .map(([page, stats]) => ({
-    page,
-    visitors: stats.visitors,
-    avgMaxScroll: Math.round(stats.totalMaxScroll / stats.visitors),
-    reached75Rate: Math.round((stats.reached75 / stats.visitors) * 100),
-    reached100Rate: Math.round((stats.reached100 / stats.visitors) * 100),
-  }))
-  .sort((a, b) => b.avgMaxScroll - a.avgMaxScroll);
-
-  const activationCtaRows = Object.entries(
-    countBy(humanEvents, (event) => {
-      if (
-        event.event !== "activation_cta_clicked" &&
-        event.event !== "example_model_cta_clicked"
-      ) {
-        return null;
-      }
-    
-      const cta = getDataValue(event, "cta") ?? "unknown";
-      const source =
-        event.event === "activation_cta_clicked"
-          ? "Activation Section"
-          : "Example Model";
-    
-      return `${source}: ${cta.replaceAll("_", " ")}`;
-    })
+  const validationExampleRows = Object.entries(
+    countBy(humanEvents, (event) =>
+      event.event === "validation_example_loaded"
+        ? getDataValue(event, "example")
+        : null,
+    ),
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
@@ -644,8 +600,8 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
     countBy(humanEvents, (event) =>
       event.event === "advisor_recommendation_generated"
         ? getDataValue(event, "recommendation")
-        : null
-    )
+        : null,
+    ),
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
@@ -699,42 +655,93 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
 
           <MetricSection title="Advisor Funnel">
             <MetricCard label="Advisor Started" value={advisorStarted} />
-            <MetricCard label="Advisor Interactions" value={advisorInteractions} />
+            <MetricCard
+              label="Advisor Interactions"
+              value={advisorInteractions}
+            />
             <MetricCard label="Advisor Toggles" value={advisorToggled} />
             <MetricCard label="Expanded" value={advisorExpanded} />
             <MetricCard label="Collapsed" value={advisorCollapsed} />
-            <MetricCard label="Question Changes" value={advisorQuestionChanges} />
-            <MetricCard label="Blueprint Copies" value={advisorBlueprintsCopied} />
-            <MetricCard label="Advisor Interaction Rate" value={`${advisorInteractionRate}%`} />
-            <MetricCard label="Advisor Copy Rate" value={`${advisorCopyRate}%`} />
+            <MetricCard
+              label="Question Changes"
+              value={advisorQuestionChanges}
+            />
+            <MetricCard
+              label="Blueprint Copies"
+              value={advisorBlueprintsCopied}
+            />
+            <MetricCard
+              label="Advisor Interaction Rate"
+              value={`${advisorInteractionRate}%`}
+            />
+            <MetricCard
+              label="Advisor Copy Rate"
+              value={`${advisorCopyRate}%`}
+            />
             <MetricCard label="Completed" value={advisorCompleted} />
-            <MetricCard label="Recommendations" value={advisorRecommendations} />
+            <MetricCard
+              label="Recommendations"
+              value={advisorRecommendations}
+            />
           </MetricSection>
 
-          <MetricSection title="Activation Funnel">
-            <MetricCard label="Activation Section CTAs" value={activationSectionCtaClicks} />
-            <MetricCard label="See Example Clicks" value={seeExampleModelClicks} />
-            <MetricCard label="Example Models Opened" value={exampleModelOpened} />
-            <MetricCard label="Example Model CTAs" value={exampleModelCtaClicks} />
-            <MetricCard label="Review My Model Clicks" value={reviewMyModelClicks} />
-            <MetricCard label="Explore Pattern Clicks" value={exploreMorePatternsClicks} />
-            <MetricCard label="Example Open Rate" value={`${exampleOpenRate}%`} />
-            <MetricCard label="Review Click Rate" value={`${reviewClickRate}%`} />
+          <MetricSection title="Guided Activation">
+            <MetricCard
+              label="Workflow Step Clicks"
+              value={workflowStepClicks}
+            />
+            <MetricCard
+              label="Review Examples Loaded"
+              value={reviewExamplesLoaded}
+            />
+            <MetricCard
+              label="Validation Examples Loaded"
+              value={validationExamplesLoaded}
+            />
+            <MetricCard
+              label="Model Reviews Completed"
+              value={modelReviewsCompleted}
+            />
+            <MetricCard
+              label="Target Validations Completed"
+              value={targetValidationsCompleted}
+            />
           </MetricSection>
 
           <MetricSection title="Pattern Catalog">
             <MetricCard label="Catalog Opens" value={patternsPageOpened} />
             <MetricCard label="Category Views" value={patternCategoryViews} />
             <MetricCard label="Card Clicks" value={patternCardClicks} />
-            <MetricCard label="Learn More Clicks" value={patternLearnMoreClicks} />
+            <MetricCard
+              label="Learn More Clicks"
+              value={patternLearnMoreClicks}
+            />
             <MetricCard label="Scroll Events" value={scrollDepthEvents} />
             <MetricCard label="Catalog Rate" value={`${patternCatalogRate}%`} />
-            <MetricCard label="Pattern Open Rate" value={`${patternOpenRate}%`} />
+            <MetricCard
+              label="Pattern Open Rate"
+              value={`${patternOpenRate}%`}
+            />
           </MetricSection>
 
           <MetricSection title="Product Workflows">
+            <MetricCard
+              label="Workflow Step Clicks"
+              value={workflowStepClicks}
+            />
+            <MetricCard
+              label="Review Examples Loaded"
+              value={reviewExamplesLoaded}
+            />
+            <MetricCard
+              label="Validation Examples Loaded"
+              value={validationExamplesLoaded}
+            />
             <MetricCard label="Model Reviews" value={modelReviewsCompleted} />
-            <MetricCard label="Target Validations" value={targetValidationsCompleted} />
+            <MetricCard
+              label="Target Validations"
+              value={targetValidationsCompleted}
+            />
             <MetricCard label="Analysis Runs" value={analysisRuns} />
             <MetricCard label="Workflow Actions" value={workflowActions} />
             <MetricCard label="Workflow Rate" value={`${workflowRate}%`} />
@@ -749,7 +756,10 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
 
           <MetricSection title="High Intent">
             <MetricCard label="Reports Copied" value={reportsCopied} />
-            <MetricCard label="Example Tables Copied" value={exampleTablesCopied} />
+            <MetricCard
+              label="Example Tables Copied"
+              value={exampleTablesCopied}
+            />
             <MetricCard label="Total Copies" value={totalCopies} />
             <MetricCard label="Copy Rate" value={`${copyRate}%`} />
             <MetricCard label="SQL Generated" value={sqlGenerated} />
@@ -760,18 +770,27 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
             <MetricCard label="Timeline Clicks" value={timelineInteractions} />
             <MetricCard label="Timeline Issues" value={timelineIssueClicks} />
             <MetricCard label="Timeline Gaps" value={timelineGapClicks} />
-            <MetricCard label="Timeline Overlaps" value={timelineOverlapClicks} />
+            <MetricCard
+              label="Timeline Overlaps"
+              value={timelineOverlapClicks}
+            />
             <MetricCard label="Total Events" value={totalEvents} />
             <MetricCard label="Loaded Events" value={loadedEvents} />
           </MetricSection>
         </div>
 
         <Panel title="Top Advisor Questions">
-          <TopList rows={topAdvisorQuestions} emptyText="No Advisor question data yet." />
+          <TopList
+            rows={topAdvisorQuestions}
+            emptyText="No Advisor question data yet."
+          />
         </Panel>
 
         <Panel title="Top Advisor Answers">
-          <TopList rows={topAdvisorValues} emptyText="No Advisor answer data yet." />
+          <TopList
+            rows={topAdvisorValues}
+            emptyText="No Advisor answer data yet."
+          />
         </Panel>
 
         <Panel title="Top Advisor Recommendations">
@@ -786,7 +805,10 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
         </Panel>
 
         <Panel title="Top Pattern Groups">
-          <TopList rows={topPatternGroups} emptyText="No pattern group data yet." />
+          <TopList
+            rows={topPatternGroups}
+            emptyText="No pattern group data yet."
+          />
         </Panel>
 
         <Panel title="Learn Page Scroll Engagement">
@@ -796,8 +818,25 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
           />
         </Panel>
 
-        <Panel title="Activation CTAs">
-          <TopList rows={activationCtaRows} emptyText="No activation CTA data yet." />
+        <Panel title="Workflow Steps">
+          <TopList
+            rows={workflowStepRows}
+            emptyText="No workflow step data yet."
+          />
+        </Panel>
+
+        <Panel title="Review Examples Loaded">
+          <TopList
+            rows={reviewExampleRows}
+            emptyText="No review example data yet."
+          />
+        </Panel>
+
+        <Panel title="Validation Examples Loaded">
+          <TopList
+            rows={validationExampleRows}
+            emptyText="No validation example data yet."
+          />
         </Panel>
 
         <Panel title="Event Types">
@@ -875,7 +914,9 @@ const scrollEngagementRows = Object.entries(scrollEngagementByPage)
 
                     <td style={tdStyle}>
                       <span style={{ color: "#94a3b8", fontSize: 12 }}>
-                        {event.ip_hash ? String(event.ip_hash).slice(0, 10) : "unknown"}
+                        {event.ip_hash
+                          ? String(event.ip_hash).slice(0, 10)
+                          : "unknown"}
                       </span>
                     </td>
 
