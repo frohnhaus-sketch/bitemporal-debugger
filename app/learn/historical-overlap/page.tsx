@@ -177,16 +177,8 @@ function DarkExampleCard() {
       </h2>
 
       <div style={overlapGridStyle}>
-        <HistoryRow
-          label="Segment = Retail"
-          range="Jan – Jun"
-          active
-        />
-        <HistoryRow
-          label="Segment = Premium"
-          range="Apr – Dec"
-          active
-        />
+        <HistoryRow label="Segment = Retail" range="Jan – Jun" active />
+        <HistoryRow label="Segment = Premium" range="Apr – Dec" active />
         <HistoryRow
           label="Overlap"
           range="Apr – Jun has two active states"

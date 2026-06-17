@@ -119,8 +119,9 @@ export default function DimensionCompletionPage() {
           <h1 style={h1Style}>Dimension Completion</h1>
 
           <p style={heroTextStyle}>
-            A contract exists from January to December, but the customer assignment only
-            starts in April. What should the February snapshot report show?
+            A contract exists from January to December, but the customer
+            assignment only starts in April. What should the February snapshot
+            report show?
           </p>
         </header>
 
@@ -137,9 +138,10 @@ export default function DimensionCompletionPage() {
             </p>
 
             <p style={paragraphStyle}>
-              A dimension can be technically valid and still be incomplete for reporting.
-              SCD2 stores the changes that were captured, but it does not automatically
-              create the missing historical coverage needed by snapshot facts.
+              A dimension can be technically valid and still be incomplete for
+              reporting. SCD2 stores the changes that were captured, but it does
+              not automatically create the missing historical coverage needed by
+              snapshot facts.
             </p>
 
             <ChipRow
@@ -163,9 +165,9 @@ export default function DimensionCompletionPage() {
             <ResultTable rows={SNAPSHOT_ROWS} />
 
             <p style={{ ...paragraphStyle, marginTop: 18 }}>
-              The contract is clearly valid in February. The customer assignment is not.
-              This is the exact moment where Dimension Completion becomes a modeling
-              decision instead of a simple join problem.
+              The contract is clearly valid in February. The customer assignment
+              is not. This is the exact moment where Dimension Completion
+              becomes a modeling decision instead of a simple join problem.
             </p>
           </WhiteCard>
 
@@ -174,15 +176,16 @@ export default function DimensionCompletionPage() {
             title="SCD2 preserves history. Dimension Completion creates missing reporting coverage."
           >
             <p style={paragraphStyle}>
-              Many teams assume that historized dimensions are enough for historical
-              reporting. But a perfectly modeled SCD2 dimension can still fail if its
-              valid-time intervals do not cover the periods required by the fact table.
+              Many teams assume that historized dimensions are enough for
+              historical reporting. But a perfectly modeled SCD2 dimension can
+              still fail if its valid-time intervals do not cover the periods
+              required by the fact table.
             </p>
 
             <p style={paragraphStyle}>
-              Dimension Completion extends, reconstructs or explicitly marks missing
-              dimension history so every relevant fact period has a deterministic
-              dimensional context.
+              Dimension Completion extends, reconstructs or explicitly marks
+              missing dimension history so every relevant fact period has a
+              deterministic dimensional context.
             </p>
           </WhiteCard>
 
@@ -252,16 +255,17 @@ export default function DimensionCompletionPage() {
             title="Without Dimension Completion, snapshot facts can be correct but historically unusable."
           >
             <p style={paragraphStyle}>
-              The fact table may contain one row per entity and snapshot date, but
-              downstream reporting still fails when the dimension join cannot resolve a
-              valid historical context.
+              The fact table may contain one row per entity and snapshot date,
+              but downstream reporting still fails when the dimension join
+              cannot resolve a valid historical context.
             </p>
 
             <p style={paragraphStyle}>
-              Dimension Completion makes the assumption explicit: either history is
-              backfilled, reconstructed, carried forward or assigned to an unknown member.
-              The important part is that missing coverage is handled deliberately rather
-              than silently losing facts or attributes.
+              Dimension Completion makes the assumption explicit: either history
+              is backfilled, reconstructed, carried forward or assigned to an
+              unknown member. The important part is that missing coverage is
+              handled deliberately rather than silently losing facts or
+              attributes.
             </p>
           </WhiteCard>
 
@@ -270,40 +274,48 @@ export default function DimensionCompletionPage() {
             title="Dimension Completion is closely related to several historical modeling concepts."
           >
             <div style={solutionGridStyle}>
-              <a href="/learn/snapshot-reproducibility" style={relatedConceptStyle}>
+              <a
+                href="/learn/snapshot-reproducibility"
+                style={relatedConceptStyle}
+              >
                 <strong>Snapshot Reproducibility</strong>
                 <div>
-                  Historical snapshots remain reproducible only if dimensions provide
-                  consistent coverage for every reporting period.
+                  Historical snapshots remain reproducible only if dimensions
+                  provide consistent coverage for every reporting period.
                 </div>
               </a>
 
-              <a href="/learn/historical-coverage-gap" style={relatedConceptStyle}>
+              <a
+                href="/learn/historical-coverage-gap"
+                style={relatedConceptStyle}
+              >
                 <strong>Historical Coverage Gap</strong>
                 <div>
-                  Dimension Completion is often required when historical coverage gaps
-                  exist between facts and dimensions.
+                  Dimension Completion is often required when historical
+                  coverage gaps exist between facts and dimensions.
                 </div>
               </a>
 
-              <a href="/learn/state-state-alignment" style={relatedConceptStyle}>
+              <a
+                href="/learn/state-state-alignment"
+                style={relatedConceptStyle}
+              >
                 <strong>State ↔ State Alignment</strong>
                 <div>
-                  Historical joins become unstable when aligned states do not cover the
-                  same time periods.
+                  Historical joins become unstable when aligned states do not
+                  cover the same time periods.
                 </div>
               </a>
 
               <a href="/learn/state-modeling" style={relatedConceptStyle}>
                 <strong>SCD2 Dimensions</strong>
                 <div>
-                  SCD2 preserves captured history, but does not automatically create the
-                  historical coverage required by snapshot reporting.
+                  SCD2 preserves captured history, but does not automatically
+                  create the historical coverage required by snapshot reporting.
                 </div>
               </a>
             </div>
           </WhiteCard>
-
         </section>
 
         <RelatedPatterns current="dimension_completion" />
@@ -324,7 +336,8 @@ function DarkExampleCard() {
       <div style={darkEyebrowStyle}>Example</div>
 
       <h2 style={darkTitleStyle}>
-        Contract exists from January to December. Customer assignment starts in April.
+        Contract exists from January to December. Customer assignment starts in
+        April.
       </h2>
 
       <div style={visualTimelineStyle}>
@@ -371,8 +384,16 @@ function DarkExampleCard() {
           </div>
         </div>
         <div style={comparisonGridStyle}>
-          <ResultCard title="Expected Result (Recommended)" rows={EXPECTED_ROWS} tone="good" />
-          <ResultCard title="Common Wrong Result (Risk)" rows={WRONG_ROWS} tone="bad" />
+          <ResultCard
+            title="Expected Result (Recommended)"
+            rows={EXPECTED_ROWS}
+            tone="good"
+          />
+          <ResultCard
+            title="Common Wrong Result (Risk)"
+            rows={WRONG_ROWS}
+            tone="bad"
+          />
         </div>
       </div>
 
@@ -380,9 +401,9 @@ function DarkExampleCard() {
         <div style={exampleNoteLabelStyle}>Reporting date: February</div>
 
         <p style={exampleNoteTextStyle}>
-          The contract exists in February, but the customer dimension has no valid
-          row yet. Without completion, the snapshot either loses the dimension
-          attributes or fails the historical join.
+          The contract exists in February, but the customer dimension has no
+          valid row yet. Without completion, the snapshot either loses the
+          dimension attributes or fails the historical join.
         </p>
       </div>
     </section>
@@ -457,7 +478,7 @@ function ResultCard({
         >
           {isGood ? "✓" : "×"}
         </div>
-        
+
         <h2
           style={{
             ...resultTitleStyle,
@@ -582,7 +603,10 @@ function PatternTestCaseCard() {
         <li>Copy one of the target tables below.</li>
         <li>Open Target Table Validation.</li>
         <li>Paste the copied table as your target output.</li>
-        <li>Check whether missing dimension history was completed or left unresolved.</li>
+        <li>
+          Check whether missing dimension history was completed or left
+          unresolved.
+        </li>
       </ol>
 
       <div style={testCaseGridStyle}>
@@ -699,15 +723,9 @@ function CopyTableCard({
         onMouseLeave={() => setHovered(false)}
         style={{
           ...copyTableButtonStyle,
-          background: copied
-            ? "#16a34a"
-            : isGood
-            ? "#15803d"
-            : "#b91c1c",
+          background: copied ? "#16a34a" : isGood ? "#15803d" : "#b91c1c",
           transform: hovered ? "translateY(-1px)" : "translateY(0)",
-          boxShadow: hovered
-            ? "0 10px 22px rgba(15, 23, 42, 0.22)"
-            : "none",
+          boxShadow: hovered ? "0 10px 22px rgba(15, 23, 42, 0.22)" : "none",
           touchAction: "manipulation",
           WebkitTapHighlightColor: "transparent",
         }}
@@ -747,12 +765,12 @@ function TryItCard() {
       </h2>
 
       <p style={tryItTextStyle}>
-        Paste your historized fact and dimension data into the workbench and check
-        whether your snapshot model has missing dimensional coverage.
+        Paste your historized fact and dimension data into the workbench and
+        check whether your snapshot model has missing dimensional coverage.
       </p>
 
       <a
-        href="/"
+        href="/#model-review-section"
         onClick={() => {
           track("example_model_cta_clicked", {
             example: "dimension_completion",
@@ -968,35 +986,6 @@ const darkTitleStyle: CSSProperties = {
   lineHeight: 1.15,
   color: "#ffffff",
   letterSpacing: "-0.03em",
-};
-
-const timelineListStyle: CSSProperties = {
-  marginTop: 22,
-  display: "grid",
-  gap: 14,
-  maxWidth: 820,
-};
-
-const timelineRowStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: 14,
-  alignItems: "center",
-};
-
-const timelineLabelStyle: CSSProperties = {
-  color: "#cbd5e1",
-  fontSize: 13,
-  fontWeight: 900,
-};
-
-const timelineBarStyle: CSSProperties = {
-  padding: "12px 14px",
-  borderRadius: 14,
-  fontFamily: "monospace",
-  fontSize: 13,
-  overflowX: "auto",
-  whiteSpace: "nowrap",
 };
 
 const exampleNoteStyle: CSSProperties = {
