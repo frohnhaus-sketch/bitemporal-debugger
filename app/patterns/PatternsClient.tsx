@@ -45,7 +45,11 @@ const PATTERN_GROUPS: {
       {
         name: "Historical Match Ambiguity",
         text: "Occurs when multiple historical records satisfy the same temporal join.",
-        examples: ["Duplicate fact rows", "Join explosion", "Multiple valid matches"],
+        examples: [
+          "Duplicate fact rows",
+          "Join explosion",
+          "Multiple valid matches",
+        ],
         href: "/learn/historical-match-ambiguity",
         interactive: true,
         category: "challenge",
@@ -83,8 +87,20 @@ const PATTERN_GROUPS: {
       {
         name: "Bitemporal Modeling",
         text: "Separates business-valid time from system-visible time.",
-        examples: ["Corrected history", "Audit reporting", "As-known reporting"],
+        examples: [
+          "Corrected history",
+          "Audit reporting",
+          "As-known reporting",
+        ],
         href: "/learn/bitemporal-modeling",
+        category: "modeling",
+      },
+      {
+        name: "Tritemporal Modeling",
+        text: "Separates valid time, visibility time and publication time when facts become true, known and externally published at different moments.",
+        examples: ["Valid time", "Visibility time", "Publication time"],
+        href: "/learn/tritemporal-modeling",
+        interactive: true,
         category: "modeling",
       },
       {
@@ -144,7 +160,11 @@ const PATTERN_GROUPS: {
       {
         name: "Snapshot Fact Modeling",
         text: "Builds reproducible reporting facts for periodic snapshots.",
-        examples: ["Month-end portfolio", "Active contracts", "Customer balances"],
+        examples: [
+          "Month-end portfolio",
+          "Active contracts",
+          "Customer balances",
+        ],
         href: "/learn/snapshot-fact-modeling",
         category: "modeling",
       },
@@ -158,7 +178,11 @@ const PATTERN_GROUPS: {
       {
         name: "Historical Correction",
         text: "Preserves corrected history without losing what was known before.",
-        examples: ["Backdated changes", "Retroactive corrections", "Restatements"],
+        examples: [
+          "Backdated changes",
+          "Retroactive corrections",
+          "Restatements",
+        ],
         href: "/learn/historical-correction",
         interactive: true,
         category: "modeling",
@@ -180,6 +204,18 @@ const PATTERN_GROUPS: {
         category: "engineering",
       },
       {
+        name: "Historical Winner Selection",
+        text: "Selects the correct winning record when multiple historical candidates are valid for the same business moment.",
+        examples: [
+          "Priority rules",
+          "Latest visible record",
+          "Source precedence",
+        ],
+        href: "/learn/historical-winner-selection",
+        interactive: true,
+        category: "engineering",
+      },
+      {
         name: "Event-to-State Projection",
         text: "Derives valid state intervals from ordered business events.",
         examples: ["Event streams", "Status history", "Snapshot derivation"],
@@ -197,7 +233,11 @@ const PATTERN_GROUPS: {
       {
         name: "Hierarchical State Derivation",
         text: "Derives historized parent states from historized child entities using business rules.",
-        examples: ["Policy status", "Contract aggregation", "Child → parent state"],
+        examples: [
+          "Policy status",
+          "Contract aggregation",
+          "Child → parent state",
+        ],
         href: "/learn/hierarchical-state-derivation",
         interactive: true,
         category: "engineering",
@@ -205,7 +245,11 @@ const PATTERN_GROUPS: {
       {
         name: "Rectangle Decomposition",
         text: "Creates stable reporting intervals from independently historized attributes.",
-        examples: ["Coverage timelines", "Risk attributes", "Contract projections"],
+        examples: [
+          "Coverage timelines",
+          "Risk attributes",
+          "Contract projections",
+        ],
         href: "/learn/rectangle-decomposition",
         interactive: true,
         category: "engineering",
@@ -257,8 +301,7 @@ export default function PatternsPage() {
     window.addEventListener("scroll", handleCategoryVisibility);
     handleCategoryVisibility();
 
-    return () =>
-      window.removeEventListener("scroll", handleCategoryVisibility);
+    return () => window.removeEventListener("scroll", handleCategoryVisibility);
   }, []);
 
   return (
@@ -494,7 +537,7 @@ function LearnMoreLink({
       href={href}
       onClick={(event) => {
         event.stopPropagation();
-      
+
         track("pattern_learn_more_clicked", {
           pattern,
           group,
@@ -506,14 +549,14 @@ function LearnMoreLink({
           category === "challenge"
             ? "challenge_learn_more_clicked"
             : category === "modeling"
-            ? "modeling_pattern_learn_more_clicked"
-            : "engineering_pattern_learn_more_clicked",
+              ? "modeling_pattern_learn_more_clicked"
+              : "engineering_pattern_learn_more_clicked",
           {
             pattern,
             group,
             category,
             href,
-          }
+          },
         );
       }}
       style={{

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Analytics } from "@vercel/analytics/next";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ModelReviewPanel } from "@/components/ModelReviewPanel";
 import { TargetTableValidationPanel } from "@/components/TargetTableValidationPanel";
@@ -183,8 +182,6 @@ export default function Home() {
 
         <Footer />
       </div>
-
-      <Analytics />
     </main>
   );
 }

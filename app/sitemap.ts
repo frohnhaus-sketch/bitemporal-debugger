@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/learn/state-modeling",
     "/learn/event-modeling",
     "/learn/bitemporal-modeling",
+    "/learn/tritemporal-modeling",
     "/learn/scd2-vs-bitemporal",
 
     "/learn/state-state-alignment",
@@ -32,6 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/learn/rectangle-decomposition",
     "/learn/hierarchical-state-derivation",
     "/learn/event-prioritization",
+    "/learn/historical-winner-selection",
     "/learn/state-reduction",
     "/learn/event-to-state-projection",
     "/learn/historical-backfill",
