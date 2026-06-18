@@ -3,6 +3,8 @@
 import { track } from "@/lib/analytics";
 import { useEffect, useMemo, useState } from "react";
 import { reviewModelText, type ReviewFinding } from "@/lib/modelReview";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 const MODEL_REVIEW_EXAMPLES = [
   {
@@ -111,7 +113,7 @@ result.write.mode("overwrite").saveAsTable("gold.fact_contract_month_snapshot")`
     button: "Load SQL Snapshot Model",
     description:
       "SQL model for month-end snapshot reporting with valid-time joins and reproducibility risk.",
-input: `with month_end_calendar as (
+    input: `with month_end_calendar as (
     select snapshot_month
     from dim_calendar
     where is_month_end = true
@@ -274,6 +276,29 @@ export function ModelReviewPanel() {
     });
   }
 
+  function getSyntaxLanguage() {
+    if (activeExampleId === "pyspark_notebook") return "python";
+    if (activeExampleId === "sql_snapshot_model") return "sql";
+    if (activeExampleId === "dbt_scd2_model") return "sql";
+    if (activeExampleId === "architecture_description") return "markdown";
+
+    const lowered = input.toLowerCase();
+
+    if (lowered.includes("pyspark") || lowered.includes("spark.table")) {
+      return "python";
+    }
+
+    if (
+      lowered.includes("select ") ||
+      lowered.includes("with ") ||
+      lowered.includes("join ")
+    ) {
+      return "sql";
+    }
+
+    return "markdown";
+  }
+
   return (
     <section
       style={{
@@ -399,23 +424,68 @@ export function ModelReviewPanel() {
         </div>
       </div>
 
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Paste SQL, PySpark, dbt model or notebook text here..."
-        style={{
-          width: "100%",
-          minHeight: 220,
-          padding: 14,
-          borderRadius: 12,
-          border: "1px solid #cbd5e1",
-          fontFamily: "monospace",
-          fontSize: 13,
-          lineHeight: 1.5,
-          boxSizing: "border-box",
-          resize: "vertical",
-        }}
-      />
+      {input ? (
+        <div
+          style={{
+            border: "1px solid #cbd5e1",
+            borderRadius: 12,
+            overflow: "hidden",
+          }}
+        >
+          <SyntaxHighlighter
+            language={getSyntaxLanguage()}
+            style={oneLight}
+            customStyle={{
+              margin: 0,
+              minHeight: 220,
+              maxHeight: 360,
+              padding: 18,
+              fontSize: 13,
+              lineHeight: 1.6,
+              background: "#f8fafc",
+            }}
+            wrapLongLines
+          >
+            {input}
+          </SyntaxHighlighter>
+
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Paste SQL, PySpark, dbt model or notebook text here..."
+            style={{
+              width: "100%",
+              minHeight: 120,
+              padding: 14,
+              border: 0,
+              borderTop: "1px solid #cbd5e1",
+              fontFamily: "monospace",
+              fontSize: 13,
+              lineHeight: 1.5,
+              boxSizing: "border-box",
+              resize: "vertical",
+            }}
+          />
+        </div>
+      ) : (
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Paste SQL, PySpark, dbt model or notebook text here..."
+          style={{
+            width: "100%",
+            minHeight: 220,
+            padding: 14,
+            borderRadius: 12,
+            border: "1px solid #cbd5e1",
+            fontFamily: "monospace",
+            fontSize: 13,
+            lineHeight: 1.5,
+            boxSizing: "border-box",
+            resize: "vertical",
+          }}
+        />
+      )}
 
       {!review && (
         <div
