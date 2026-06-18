@@ -24,7 +24,7 @@ Historical Data Products
 
 This framework serves as the conceptual foundation for:
 
-* Historical Modeling Advisor
+* Historical Modeling Assessment
 * Blueprint Generator
 * Notebook Review
 * Validation Engine

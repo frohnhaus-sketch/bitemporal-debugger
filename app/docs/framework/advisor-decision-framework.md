@@ -1,8 +1,8 @@
-# Historical Modeling Advisor – Decision Framework
+# Historical Modeling Assessment – Decision Framework
 
 ## Purpose
 
-The Historical Modeling Advisor converts reporting requirements, source system characteristics and historical behavior into an implementation-ready historical modeling blueprint.
+The Historical Modeling Assessment converts reporting requirements, source system characteristics and historical behavior into an implementation-ready historical modeling blueprint.
 
 The Advisor does not start with tables.
 
@@ -266,7 +266,7 @@ Frequently discussed in dbt, data warehouse and analytics engineering communitie
 
 ### Recommended Patterns
 
-* Temporal Conformance
+* Historical Conformance
 * Identity Resolution
 
 ### Recommended Architecture

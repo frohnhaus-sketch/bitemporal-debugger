@@ -188,7 +188,7 @@ Advisor gewinnt
 
 Dann:
 
-Historical Modeling Advisor
+Historical Modeling Assessment
 
 wird das Produkt.
 

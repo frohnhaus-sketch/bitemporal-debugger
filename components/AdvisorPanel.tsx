@@ -35,15 +35,16 @@ export function AdvisorPanel() {
   }, []);
 
   const [answers, setAnswers] = useState<AdvisorAnswers>({
-    reportingGoal: "SNAPSHOT",
+    reportingGoal: "" as ReportingGoal,
     sourceTypes: [],
-    historyCorrected: "YES",
-    multipleSystems: "YES",
-    changingRelationships: "YES",
-    historizedDimensions: "BITEMPORAL",
+    historyCorrected: "" as YesNoUnknown,
+    multipleSystems: "" as "YES" | "NO",
+    changingRelationships: "" as "YES" | "NO",
+    historizedDimensions: "" as DimensionNeed,
   });
 
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [hasStartedAssessment, setHasStartedAssessment] = useState(false);
 
   const [advisorStep, setAdvisorStep] = useState(0);
 
@@ -51,14 +52,25 @@ export function AdvisorPanel() {
     useState(false);
 
   const totalAdvisorSteps = 6;
-  const advisorProgress = Math.round(((advisorStep + 1) / totalAdvisorSteps) * 100);
+  const answeredAdvisorSteps = [
+    answers.reportingGoal,
+    answers.sourceTypes.length > 0 ? "selected" : "",
+    answers.historyCorrected,
+    answers.multipleSystems,
+    answers.changingRelationships,
+    answers.historizedDimensions,
+  ].filter(Boolean).length;
+
+  const advisorProgress = Math.round(
+    (answeredAdvisorSteps / totalAdvisorSteps) * 100,
+  );
   const isLastAdvisorStep = advisorStep === totalAdvisorSteps - 1;
 
   const blueprint = useMemo(() => generateAdvisorBlueprint(answers), [answers]);
 
   const markdown = useMemo(
     () => generateAdvisorMarkdown(answers, blueprint),
-    [answers, blueprint]
+    [answers, blueprint],
   );
 
   const advisorItems = useMemo(
@@ -77,7 +89,7 @@ export function AdvisorPanel() {
       blueprint.engineeringChallenges,
       blueprint.modelingPatterns,
       blueprint.engineeringPatterns,
-    ]
+    ],
   );
 
   function trackAdvisorStarted() {
@@ -87,6 +99,18 @@ export function AdvisorPanel() {
 
     track("advisor_started", {
       source: "advisor_question_changed",
+    });
+  }
+
+  function startAssessment() {
+    setHasStartedAssessment(true);
+
+    if (hasStartedAdvisor.current) return;
+
+    hasStartedAdvisor.current = true;
+
+    track("advisor_started", {
+      source: "start_assessment_button",
     });
   }
 
@@ -124,9 +148,9 @@ export function AdvisorPanel() {
   }, [answers, blueprint]);
 
   const selectedSummary = [
-    getReportingGoalLabel(answers.reportingGoal),
+    answers.reportingGoal ? getReportingGoalLabel(answers.reportingGoal) : null,
     ...answers.sourceTypes,
-    answers.historizedDimensions !== "NO"
+    answers.historizedDimensions && answers.historizedDimensions !== "NO"
       ? getDimensionLabel(answers.historizedDimensions)
       : null,
     answers.historyCorrected === "YES" ? "late or corrected history" : null,
@@ -137,14 +161,14 @@ export function AdvisorPanel() {
   ].filter(Boolean);
 
   const advisorSummaryChips = [
-    getReportingGoalLabel(answers.reportingGoal),
+    answers.reportingGoal ? getReportingGoalLabel(answers.reportingGoal) : null,
     ...answers.sourceTypes,
-    getDimensionLabel(answers.historizedDimensions),
+    answers.historizedDimensions
+      ? getDimensionLabel(answers.historizedDimensions)
+      : null,
     answers.historyCorrected === "YES" ? "Corrected history" : null,
     answers.multipleSystems === "YES" ? "Multiple systems" : null,
-    answers.changingRelationships === "YES"
-      ? "Changing relationships"
-      : null,
+    answers.changingRelationships === "YES" ? "Changing relationships" : null,
   ].filter(Boolean) as string[];
 
   function toggleSourceType(sourceType: SourceType) {
@@ -175,7 +199,7 @@ export function AdvisorPanel() {
 
   function updateAnswer<K extends keyof AdvisorAnswers>(
     question: K,
-    value: AdvisorAnswers[K]
+    value: AdvisorAnswers[K],
   ) {
     trackAdvisorStarted();
     hasInteractedWithAdvisor.current = true;
@@ -195,7 +219,7 @@ export function AdvisorPanel() {
   async function copyMarkdownBlueprint() {
     if (!hasTrackedAdvisorCompleted.current) {
       hasTrackedAdvisorCompleted.current = true;
-    
+
       track("advisor_completed", {
         reportingGoal: answers.reportingGoal,
         sourceTypes: answers.sourceTypes.join(","),
@@ -219,10 +243,10 @@ export function AdvisorPanel() {
       validationCheckCount: blueprint.validationChecks.length,
       communityEvidenceCount: blueprint.communityEvidence.length,
     });
-  
+
     await navigator.clipboard.writeText(markdown);
     setCopyState("copied");
-  
+
     window.setTimeout(() => {
       setCopyState("idle");
     }, 2000);
@@ -239,25 +263,25 @@ export function AdvisorPanel() {
   }
 
   function goToNextAdvisorStep() {
-  if (isLastAdvisorStep) {
-    setHasGeneratedRecommendation(true);
+    if (isLastAdvisorStep) {
+      setHasGeneratedRecommendation(true);
 
-    track("advisor_recommendation_requested", {
-      step: advisorStep + 1,
-      reportingGoal: answers.reportingGoal,
-      sourceTypes: answers.sourceTypes.join(","),
-      historyCorrected: answers.historyCorrected,
-      multipleSystems: answers.multipleSystems,
-      changingRelationships: answers.changingRelationships,
-      historizedDimensions: answers.historizedDimensions,
-      recommendation: blueprint.recommendation,
-      challengeCount: advisorItems.engineeringChallenges.length,
-      modelingPatternCount: advisorItems.modelingPatterns.length,
-      engineeringPatternCount: advisorItems.engineeringPatterns.length,
-    });
+      track("advisor_recommendation_requested", {
+        step: advisorStep + 1,
+        reportingGoal: answers.reportingGoal,
+        sourceTypes: answers.sourceTypes.join(","),
+        historyCorrected: answers.historyCorrected,
+        multipleSystems: answers.multipleSystems,
+        changingRelationships: answers.changingRelationships,
+        historizedDimensions: answers.historizedDimensions,
+        recommendation: blueprint.recommendation,
+        challengeCount: advisorItems.engineeringChallenges.length,
+        modelingPatternCount: advisorItems.modelingPatterns.length,
+        engineeringPatternCount: advisorItems.engineeringPatterns.length,
+      });
 
-    return;
-  }
+      return;
+    }
 
     setAdvisorStep((step) => Math.min(totalAdvisorSteps - 1, step + 1));
 
@@ -269,7 +293,12 @@ export function AdvisorPanel() {
   }
 
   const canProceedAdvisorStep =
-    advisorStep !== 1 || answers.sourceTypes.length > 0;
+    (advisorStep === 0 && Boolean(answers.reportingGoal)) ||
+    (advisorStep === 1 && answers.sourceTypes.length > 0) ||
+    (advisorStep === 2 && Boolean(answers.historyCorrected)) ||
+    (advisorStep === 3 && Boolean(answers.multipleSystems)) ||
+    (advisorStep === 4 && Boolean(answers.changingRelationships)) ||
+    (advisorStep === 5 && Boolean(answers.historizedDimensions));
 
   return (
     <details
@@ -294,748 +323,881 @@ export function AdvisorPanel() {
           listStylePosition: "inside",
         }}
       >
-        <SectionEyebrow>Historical Modeling Advisor</SectionEyebrow>
-      
+        <SectionEyebrow>Historical Modeling Assessment</SectionEyebrow>
+
         <h2 style={{ margin: "0 0 8px", fontSize: 26 }}>
-          Design the model before implementation
+          Assess your historical modeling requirements
         </h2>
-      
+
         <p style={{ color: "#475569", marginTop: 0, marginBottom: 0 }}>
-          Answer a few questions and get a recommended historical modeling strategy.
+          Answer a few questions and get a recommended historical modeling
+          strategy.
         </p>
       </summary>
-      <div
-        style={{
-          marginTop: 24,
-          padding: 18,
-          borderRadius: 16,
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
-        }}
-      >
+      {!hasStartedAssessment && (
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            marginBottom: 12,
+            marginTop: 24,
+            padding: 22,
+            borderRadius: 16,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
           }}
         >
-          <div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 900,
-                color: "#2563eb",
-                textTransform: "uppercase",
-                letterSpacing: 0.6,
-              }}
-            >
-              Question {advisorStep + 1} of {totalAdvisorSteps}
-            </div>
-            
-            <div
-              style={{
-                marginTop: 4,
-                color: "#64748b",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              {advisorProgress}% complete
-            </div>
-          </div>
-            
+          <SectionEyebrow>Start Assessment</SectionEyebrow>
+
+          <h3
+            style={{
+              margin: "0 0 10px",
+              fontSize: 24,
+              color: "#0f172a",
+              letterSpacing: "-0.03em",
+            }}
+          >
+            Answer 6 questions about your historical model.
+          </h3>
+
+          <p
+            style={{
+              margin: "0 0 16px",
+              color: "#475569",
+              fontSize: 15,
+              lineHeight: 1.6,
+              maxWidth: 760,
+            }}
+          >
+            Get a recommended modeling strategy, relevant historical patterns,
+            implementation risks and validation checks for your reporting model.
+          </p>
+
           <div
             style={{
-              minWidth: 120,
-              height: 8,
-              borderRadius: 999,
-              background: "#e2e8f0",
-              overflow: "hidden",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: 10,
+              marginBottom: 18,
             }}
           >
+            {[
+              "Takes less than 1 minute",
+              "Recommends modeling patterns",
+              "Highlights validation risks",
+              "Generates an implementation blueprint",
+            ].map((item) => (
+              <div
+                key={item}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  background: "#ffffff",
+                  border: "1px solid #dbeafe",
+                  color: "#1e293b",
+                  fontSize: 13,
+                  fontWeight: 800,
+                }}
+              >
+                ✓ {item}
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={startAssessment}
+            style={{
+              border: "none",
+              borderRadius: 12,
+              padding: "12px 16px",
+              background: "#2563eb",
+              color: "#ffffff",
+              fontWeight: 900,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Start Assessment →
+          </button>
+        </div>
+      )}
+      {hasStartedAssessment && (
+        <div
+          style={{
+            marginTop: 24,
+            padding: 18,
+            borderRadius: 16,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 900,
+                  color: "#2563eb",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.6,
+                }}
+              >
+                Question {advisorStep + 1} of {totalAdvisorSteps}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#64748b",
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                {advisorProgress}% complete
+              </div>
+            </div>
+
             <div
               style={{
-                width: `${advisorProgress}%`,
-                height: "100%",
-                background: "#2563eb",
+                minWidth: 120,
+                height: 8,
+                borderRadius: 999,
+                background: "#e2e8f0",
+                overflow: "hidden",
               }}
-            />
+            >
+              <div
+                style={{
+                  width: `${advisorProgress}%`,
+                  height: "100%",
+                  background: "#2563eb",
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 18 }}>
+            {advisorStep === 0 && (
+              <QuestionBlock
+                title="What should the final reporting model support?"
+                description="Choose the main reporting behavior the historical model needs to produce."
+              >
+                <select
+                  value={answers.reportingGoal}
+                  onChange={(e) =>
+                    updateAnswer(
+                      "reportingGoal",
+                      e.target.value as ReportingGoal,
+                    )
+                  }
+                  style={inputStyle}
+                >
+                  <option value="" disabled>
+                    Select reporting behavior...
+                  </option>
+                  <option value="CURRENT_STATE">Only current state</option>
+                  <option value="POINT_IN_TIME">Point-in-time reporting</option>
+                  <option value="SNAPSHOT">Periodic snapshot reporting</option>
+                  <option value="EVENT">Event-based reporting</option>
+                  <option value="AUDIT">Audit / correction history</option>
+                </select>
+              </QuestionBlock>
+            )}
+
+            {advisorStep === 1 && (
+              <QuestionBlock
+                title="What kind of source data do you have?"
+                description="Select all source behaviors that exist in your historical model."
+                examples={[
+                  "State = valid intervals",
+                  "Event = point-in-time changes",
+                  "Journal / CDC = change log",
+                  "Reference Data = product, region or category lookups",
+                  "Business Relationships = customer ↔ advisor, contract ↔ owner",
+                ]}
+              >
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {SOURCE_TYPES.map((sourceType) => {
+                    const active = answers.sourceTypes.includes(sourceType);
+
+                    return (
+                      <button
+                        key={sourceType}
+                        type="button"
+                        onClick={() => toggleSourceType(sourceType)}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: 999,
+                          border: "1px solid #cbd5e1",
+                          background: active ? "#2563eb" : "#ffffff",
+                          color: active ? "#ffffff" : "#0f172a",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {sourceType}
+                      </button>
+                    );
+                  })}
+                </div>
+              </QuestionBlock>
+            )}
+
+            {advisorStep === 2 && (
+              <QuestionBlock
+                title="Can source history change after it was first loaded?"
+                description="Use Yes if historical records can arrive late, be backdated, corrected or replaced after reports were already produced."
+                examples={[
+                  "Backdated contract change",
+                  "Corrected customer status",
+                  "Late-arriving source record",
+                ]}
+              >
+                <select
+                  value={answers.historyCorrected}
+                  onChange={(e) =>
+                    updateAnswer(
+                      "historyCorrected",
+                      e.target.value as YesNoUnknown,
+                    )
+                  }
+                  style={inputStyle}
+                >
+                  <option value="" disabled>
+                    Select whether history can change...
+                  </option>
+                  <option value="YES">Yes, history can change later</option>
+                  <option value="NO">No, history is stable once loaded</option>
+                  <option value="UNKNOWN">Unknown / not sure</option>
+                </select>
+              </QuestionBlock>
+            )}
+
+            {advisorStep === 3 && (
+              <QuestionBlock
+                title="Does the final model combine multiple systems?"
+                description="Use Yes when the reporting product joins or conforms data from different operational systems, not just multiple tables from the same source."
+                examples={[
+                  "Policy system + customer master",
+                  "Contract system + CRM",
+                  "SAP + Salesforce",
+                ]}
+              >
+                <select
+                  value={answers.multipleSystems}
+                  onChange={(e) =>
+                    updateAnswer(
+                      "multipleSystems",
+                      e.target.value as "YES" | "NO",
+                    )
+                  }
+                  style={inputStyle}
+                >
+                  <option value="" disabled>
+                    Select system scope...
+                  </option>
+                  <option value="YES">
+                    Yes, multiple systems are combined
+                  </option>
+                  <option value="NO">No, mostly one source system</option>
+                </select>
+              </QuestionBlock>
+            )}
+
+            {advisorStep === 4 && (
+              <QuestionBlock
+                title="Can business relationships change over time?"
+                description="Use Yes when an entity can be linked to different related entities depending on the reporting date."
+                examples={[
+                  "Customer changes advisor",
+                  "Contract changes owner",
+                  "Employee changes department",
+                ]}
+              >
+                <select
+                  value={answers.changingRelationships}
+                  onChange={(e) =>
+                    updateAnswer(
+                      "changingRelationships",
+                      e.target.value as "YES" | "NO",
+                    )
+                  }
+                  style={inputStyle}
+                >
+                  <option value="" disabled>
+                    Select relationship behavior...
+                  </option>
+                  <option value="YES">
+                    Yes, relationships are time-dependent
+                  </option>
+                  <option value="NO">
+                    No, relationships are mostly stable
+                  </option>
+                </select>
+              </QuestionBlock>
+            )}
+
+            {advisorStep === 5 && (
+              <QuestionBlock
+                title="When looking at a report from last year, which attributes should be shown?"
+                description="Choose how customer, product or relationship attributes should behave in historical reports."
+                examples={[
+                  "Customer segment",
+                  "Product category",
+                  "Advisor assignment",
+                ]}
+              >
+                <select
+                  value={answers.historizedDimensions}
+                  onChange={(e) =>
+                    updateAnswer(
+                      "historizedDimensions",
+                      e.target.value as DimensionNeed,
+                    )
+                  }
+                  style={inputStyle}
+                >
+                  <option value="" disabled>
+                    Select attribute behavior...
+                  </option>
+                  <option value="NO">
+                    No descriptive attributes are needed
+                  </option>
+                  <option value="SCD1">
+                    Always show today's attributes (SCD1)
+                  </option>
+                  <option value="SCD2">
+                    Show attributes that were valid back then (SCD2)
+                  </option>
+                  <option value="BITEMPORAL">
+                    Show attributes that were known back then (Bitemporal)
+                  </option>
+                </select>
+              </QuestionBlock>
+            )}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              marginTop: 18,
+            }}
+          >
+            <button
+              type="button"
+              onClick={goToPreviousAdvisorStep}
+              disabled={advisorStep === 0}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "1px solid #cbd5e1",
+                background: advisorStep === 0 ? "#f1f5f9" : "#ffffff",
+                color: advisorStep === 0 ? "#94a3b8" : "#0f172a",
+                cursor: advisorStep === 0 ? "not-allowed" : "pointer",
+                fontWeight: 800,
+              }}
+            >
+              Back
+            </button>
+
+            <button
+              type="button"
+              onClick={canProceedAdvisorStep ? goToNextAdvisorStep : undefined}
+              disabled={!canProceedAdvisorStep}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "1px solid #1d4ed8",
+                background: canProceedAdvisorStep ? "#2563eb" : "#cbd5e1",
+                color: "#ffffff",
+                cursor: canProceedAdvisorStep ? "pointer" : "not-allowed",
+                fontWeight: 900,
+              }}
+            >
+              {isLastAdvisorStep ? "Generate Recommendation" : "Next"}
+            </button>
           </div>
         </div>
-            
-        <div style={{ display: "grid", gap: 18 }}>
-          {advisorStep === 0 && (
-            <QuestionBlock
-              title="What should the final reporting model support?"
-              description="Choose the main reporting behavior the historical model needs to produce."
-            >
-              <select
-                value={answers.reportingGoal}
-                onChange={(e) =>
-                  updateAnswer("reportingGoal", e.target.value as ReportingGoal)
-                }
-                style={inputStyle}
+      )}
+      {hasGeneratedRecommendation && (
+        <div
+          style={{
+            marginTop: 28,
+            padding: 18,
+            borderRadius: 14,
+            background: "#dbeafe",
+            border: "1px solid #93c5fd",
+          }}
+        >
+          <SectionEyebrow color="#1d4ed8">
+            Recommended Historical Modeling Strategy
+          </SectionEyebrow>
+
+          <div
+            style={{
+              fontSize: "clamp(24px, 8vw, 28px)",
+              fontWeight: 900,
+              color: "#0f172a",
+              lineHeight: 1.2,
+            }}
+          >
+            {blueprint.recommendation}
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+            }}
+          >
+            {advisorSummaryChips.map((chip) => (
+              <span
+                key={chip}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  color: "#1d4ed8",
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
               >
-                <option value="CURRENT_STATE">Only current state</option>
-                <option value="POINT_IN_TIME">Point-in-time reporting</option>
-                <option value="SNAPSHOT">Periodic snapshot reporting</option>
-                <option value="EVENT">Event-based reporting</option>
-                <option value="AUDIT">Audit / correction history</option>
-              </select>
-            </QuestionBlock>
-          )}
-      
-          {advisorStep === 1 && (
-            <QuestionBlock
-              title="What kind of source data do you have?"
-              description="Select all source behaviors that exist in your historical model."
-              examples={[
-                "State = valid intervals",
-                "Event = point-in-time changes",
-                "Journal / CDC = change log",
-                "Reference Data = product, region or category lookups",
-                "Business Relationships = customer ↔ advisor, contract ↔ owner",
-              ]}
-            >
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {SOURCE_TYPES.map((sourceType) => {
-                  const active = answers.sourceTypes.includes(sourceType);
-                
-                  return (
-                    <button
-                      key={sourceType}
-                      type="button"
-                      onClick={() => toggleSourceType(sourceType)}
+                {chip}
+              </span>
+            ))}
+          </div>
+          {blueprint.architecture.length > 0 && (
+            <div style={{ marginTop: 18 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: "#475569",
+                  marginBottom: 8,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Typical Architecture
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                {blueprint.architecture.map((item, index) => (
+                  <div key={item}>
+                    <div
                       style={{
-                        padding: "8px 12px",
-                        borderRadius: 999,
-                        border: "1px solid #cbd5e1",
-                        background: active ? "#2563eb" : "#ffffff",
-                        color: active ? "#ffffff" : "#0f172a",
-                        cursor: "pointer",
-                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: 12,
+                        borderRadius: 14,
+                        background: "#ffffff",
+                        border: "1px solid #bfdbfe",
                       }}
                     >
-                      {sourceType}
-                    </button>
-                  );
-                })}
-              </div>
-            </QuestionBlock>
-          )}
-      
-          {advisorStep === 2 && (
-            <QuestionBlock
-              title="Can source history change after it was first loaded?"
-              description="Use Yes if historical records can arrive late, be backdated, corrected or replaced after reports were already produced."
-              examples={[
-                "Backdated contract change",
-                "Corrected customer status",
-                "Late-arriving source record",
-              ]}
-            >
-              <select
-                value={answers.historyCorrected}
-                onChange={(e) =>
-                  updateAnswer("historyCorrected", e.target.value as YesNoUnknown)
-                }
-                style={inputStyle}
-              >
-                <option value="YES">Yes, history can change later</option>
-                <option value="NO">No, history is stable once loaded</option>
-                <option value="UNKNOWN">Unknown / not sure</option>
-              </select>
-            </QuestionBlock>
-          )}
-      
-          {advisorStep === 3 && (
-            <QuestionBlock
-              title="Does the final model combine multiple systems?"
-              description="Use Yes when the reporting product joins or conforms data from different operational systems, not just multiple tables from the same source."
-              examples={[
-                "Policy system + customer master",
-                "Contract system + CRM",
-                "SAP + Salesforce",
-              ]}
-            >
-              <select
-                value={answers.multipleSystems}
-                onChange={(e) =>
-                  updateAnswer("multipleSystems", e.target.value as "YES" | "NO")
-                }
-                style={inputStyle}
-              >
-                <option value="YES">Yes, multiple systems are combined</option>
-                <option value="NO">No, mostly one source system</option>
-              </select>
-            </QuestionBlock>
-          )}
-      
-          {advisorStep === 4 && (
-            <QuestionBlock
-              title="Can business relationships change over time?"
-              description="Use Yes when an entity can be linked to different related entities depending on the reporting date."
-              examples={[
-                "Customer changes advisor",
-                "Contract changes owner",
-                "Employee changes department",
-              ]}
-            >
-              <select
-                value={answers.changingRelationships}
-                onChange={(e) =>
-                  updateAnswer("changingRelationships", e.target.value as "YES" | "NO")
-                }
-                style={inputStyle}
-              >
-                <option value="YES">Yes, relationships are time-dependent</option>
-                <option value="NO">No, relationships are mostly stable</option>
-              </select>
-            </QuestionBlock>
-          )}
-      
-          {advisorStep === 5 && (
-            <QuestionBlock
-              title="When looking at a report from last year, which attributes should be shown?"
-              description="Choose how customer, product or relationship attributes should behave in historical reports."
-              examples={[
-                "Customer segment",
-                "Product category",
-                "Advisor assignment",
-              ]}
-            >
-              <select
-                value={answers.historizedDimensions}
-                onChange={(e) =>
-                  updateAnswer("historizedDimensions", e.target.value as DimensionNeed)
-                }
-                style={inputStyle}
-              >
-                <option value="NO">No descriptive attributes are needed</option>
-                <option value="SCD1">Always show today's attributes (SCD1)</option>
-                <option value="SCD2">Show attributes that were valid back then (SCD2)</option>
-                <option value="BITEMPORAL">Show attributes that were known back then (Bitemporal)</option>
-              </select>
-            </QuestionBlock>
-          )}
-        </div>
-        
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            marginTop: 18,
-          }}
-        >
-          <button
-            type="button"
-            onClick={goToPreviousAdvisorStep}
-            disabled={advisorStep === 0}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 10,
-              border: "1px solid #cbd5e1",
-              background: advisorStep === 0 ? "#f1f5f9" : "#ffffff",
-              color: advisorStep === 0 ? "#94a3b8" : "#0f172a",
-              cursor: advisorStep === 0 ? "not-allowed" : "pointer",
-              fontWeight: 800,
-            }}
-          >
-            Back
-          </button>
-          
-          <button
-            type="button"
-            onClick={canProceedAdvisorStep ? goToNextAdvisorStep : undefined}
-            disabled={!canProceedAdvisorStep}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 10,
-              border: "1px solid #1d4ed8",
-              background: canProceedAdvisorStep ? "#2563eb" : "#cbd5e1",
-              color: "#ffffff",
-              cursor: canProceedAdvisorStep ? "pointer" : "not-allowed",
-              fontWeight: 900,
-            }}
-          >
-            {isLastAdvisorStep ? "Generate Recommendation" : "Next"}
-          </button>
-        </div>
-      </div>
-    {hasGeneratedRecommendation && (
-      <div
-        style={{
-          marginTop: 28,
-          padding: 18,
-          borderRadius: 14,
-          background: "#dbeafe",
-          border: "1px solid #93c5fd",
-        }}
-      >
-        <SectionEyebrow color="#1d4ed8">
-          Recommended Historical Modeling Strategy
-        </SectionEyebrow>
+                      <div
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: 999,
+                          display: "grid",
+                          placeItems: "center",
+                          flexShrink: 0,
+                          background: "#dbeafe",
+                          color: "#1d4ed8",
+                          fontSize: 12,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div
+                          style={{
+                            color: "#0f172a",
+                            fontSize: 13,
+                            fontWeight: 900,
+                          }}
+                        >
+                          {item}
+                        </div>
 
-        <div
-          style={{
-            fontSize: "clamp(24px, 8vw, 28px)",
-            fontWeight: 900,
-            color: "#0f172a",
-            lineHeight: 1.2,
-          }}
-        >
-          {blueprint.recommendation}
-        </div>
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 8,
-          }}
-        >
-          {advisorSummaryChips.map((chip) => (
-            <span
-              key={chip}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 999,
-                background: "#eff6ff",
-                border: "1px solid #bfdbfe",
-                color: "#1d4ed8",
-                fontSize: 12,
-                fontWeight: 800,
-              }}
-            >
-              {chip}
-            </span>
-          ))}
-        </div>
-        {blueprint.architecture.length > 0 && (
-          <div style={{ marginTop: 18 }}>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 800,
-                color: "#475569",
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              Typical Architecture
+                        <div
+                          style={{
+                            marginTop: 3,
+                            color: "#64748b",
+                            fontSize: 12,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {getArchitectureDescription(item)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {index < blueprint.architecture.length - 1 && (
+                      <div
+                        style={{
+                          marginLeft: 13,
+                          height: 10,
+                          borderLeft: "2px solid #bfdbfe",
+                        }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-            
-            <div
-              style={{
-                display: "grid",
-                gap: 8,
-              }}
-            >
-              {blueprint.architecture.map((item, index) => (
-                <div key={item}>
+          )}
+          <AdvisorRecommendationSection
+            title="Engineering Challenges"
+            description="What can go wrong in this historical model."
+            items={advisorItems.engineeringChallenges}
+            recommendation={blueprint.recommendation}
+            eventName="advisor_challenge_opened"
+            actionLabel="Open Challenge →"
+            validationLabel="Open Validation →"
+          />
+
+          <AdvisorRecommendationSection
+            title="Recommended Modeling Patterns"
+            description="What the target historical model should look like."
+            items={advisorItems.modelingPatterns}
+            recommendation={blueprint.recommendation}
+            eventName="advisor_modeling_pattern_clicked"
+            actionLabel="Learn Pattern →"
+            validationLabel="Open Validation →"
+          />
+
+          <AdvisorRecommendationSection
+            title="Recommended Engineering Patterns"
+            description="How to implement the required historical transformation."
+            items={advisorItems.engineeringPatterns}
+            recommendation={blueprint.recommendation}
+            eventName="advisor_engineering_pattern_clicked"
+            actionLabel="Learn Method →"
+            validationLabel="Open Validation →"
+          />
+          {blueprint.communityEvidence.length > 0 && (
+            <details style={{ marginTop: 18 }}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: "#1e40af",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  marginBottom: 8,
+                }}
+              >
+                Common Use Cases
+              </summary>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {blueprint.communityEvidence.map((item) => (
                   <div
+                    key={item.pattern}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
                       padding: 12,
-                      borderRadius: 14,
+                      borderRadius: 12,
                       background: "#ffffff",
                       border: "1px solid #bfdbfe",
                     }}
                   >
                     <div
                       style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: 999,
-                        display: "grid",
-                        placeItems: "center",
-                        flexShrink: 0,
-                        background: "#dbeafe",
-                        color: "#1d4ed8",
-                        fontSize: 12,
-                        fontWeight: 900,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        alignItems: "center",
+                        marginBottom: 6,
                       }}
                     >
-                      {index + 1}
-                    </div>
-                    <div>
-                      <div
+                      <strong style={{ color: "#0f172a", fontSize: 13 }}>
+                        {item.pattern}
+                      </strong>
+
+                      <span
                         style={{
-                          color: "#0f172a",
-                          fontSize: 13,
-                          fontWeight: 900,
+                          padding: "3px 7px",
+                          borderRadius: 999,
+                          background:
+                            item.priority === "HIGH"
+                              ? "#dbeafe"
+                              : item.priority === "MEDIUM"
+                                ? "#e0e7ff"
+                                : "#f1f5f9",
+                          color:
+                            item.priority === "HIGH"
+                              ? "#1d4ed8"
+                              : item.priority === "MEDIUM"
+                                ? "#4338ca"
+                                : "#475569",
+                          fontSize: 10,
+                          fontWeight: 800,
                         }}
                       >
-                        {item}
-                      </div>
-                      
-                      <div
-                        style={{
-                          marginTop: 3,
-                          color: "#64748b",
-                          fontSize: 12,
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {getArchitectureDescription(item)}
-                      </div>
+                        {item.priority}
+                      </span>
                     </div>
-                  </div>
-                    
-                  {index < blueprint.architecture.length - 1 && (
+
                     <div
                       style={{
-                        marginLeft: 13,
-                        height: 10,
-                        borderLeft: "2px solid #bfdbfe",
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        <AdvisorRecommendationSection
-          title="Engineering Challenges"
-          description="What can go wrong in this historical model."
-          items={advisorItems.engineeringChallenges}
-          recommendation={blueprint.recommendation}
-          eventName="advisor_challenge_opened"
-          actionLabel="Open Challenge →"
-          validationLabel="Open Validation →"
-        />
-
-        <AdvisorRecommendationSection
-          title="Recommended Modeling Patterns"
-          description="What the target historical model should look like."
-          items={advisorItems.modelingPatterns}
-          recommendation={blueprint.recommendation}
-          eventName="advisor_modeling_pattern_clicked"
-          actionLabel="Learn Pattern →"
-          validationLabel="Open Validation →"
-        />
-
-        <AdvisorRecommendationSection
-          title="Recommended Engineering Patterns"
-          description="How to implement the required historical transformation."
-          items={advisorItems.engineeringPatterns}
-          recommendation={blueprint.recommendation}
-          eventName="advisor_engineering_pattern_clicked"
-          actionLabel="Learn Method →"
-          validationLabel="Open Validation →"
-        />
-        {blueprint.communityEvidence.length > 0 && (
-          <details style={{ marginTop: 18 }}>
-            <summary
-              style={{
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 800,
-                color: "#1e40af",
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-                marginBottom: 8,
-              }}
-            >
-              Common Use Cases
-            </summary>
-            
-            <div
-              style={{
-                marginTop: 10,
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 10,
-              }}
-            >
-              {blueprint.communityEvidence.map((item) => (
-                <div
-                  key={item.pattern}
-                  style={{
-                    padding: 12,
-                    borderRadius: 12,
-                    background: "#ffffff",
-                    border: "1px solid #bfdbfe",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 8,
-                      alignItems: "center",
-                      marginBottom: 6,
-                    }}
-                  >
-                    <strong style={{ color: "#0f172a", fontSize: 13 }}>
-                      {item.pattern}
-                    </strong>
-                  
-                    <span
-                      style={{
-                        padding: "3px 7px",
-                        borderRadius: 999,
-                        background:
-                          item.priority === "HIGH"
-                            ? "#dbeafe"
-                            : item.priority === "MEDIUM"
-                            ? "#e0e7ff"
-                            : "#f1f5f9",
-                        color:
-                          item.priority === "HIGH"
-                            ? "#1d4ed8"
-                            : item.priority === "MEDIUM"
-                            ? "#4338ca"
-                            : "#475569",
-                        fontSize: 10,
-                        fontWeight: 800,
+                        color: "#475569",
+                        fontSize: 12,
+                        lineHeight: 1.45,
+                        marginBottom: 8,
                       }}
                     >
-                      {item.priority}
-                    </span>
+                      {item.summary}
+                    </div>
+                    <div
+                      style={{
+                        color: "#64748b",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.4,
+                        marginBottom: 6,
+                      }}
+                    >
+                      Common problems solved
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {item.observedIn.map((evidence) => (
+                        <span
+                          key={evidence}
+                          style={{
+                            padding: "4px 7px",
+                            borderRadius: 999,
+                            background: "#eff6ff",
+                            border: "1px solid #dbeafe",
+                            color: "#1d4ed8",
+                            fontSize: 11,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {evidence}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                    
-                  <div
+                ))}
+              </div>
+            </details>
+          )}
+
+          {blueprint.risks.length > 0 && (
+            <div style={{ marginTop: 18 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: "#475569",
+                  marginBottom: 8,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Key Modeling Risks
+              </div>
+              <p
+                style={{
+                  margin: "0 0 10px",
+                  color: "#64748b",
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                }}
+              >
+                These risks are derived from the selected reporting goal, source
+                behavior and historical complexity. They highlight what can
+                break during implementation.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {blueprint.risks.slice(0, 5).map((risk) => (
+                  <span
+                    key={risk}
+                    title={getRiskTooltip(risk)}
                     style={{
-                      color: "#475569",
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      background: "#fff7ed",
+                      border: "1px solid #fed7aa",
+                      color: "#9a3412",
                       fontSize: 12,
-                      lineHeight: 1.45,
-                      marginBottom: 8,
+                      fontWeight: 700,
                     }}
                   >
-                    {item.summary}
-                  </div>
-                  <div
+                    {risk}
+                  </span>
+                ))}
+                {blueprint.risks.length > 5 && (
+                  <span
                     style={{
-                      color: "#64748b",
-                      fontSize: 11,
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      background: "#fff7ed",
+                      border: "1px solid #fed7aa",
+                      color: "#9a3412",
+                      fontSize: 12,
                       fontWeight: 800,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.4,
-                      marginBottom: 6,
                     }}
                   >
-                    Common problems solved
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {item.observedIn.map((evidence) => (
-                      <span
-                        key={evidence}
-                        style={{
-                          padding: "4px 7px",
-                          borderRadius: 999,
-                          background: "#eff6ff",
-                          border: "1px solid #dbeafe",
-                          color: "#1d4ed8",
-                          fontSize: 11,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {evidence}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                    +{blueprint.risks.length - 5} more
+                  </span>
+                )}
+              </div>
             </div>
-          </details>
-        )}
+          )}
 
-        {blueprint.risks.length > 0 && (
-          <div style={{ marginTop: 18 }}>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 800,
-                color: "#475569",
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              Key Modeling Risks
-            </div>
-            <p
-              style={{
-                margin: "0 0 10px",
-                color: "#64748b",
-                fontSize: 12,
-                lineHeight: 1.45,
-              }}
-            >
-              These risks are derived from the selected reporting goal, source behavior and
-              historical complexity. They highlight what can break during implementation.
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {blueprint.risks.slice(0, 5).map((risk) => (
-                <span
-                  key={risk}
-                  title={getRiskTooltip(risk)}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    background: "#fff7ed",
-                    border: "1px solid #fed7aa",
-                    color: "#9a3412",
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                >
-                  {risk}
-                </span>
-              ))}
-              {blueprint.risks.length > 5 && (
-                <span
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    background: "#fff7ed",
-                    border: "1px solid #fed7aa",
-                    color: "#9a3412",
-                    fontSize: 12,
-                    fontWeight: 800,
-                  }}
-                >
-                  +{blueprint.risks.length - 5} more
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+          {blueprint.validationChecks.length > 0 && (
+            <details style={{ marginTop: 18 }}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: "#475569",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  marginBottom: 8,
+                }}
+              >
+                Validation Checks
+              </summary>
 
-        {blueprint.validationChecks.length > 0 && (
-          <details style={{ marginTop: 18 }}>
-            <summary
-              style={{
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 800,
-                color: "#475569",
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-                marginBottom: 8,
-              }}
-            >
-              Validation Checks
-            </summary>
-            
-            <p
-              style={{
-                margin: "10px 0",
-                color: "#64748b",
-                fontSize: 12,
-                lineHeight: 1.45,
-              }}
-            >
-              These checks should be implemented before publishing the historical model
-              or using it for reporting.
-            </p>
-            
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {blueprint.validationChecks.map((check) => (
-                <span
-                  key={check}
-                  title={getValidationCheckTooltip(check)}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    background: "#ecfeff",
-                    border: "1px solid #a5f3fc",
-                    color: "#155e75",
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                >
-                  ✓ {check}
-                </span>
-              ))}
-            </div>
-          </details>
-        )}
+              <p
+                style={{
+                  margin: "10px 0",
+                  color: "#64748b",
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                }}
+              >
+                These checks should be implemented before publishing the
+                historical model or using it for reporting.
+              </p>
 
-      <div
-        style={{
-          marginTop: 16,
-          padding: 18,
-          borderRadius: 14,
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
-        }}
-      >
-        <SectionEyebrow>Markdown Recommendation</SectionEyebrow>
-
-        <p
-          style={{
-            margin: "0 0 14px",
-            color: "#475569",
-            fontSize: 14,
-            lineHeight: 1.5,
-          }}
-        >
-          Generate a Markdown blueprint that can be used in project
-          documentation, architecture reviews, notebooks or implementation
-          tickets.
-        </p>
-
-        <button
-          type="button"
-          onClick={copyMarkdownBlueprint}
-          style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            background: "#2563eb",
-            color: "#ffffff",
-            border: "1px solid #1d4ed8",
-            cursor: "pointer",
-            fontWeight: 800,
-          }}
-        >
-          {copyState === "copied"
-            ? "Copied Markdown Recommendation"
-            : "Copy Implementation Blueprint"}
-        </button>
-
-        <details style={{ marginTop: 14 }}>
-          <summary
-            style={{
-              cursor: "pointer",
-              fontWeight: 700,
-              color: "#334155",
-            }}
-          >
-            Preview Markdown
-          </summary>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {blueprint.validationChecks.map((check) => (
+                  <span
+                    key={check}
+                    title={getValidationCheckTooltip(check)}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      background: "#ecfeff",
+                      border: "1px solid #a5f3fc",
+                      color: "#155e75",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✓ {check}
+                  </span>
+                ))}
+              </div>
+            </details>
+          )}
 
           <div
             style={{
-              marginTop: 12,
-              padding: 16,
-              borderRadius: 10,
-              background: "#0f172a",
-              color: "#e2e8f0",
-              overflowX: "auto",
-              fontSize: 13,
-              lineHeight: 1.6,
-              maxHeight: 520,
-              overflowY: "auto",
+              marginTop: 16,
+              padding: 18,
+              borderRadius: 14,
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
             }}
           >
-            {renderMarkdownPreview(markdown)}
+            <SectionEyebrow>Markdown Recommendation</SectionEyebrow>
+
+            <p
+              style={{
+                margin: "0 0 14px",
+                color: "#475569",
+                fontSize: 14,
+                lineHeight: 1.5,
+              }}
+            >
+              Generate a Markdown blueprint that can be used in project
+              documentation, architecture reviews, notebooks or implementation
+              tickets.
+            </p>
+
+            <button
+              type="button"
+              onClick={copyMarkdownBlueprint}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 10,
+                background: "#2563eb",
+                color: "#ffffff",
+                border: "1px solid #1d4ed8",
+                cursor: "pointer",
+                fontWeight: 800,
+              }}
+            >
+              {copyState === "copied"
+                ? "Copied Markdown Recommendation"
+                : "Copy Implementation Blueprint"}
+            </button>
+
+            <details style={{ marginTop: 14 }}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  color: "#334155",
+                }}
+              >
+                Preview Markdown
+              </summary>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 16,
+                  borderRadius: 10,
+                  background: "#0f172a",
+                  color: "#e2e8f0",
+                  overflowX: "auto",
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                  maxHeight: 520,
+                  overflowY: "auto",
+                }}
+              >
+                {renderMarkdownPreview(markdown)}
+              </div>
+            </details>
           </div>
-        </details>
-      </div>
-    </div>
-  )}
-</details>
-);
+        </div>
+      )}
+    </details>
+  );
 }
 
 const SOURCE_TYPES: SourceType[] = [
@@ -1144,7 +1306,11 @@ function getAdvisorItem(name: string): AdvisorItem | null {
   }
 
   if (name === "Historical Conformance") {
-    return { name, href: "/learn/historical-conformance", category: "modeling" };
+    return {
+      name,
+      href: "/learn/historical-conformance",
+      category: "modeling",
+    };
   }
 
   if (name === "Dimension Completion") {
@@ -1160,11 +1326,19 @@ function getAdvisorItem(name: string): AdvisorItem | null {
   }
 
   if (name === "Snapshot Fact Modeling") {
-    return { name, href: "/learn/snapshot-fact-modeling", category: "modeling" };
+    return {
+      name,
+      href: "/learn/snapshot-fact-modeling",
+      category: "modeling",
+    };
   }
 
   if (name === "Snapshot Reproducibility") {
-    return { name, href: "/learn/snapshot-reproducibility", category: "modeling" };
+    return {
+      name,
+      href: "/learn/snapshot-reproducibility",
+      category: "modeling",
+    };
   }
 
   if (name === "As-Known Reporting") {
@@ -1176,7 +1350,11 @@ function getAdvisorItem(name: string): AdvisorItem | null {
   }
 
   if (name === "Event Prioritization") {
-    return { name, href: "/learn/event-prioritization", category: "engineering" };
+    return {
+      name,
+      href: "/learn/event-prioritization",
+      category: "engineering",
+    };
   }
 
   if (name === "Event-to-State Projection") {
@@ -1200,7 +1378,11 @@ function getAdvisorItem(name: string): AdvisorItem | null {
   }
 
   if (name === "Historical Backfill") {
-    return { name, href: "/learn/historical-backfill", category: "engineering" };
+    return {
+      name,
+      href: "/learn/historical-backfill",
+      category: "engineering",
+    };
   }
 
   return null;

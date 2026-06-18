@@ -338,11 +338,17 @@ export default async function EventsPage() {
 
     return (
       ua.includes("google-inspectiontool") ||
+      ua.includes("inspectiontool") ||
       ua.includes("googlebot") ||
       ua.includes("bingbot") ||
       ua.includes("crawler") ||
       ua.includes("spider") ||
-      ua.includes("bot")
+      ua.includes("bot") ||
+      ua.includes("lighthouse") ||
+      ua.includes("pagespeed") ||
+      ua.includes("slurp") ||
+      ua.includes("duckduckbot") ||
+      ua.includes("baiduspider")
     );
   }
 
@@ -433,6 +439,17 @@ export default async function EventsPage() {
     : 0;
   const advisorCopyRate = advisorStarted
     ? Math.round((advisorBlueprintsCopied / advisorStarted) * 100)
+    : 0;
+  const advisorStartRate = pageViews
+    ? Math.round((advisorStarted / pageViews) * 100)
+    : 0;
+
+  const modelReviewRate = pageViews
+    ? Math.round((modelReviewsCompleted / pageViews) * 100)
+    : 0;
+
+  const workflowStepRate = pageViews
+    ? Math.round((workflowStepClicks / pageViews) * 100)
     : 0;
   const patternCatalogRate = pageViews
     ? Math.round((patternsPageOpened / pageViews) * 100)
@@ -656,32 +673,29 @@ export default async function EventsPage() {
           <MetricSection title="Advisor Funnel">
             <MetricCard label="Advisor Started" value={advisorStarted} />
             <MetricCard
+              label="Advisor Start Rate"
+              value={`${advisorStartRate}%`}
+            />
+            <MetricCard
               label="Advisor Interactions"
               value={advisorInteractions}
             />
-            <MetricCard label="Advisor Toggles" value={advisorToggled} />
-            <MetricCard label="Expanded" value={advisorExpanded} />
-            <MetricCard label="Collapsed" value={advisorCollapsed} />
             <MetricCard
               label="Question Changes"
               value={advisorQuestionChanges}
             />
             <MetricCard
+              label="Recommendations"
+              value={advisorRecommendations}
+            />
+            <MetricCard label="Completed" value={advisorCompleted} />
+            <MetricCard
               label="Blueprint Copies"
               value={advisorBlueprintsCopied}
             />
             <MetricCard
-              label="Advisor Interaction Rate"
-              value={`${advisorInteractionRate}%`}
-            />
-            <MetricCard
               label="Advisor Copy Rate"
               value={`${advisorCopyRate}%`}
-            />
-            <MetricCard label="Completed" value={advisorCompleted} />
-            <MetricCard
-              label="Recommendations"
-              value={advisorRecommendations}
             />
           </MetricSection>
 
@@ -689,6 +703,10 @@ export default async function EventsPage() {
             <MetricCard
               label="Workflow Step Clicks"
               value={workflowStepClicks}
+            />
+            <MetricCard
+              label="Workflow Step Rate"
+              value={`${workflowStepRate}%`}
             />
             <MetricCard
               label="Review Examples Loaded"
@@ -701,6 +719,10 @@ export default async function EventsPage() {
             <MetricCard
               label="Model Reviews Completed"
               value={modelReviewsCompleted}
+            />
+            <MetricCard
+              label="Model Review Rate"
+              value={`${modelReviewRate}%`}
             />
             <MetricCard
               label="Target Validations Completed"
@@ -725,18 +747,6 @@ export default async function EventsPage() {
           </MetricSection>
 
           <MetricSection title="Product Workflows">
-            <MetricCard
-              label="Workflow Step Clicks"
-              value={workflowStepClicks}
-            />
-            <MetricCard
-              label="Review Examples Loaded"
-              value={reviewExamplesLoaded}
-            />
-            <MetricCard
-              label="Validation Examples Loaded"
-              value={validationExamplesLoaded}
-            />
             <MetricCard label="Model Reviews" value={modelReviewsCompleted} />
             <MetricCard
               label="Target Validations"

@@ -100,9 +100,9 @@ export default function SnapshotReproducibilityPage() {
           <h1 style={h1Style}>Snapshot Reproducibility</h1>
 
           <p style={heroTextStyle}>
-            Snapshot Reproducibility answers a simple question: if you rebuild last
-            month’s report today, should it produce the same result or the corrected
-            result?
+            Snapshot Reproducibility answers a simple question: if you rebuild
+            last month’s report today, should it produce the same result or the
+            corrected result?
           </p>
         </header>
 
@@ -207,7 +207,8 @@ function DarkExampleCard() {
       <div style={darkEyebrowStyle}>Example</div>
 
       <h2 style={darkTitleStyle}>
-        A March report was published. In June, corrected history changes the result.
+        A March report was published. In June, corrected history changes the
+        result.
       </h2>
 
       <div style={timelineGridStyle}>
@@ -240,8 +241,16 @@ function DarkExampleCard() {
       </div>
 
       <div style={comparisonGridStyle}>
-        <ResultCard title="Expected Result (Reproducible)" rows={EXPECTED_ROWS} tone="good" />
-        <ResultCard title="Common Wrong Result (Risk)" rows={WRONG_ROWS} tone="bad" />
+        <ResultCard
+          title="Expected Result (Reproducible)"
+          rows={EXPECTED_ROWS}
+          tone="good"
+        />
+        <ResultCard
+          title="Common Wrong Result (Risk)"
+          rows={WRONG_ROWS}
+          tone="bad"
+        />
       </div>
 
       <div style={exampleNoteStyle}>
@@ -249,8 +258,8 @@ function DarkExampleCard() {
 
         <p style={exampleNoteTextStyle}>
           A reproducible snapshot needs either persisted report state or visible
-          time. Otherwise, old reports can silently change when source history is
-          corrected later.
+          time. Otherwise, old reports can silently change when source history
+          is corrected later.
         </p>
       </div>
     </section>
@@ -396,6 +405,8 @@ function ResultCard({
 }
 
 function PatternTestCaseCard() {
+  const [selectedExample, setSelectedExample] = useState<string | null>(null);
+
   return (
     <section style={testCaseCardStyle}>
       <div style={testCaseEyebrowStyle}>Test case</div>
@@ -412,7 +423,10 @@ function PatternTestCaseCard() {
         <li>Copy one of the target tables below.</li>
         <li>Open Target Table Validation.</li>
         <li>Paste the copied table as your target output.</li>
-        <li>Check whether the snapshot remains reproducible or only reflects the current rebuild.</li>
+        <li>
+          Check whether the snapshot remains reproducible or only reflects the
+          current rebuild.
+        </li>
       </ol>
 
       <div style={testCaseGridStyle}>
@@ -422,6 +436,7 @@ function PatternTestCaseCard() {
           tableName="reproducible_target"
           value={REPRODUCIBLE_TARGET_TABLE}
           tone="good"
+          onExampleReady={setSelectedExample}
         />
 
         <CopyTableCard
@@ -430,23 +445,37 @@ function PatternTestCaseCard() {
           tableName="wrong_target"
           value={WRONG_TARGET_TABLE}
           tone="bad"
+          onExampleReady={setSelectedExample}
         />
       </div>
 
-      <a
-        href="/#target-table-validation"
+      <button
+        type="button"
+        disabled={!selectedExample}
         onClick={() => {
+          if (!selectedExample) return;
+
           track("example_model_cta_clicked", {
             example: "snapshot_reproducibility",
-            cta: "open_target_validation",
+            cta: "open_target_validation_with_example",
             source: "test_case_card",
             page_type: "interactive_example",
+            selectedExample,
           });
+
+          window.location.href = "/#target-table-validation";
         }}
-        style={testCaseButtonStyle}
+        style={{
+          ...testCaseButtonStyle,
+          border: "none",
+          opacity: selectedExample ? 1 : 0.45,
+          cursor: selectedExample ? "pointer" : "not-allowed",
+        }}
       >
-        Open Target Table Validation →
-      </a>
+        {selectedExample
+          ? "Open Validation with Example →"
+          : "Use an example first"}
+      </button>
     </section>
   );
 }
@@ -457,12 +486,14 @@ function CopyTableCard({
   tableName,
   value,
   tone,
+  onExampleReady,
 }: {
   title: string;
   description: string;
-  tableName: "reproducible_target" | "wrong_target";
+  tableName: string;
   value: string;
   tone: "good" | "bad";
+  onExampleReady: (tableName: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -484,26 +515,29 @@ function CopyTableCard({
   }, []);
 
   async function handleCopy() {
+    localStorage.setItem("target_validation_prefill", value);
+    localStorage.setItem("target_validation_prefill_name", tableName);
+
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        copyWithFallback(value);
-      }
+      await navigator.clipboard.writeText(value);
     } catch {
-      copyWithFallback(value);
+      // Prefill still works even if clipboard access is blocked.
     }
-  
+
     setCopied(true);
-  
-    track("example_table_copied", {
+    onExampleReady(tableName);
+
+    localStorage.setItem("target_validation_prefill", value);
+    localStorage.setItem("target_validation_prefill_name", tableName);
+    sessionStorage.setItem("target_validation_scroll_to_result", "true");
+
+    track("example_table_loaded_for_validation", {
       example: "snapshot_reproducibility",
       table: tableName,
+      inputLength: value.length,
     });
-  
-    window.setTimeout(() => {
-      setCopied(false);
-    }, 1800);
+
+    window.setTimeout(() => setCopied(false), 1800);
   }
 
   return (
@@ -529,20 +563,14 @@ function CopyTableCard({
         onMouseLeave={() => setHovered(false)}
         style={{
           ...copyTableButtonStyle,
-          background: copied
-            ? "#16a34a"
-            : isGood
-            ? "#15803d"
-            : "#b91c1c",
+          background: copied ? "#16a34a" : isGood ? "#15803d" : "#b91c1c",
           transform: hovered ? "translateY(-1px)" : "translateY(0)",
-          boxShadow: hovered
-            ? "0 10px 22px rgba(15, 23, 42, 0.22)"
-            : "none",
+          boxShadow: hovered ? "0 10px 22px rgba(15, 23, 42, 0.22)" : "none",
           touchAction: "manipulation",
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        {copied ? "✓ Copied" : "Copy table"}
+        {copied ? "✓ Example ready" : "Use this example"}
       </button>
     </div>
   );

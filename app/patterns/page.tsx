@@ -195,6 +195,14 @@ const PATTERN_GROUPS: {
         category: "engineering",
       },
       {
+        name: "Hierarchical State Derivation",
+        text: "Derives historized parent states from historized child entities using business rules.",
+        examples: ["Policy status", "Contract aggregation", "Child → parent state"],
+        href: "/learn/hierarchical-state-derivation",
+        interactive: true,
+        category: "engineering",
+      },
+      {
         name: "Rectangle Decomposition",
         text: "Creates stable reporting intervals from independently historized attributes.",
         examples: ["Coverage timelines", "Risk attributes", "Contract projections"],
@@ -214,7 +222,6 @@ const PATTERN_GROUPS: {
 ];
 
 export default function PatternsPage() {
-  const trackedDepths = useRef(new Set<number>());
   const trackedVisibleGroups = useRef(new Set<string>());
 
   useEffect(() => {

@@ -30,6 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/learn/historical-match-ambiguity",
 
     "/learn/rectangle-decomposition",
+    "/learn/hierarchical-state-derivation",
     "/learn/event-prioritization",
     "/learn/state-reduction",
     "/learn/event-to-state-projection",

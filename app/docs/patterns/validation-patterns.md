@@ -8,7 +8,7 @@ The goal is to provide a reusable validation framework for:
 
 * Historical Data Engineering Toolkit
 * Target Table Validation
-* Historical Modeling Advisor
+* Historical Modeling Assessment
 * Model Review
 * Automated Validation Rules
 

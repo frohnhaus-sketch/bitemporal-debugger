@@ -96,7 +96,8 @@ export default function HistoricalConformancePage() {
             <p style={paragraphStyle}>
               Historical reporting often combines CRM, policy, billing or
               product systems. Each system may have its own version of customer
-              segment, product category, broker assignment or risk classification.
+              segment, product category, broker assignment or risk
+              classification.
             </p>
 
             <p style={paragraphStyle}>
@@ -172,8 +173,9 @@ export default function HistoricalConformancePage() {
             title="Without conformance, different systems can produce different historical truths."
           >
             <p style={paragraphStyle}>
-              Historical Conformance is often the difference between a collection
-              of historized source tables and a trustworthy reporting model.
+              Historical Conformance is often the difference between a
+              collection of historized source tables and a trustworthy reporting
+              model.
             </p>
           </WhiteCard>
         </section>
@@ -192,7 +194,8 @@ function DarkExampleCard() {
       <div style={darkEyebrowStyle}>Example</div>
 
       <h2 style={darkTitleStyle}>
-        CRM and policy system disagree about the customer segment for the same reporting period.
+        CRM and policy system disagree about the customer segment for the same
+        reporting period.
       </h2>
 
       <div style={sourceGridStyle}>
@@ -226,8 +229,16 @@ function DarkExampleCard() {
       </div>
 
       <div style={comparisonGridStyle}>
-        <ResultCard title="Expected Result (Conformed)" rows={EXPECTED_ROWS} tone="good" />
-        <ResultCard title="Common Wrong Result (Risk)" rows={WRONG_ROWS} tone="bad" />
+        <ResultCard
+          title="Expected Result (Conformed)"
+          rows={EXPECTED_ROWS}
+          tone="good"
+        />
+        <ResultCard
+          title="Common Wrong Result (Risk)"
+          rows={WRONG_ROWS}
+          tone="bad"
+        />
       </div>
 
       <div style={exampleNoteStyle}>
@@ -332,6 +343,8 @@ function ResultCard({
 }
 
 function PatternTestCaseCard() {
+  const [selectedExample, setSelectedExample] = useState<string | null>(null);
+
   return (
     <section style={testCaseCardStyle}>
       <div style={testCaseEyebrowStyle}>Test case</div>
@@ -358,6 +371,7 @@ function PatternTestCaseCard() {
           tableName="conformed_target"
           value={CONFORMED_TARGET_TABLE}
           tone="good"
+          onExampleReady={setSelectedExample}
         />
 
         <CopyTableCard
@@ -366,23 +380,37 @@ function PatternTestCaseCard() {
           tableName="wrong_target"
           value={WRONG_TARGET_TABLE}
           tone="bad"
+          onExampleReady={setSelectedExample}
         />
       </div>
 
-      <a
-        href="/#target-table-validation"
+      <button
+        type="button"
+        disabled={!selectedExample}
         onClick={() => {
+          if (!selectedExample) return;
+
           track("example_model_cta_clicked", {
-            example: "historical_conformance",
-            cta: "open_target_validation",
+            example: "historical-conformance",
+            cta: "open_target_validation_with_example",
             source: "test_case_card",
             page_type: "interactive_example",
+            selectedExample,
           });
+
+          window.location.href = "/#target-table-validation";
         }}
-        style={testCaseButtonStyle}
+        style={{
+          ...testCaseButtonStyle,
+          border: "none",
+          opacity: selectedExample ? 1 : 0.45,
+          cursor: selectedExample ? "pointer" : "not-allowed",
+        }}
       >
-        Open Target Table Validation →
-      </a>
+        {selectedExample
+          ? "Open Validation with Example →"
+          : "Use an example first"}
+      </button>
     </section>
   );
 }
@@ -393,38 +421,43 @@ function CopyTableCard({
   tableName,
   value,
   tone,
+  onExampleReady,
 }: {
   title: string;
   description: string;
-  tableName: "conformed_target" | "wrong_target";
+  tableName: string;
   value: string;
   tone: "good" | "bad";
+  onExampleReady: (tableName: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
   const isGood = tone === "good";
 
   async function handleCopy() {
+    localStorage.setItem("target_validation_prefill", value);
+    localStorage.setItem("target_validation_prefill_name", tableName);
+
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        copyWithFallback(value);
-      }
+      await navigator.clipboard.writeText(value);
     } catch {
-      copyWithFallback(value);
+      // Prefill still works even if clipboard access is blocked.
     }
 
     setCopied(true);
+    onExampleReady(tableName);
 
-    track("example_table_copied", {
+    localStorage.setItem("target_validation_prefill", value);
+    localStorage.setItem("target_validation_prefill_name", tableName);
+    sessionStorage.setItem("target_validation_scroll_to_result", "true");
+
+    track("example_table_loaded_for_validation", {
       example: "historical_conformance",
       table: tableName,
+      inputLength: value.length,
     });
 
-    window.setTimeout(() => {
-      setCopied(false);
-    }, 1800);
+    window.setTimeout(() => setCopied(false), 1800);
   }
 
   return (
@@ -452,12 +485,10 @@ function CopyTableCard({
           ...copyTableButtonStyle,
           background: copied ? "#16a34a" : isGood ? "#15803d" : "#b91c1c",
           transform: hovered ? "translateY(-1px)" : "translateY(0)",
-          boxShadow: hovered
-            ? "0 10px 22px rgba(15, 23, 42, 0.22)"
-            : "none",
+          boxShadow: hovered ? "0 10px 22px rgba(15, 23, 42, 0.22)" : "none",
         }}
       >
-        {copied ? "✓ Copied" : "Copy table"}
+        {copied ? "✓ Example ready" : "Use this example"}
       </button>
     </div>
   );

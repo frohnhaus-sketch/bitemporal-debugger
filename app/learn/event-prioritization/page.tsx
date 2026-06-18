@@ -248,6 +248,8 @@ function EventRow({
 }
 
 function PatternTestCaseCard() {
+  const [selectedExample, setSelectedExample] = useState<string | null>(null);
+
   return (
     <section style={testCaseCardStyle}>
       <div style={testCaseEyebrowStyle}>Test case</div>
@@ -264,7 +266,10 @@ function PatternTestCaseCard() {
         <li>Copy one of the target tables below.</li>
         <li>Open Target Table Validation.</li>
         <li>Paste the copied table as your target output.</li>
-        <li>Check whether operational noise was removed or kept as reporting events.</li>
+        <li>
+          Check whether operational noise was removed or kept as reporting
+          events.
+        </li>
       </ol>
 
       <div style={testCaseGridStyle}>
@@ -274,6 +279,7 @@ function PatternTestCaseCard() {
           tableName="prioritized_target"
           value={PRIORITIZED_TARGET_TABLE}
           tone="good"
+          onExampleReady={setSelectedExample}
         />
 
         <CopyTableCard
@@ -282,23 +288,37 @@ function PatternTestCaseCard() {
           tableName="wrong_target"
           value={WRONG_TARGET_TABLE}
           tone="bad"
+          onExampleReady={setSelectedExample}
         />
       </div>
 
-      <a
-        href="/#target-table-validation"
+      <button
+        type="button"
+        disabled={!selectedExample}
         onClick={() => {
+          if (!selectedExample) return;
+
           track("example_model_cta_clicked", {
             example: "event_prioritization",
-            cta: "open_target_validation",
+            cta: "open_target_validation_with_example",
             source: "test_case_card",
             page_type: "interactive_example",
+            selectedExample,
           });
+
+          window.location.href = "/#target-table-validation";
         }}
-        style={testCaseButtonStyle}
+        style={{
+          ...testCaseButtonStyle,
+          border: "none",
+          opacity: selectedExample ? 1 : 0.45,
+          cursor: selectedExample ? "pointer" : "not-allowed",
+        }}
       >
-        Open Target Table Validation →
-      </a>
+        {selectedExample
+          ? "Open Validation with Example →"
+          : "Use an example first"}
+      </button>
     </section>
   );
 }
@@ -309,33 +329,40 @@ function CopyTableCard({
   tableName,
   value,
   tone,
+  onExampleReady,
 }: {
   title: string;
   description: string;
   tableName: "prioritized_target" | "wrong_target";
   value: string;
   tone: "good" | "bad";
+  onExampleReady: (tableName: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
   const isGood = tone === "good";
 
   async function handleCopy() {
+    localStorage.setItem("target_validation_prefill", value);
+    localStorage.setItem("target_validation_prefill_name", tableName);
+
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        copyWithFallback(value);
-      }
+      await navigator.clipboard.writeText(value);
     } catch {
-      copyWithFallback(value);
+      // Prefill still works even if clipboard access is blocked.
     }
 
     setCopied(true);
+    onExampleReady(tableName);
 
-    track("example_table_copied", {
+    localStorage.setItem("target_validation_prefill", value);
+    localStorage.setItem("target_validation_prefill_name", tableName);
+    sessionStorage.setItem("target_validation_scroll_to_result", "true");
+
+    track("example_table_loaded_for_validation", {
       example: "event_prioritization",
       table: tableName,
+      inputLength: value.length,
     });
 
     window.setTimeout(() => setCopied(false), 1800);
@@ -371,7 +398,7 @@ function CopyTableCard({
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        {copied ? "✓ Copied" : "Copy table"}
+        {copied ? "✓ Example ready" : "Use this example"}
       </button>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { track } from "@/lib/analytics";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { parseCSV } from "@/lib/parser";
 
 type TargetFinding = {
@@ -81,8 +81,10 @@ E-006,C-3002,2024-03-01T11:02:00,cancelled,contract_cancelled,1,duplicate_milest
 export function TargetTableValidationPanel() {
   const [input, setInput] = useState("");
   const [activeExampleId, setActiveExampleId] = useState<string | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
+
   function loadExampleValidation(
-    example: (typeof TARGET_VALIDATION_EXAMPLES)[number]
+    example: (typeof TARGET_VALIDATION_EXAMPLES)[number],
   ) {
     setInput(example.input);
     setActiveExampleId(example.id);
@@ -93,6 +95,32 @@ export function TargetTableValidationPanel() {
     });
   }
 
+  useEffect(() => {
+    const prefill = localStorage.getItem("target_validation_prefill");
+    const prefillName = localStorage.getItem("target_validation_prefill_name");
+
+    if (!prefill) return;
+
+    setInput(prefill);
+    setActiveExampleId(prefillName ?? "external_prefill");
+
+    setTimeout(() => {
+      validationResultRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 500);
+
+    track("target_validation_prefilled", {
+      source: "learn_page",
+      name: prefillName,
+      inputLength: prefill.length,
+    });
+
+    localStorage.removeItem("target_validation_prefill");
+    localStorage.removeItem("target_validation_prefill_name");
+  }, []);
+
   const result = useMemo(() => {
     if (!input.trim()) return null;
     return validateTargetTable(input);
@@ -100,22 +128,43 @@ export function TargetTableValidationPanel() {
 
   useEffect(() => {
     if (!result) return;
-  
+
     track("target_validation_completed", {
       rowCount: result.rowCount,
       columnCount: result.columns.length,
       findingCount: result.findings.length,
-      highRiskCount: result.findings.filter((f) => f.severity === "high").length,
-      mediumRiskCount: result.findings.filter((f) => f.severity === "medium").length,
+      highRiskCount: result.findings.filter((f) => f.severity === "high")
+        .length,
+      mediumRiskCount: result.findings.filter((f) => f.severity === "medium")
+        .length,
       hasBusinessKey: Boolean(result.detectedColumns.businessKey),
       hasValidTime: Boolean(
-        result.detectedColumns.validFrom && result.detectedColumns.validTo
+        result.detectedColumns.validFrom && result.detectedColumns.validTo,
       ),
       hasVisibleTime: Boolean(
-        result.detectedColumns.visibleFrom && result.detectedColumns.visibleTo
+        result.detectedColumns.visibleFrom && result.detectedColumns.visibleTo,
       ),
       hasSnapshotDate: Boolean(result.detectedColumns.snapshotDate),
     });
+  }, [result]);
+
+  useEffect(() => {
+    if (!result) return;
+
+    const shouldScroll = sessionStorage.getItem(
+      "target_validation_scroll_to_result",
+    );
+
+    if (!shouldScroll) return;
+
+    window.setTimeout(() => {
+      resultRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      sessionStorage.removeItem("target_validation_scroll_to_result");
+    }, 250);
   }, [result]);
 
   const requiresValidTime =
@@ -126,6 +175,8 @@ export function TargetTableValidationPanel() {
       result.columns.includes("event_type") ||
       result.columns.includes("prioritization_status")
     );
+
+  const validationResultRef = useRef<HTMLDivElement>(null);
 
   return (
     <section
@@ -158,9 +209,9 @@ export function TargetTableValidationPanel() {
       </h2>
 
       <p style={{ color: "#475569", marginTop: 0, marginBottom: 18 }}>
-        Paste the output table produced by your notebook or pipeline. This checks
-        whether the generated historical table has a stable grain, valid-time
-        consistency and snapshot coverage.
+        Paste the output table produced by your notebook or pipeline. This
+        checks whether the generated historical table has a stable grain,
+        valid-time consistency and snapshot coverage.
       </p>
 
       <div
@@ -184,7 +235,7 @@ export function TargetTableValidationPanel() {
         >
           Try an example output
         </div>
-        
+
         <div
           style={{
             fontSize: 16,
@@ -195,7 +246,7 @@ export function TargetTableValidationPanel() {
         >
           Validate generated tables from notebooks or pipelines
         </div>
-        
+
         <p
           style={{
             margin: "0 0 14px",
@@ -208,7 +259,7 @@ export function TargetTableValidationPanel() {
           dimension completion, missing coverage, event prioritization and
           reproducibility risks.
         </p>
-        
+
         <div
           style={{
             display: "grid",
@@ -225,7 +276,8 @@ export function TargetTableValidationPanel() {
                 textAlign: "left",
                 padding: 14,
                 borderRadius: 12,
-                background: activeExampleId === example.id ? "#2563eb" : "#ffffff",
+                background:
+                  activeExampleId === example.id ? "#2563eb" : "#ffffff",
                 color: activeExampleId === example.id ? "#ffffff" : "#0f172a",
                 border:
                   activeExampleId === example.id
@@ -238,7 +290,7 @@ export function TargetTableValidationPanel() {
               <div style={{ fontSize: 14, marginBottom: 6 }}>
                 {example.button}
               </div>
-            
+
               <div
                 style={{
                   fontSize: 12,
@@ -257,7 +309,7 @@ export function TargetTableValidationPanel() {
       <textarea
         value={input}
         onChange={(event) => setInput(event.target.value)}
-        placeholder="Paste target table data here, for example from Databricks display(), SQL result grid, CSV or TSV..."
+        placeholder="Paste target table data here — or use an example from a Learn Page / demo button above..."
         spellCheck={false}
         autoCorrect="off"
         autoCapitalize="off"
@@ -278,13 +330,30 @@ export function TargetTableValidationPanel() {
 
       {!result && (
         <InfoBox>
-          The validation result will appear after you paste target table rows.
+          Paste a target table or load an example above. If you opened this from
+          a Learn Page, the example should appear here automatically.
         </InfoBox>
       )}
 
       {result && (
-        <>
-          <SummaryCard result={result} />
+        <div ref={validationResultRef}>
+          <div id="target-validation-result" ref={resultRef}>
+            <div
+              style={{
+                marginTop: 16,
+                marginBottom: 12,
+                padding: 12,
+                borderRadius: 10,
+                background: "#ecfeff",
+                border: "1px solid #a5f3fc",
+                color: "#155e75",
+                fontWeight: 700,
+              }}
+            >
+              Example loaded automatically from the learn page.
+            </div>
+            <SummaryCard result={result} />
+          </div>
 
           <div style={{ marginTop: 18 }}>
             <SectionTitle>Detected historical structure</SectionTitle>
@@ -391,7 +460,7 @@ export function TargetTableValidationPanel() {
               {result.columns.join(", ")}
             </div>
           </details>
-        </>
+        </div>
       )}
     </section>
   );
@@ -459,13 +528,13 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
     dimensionColumns: detectDimensionColumns(columns),
   };
 
-const sourceSystemColumn = detectColumn(columns, [
-  "source_system",
-  "source",
-  "system",
-  "source_name",
-  "system_name",
-]);
+  const sourceSystemColumn = detectColumn(columns, [
+    "source_system",
+    "source",
+    "system",
+    "source_name",
+    "system_name",
+  ]);
 
   const effectiveBusinessKey =
     detectedColumns.businessKey && sourceSystemColumn
@@ -543,23 +612,23 @@ const sourceSystemColumn = detectColumn(columns, [
     detectedColumns.validFrom &&
     detectedColumns.validTo
   ) {
-  if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
-    findings.push(
-      ...detectDuplicateIntervals(
-        effectiveRows,
-        effectiveBusinessKey,
-        detectedColumns.validFrom,
-        detectedColumns.validTo
-      )
-    );
-  }
+    if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
+      findings.push(
+        ...detectDuplicateIntervals(
+          effectiveRows,
+          effectiveBusinessKey,
+          detectedColumns.validFrom,
+          detectedColumns.validTo,
+        ),
+      );
+    }
 
     findings.push(
       ...detectInvalidIntervals(
         rows,
         detectedColumns.validFrom,
-        detectedColumns.validTo
-      )
+        detectedColumns.validTo,
+      ),
     );
 
     if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
@@ -568,8 +637,8 @@ const sourceSystemColumn = detectColumn(columns, [
           effectiveRows,
           effectiveBusinessKey,
           detectedColumns.validFrom,
-          detectedColumns.validTo
-        )
+          detectedColumns.validTo,
+        ),
       );
     }
 
@@ -579,8 +648,8 @@ const sourceSystemColumn = detectColumn(columns, [
           effectiveRows,
           effectiveBusinessKey,
           detectedColumns.validFrom,
-          detectedColumns.validTo
-        )
+          detectedColumns.validTo,
+        ),
       );
     }
   }
@@ -591,33 +660,33 @@ const sourceSystemColumn = detectColumn(columns, [
         ...detectSnapshotDuplicates(
           effectiveRows,
           effectiveBusinessKey,
-          detectedColumns.snapshotDate
-        )
+          detectedColumns.snapshotDate,
+        ),
       );
     }
-  
+
     findings.push(
       ...detectMissingSnapshotCoverage(
         effectiveRows,
         effectiveBusinessKey,
-        detectedColumns.snapshotDate
-      )
+        detectedColumns.snapshotDate,
+      ),
     );
-  
+
     if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
       findings.push(
         ...detectMonthlySnapshotGaps(
           effectiveRows,
           effectiveBusinessKey,
-          detectedColumns.snapshotDate
-        )
+          detectedColumns.snapshotDate,
+        ),
       );
     }
   }
 
   if (detectedColumns.dimensionColumns.length > 0) {
     findings.push(
-      ...detectMissingDimensionValues(rows, detectedColumns.dimensionColumns)
+      ...detectMissingDimensionValues(rows, detectedColumns.dimensionColumns),
     );
   }
 
@@ -633,12 +702,14 @@ const sourceSystemColumn = detectColumn(columns, [
 
   function detectRelationshipHistoryRisk(rows: any[]): TargetFinding[] {
     const statusColumn = "relationship_status";
-  
+
     if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
-  
+
     const riskyRows = rows.filter((row) => {
-      const value = String(row[statusColumn] ?? "").trim().toLowerCase();
-    
+      const value = String(row[statusColumn] ?? "")
+        .trim()
+        .toLowerCase();
+
       return [
         "current_relationship_used",
         "wrong_relationship",
@@ -647,9 +718,9 @@ const sourceSystemColumn = detectColumn(columns, [
         "historical_attribution_wrong",
       ].includes(value);
     });
-  
+
     if (riskyRows.length === 0) return [];
-  
+
     return [
       {
         id: "relationship-history-risk",
@@ -670,7 +741,9 @@ const sourceSystemColumn = detectColumn(columns, [
     if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
 
     const riskyRows = rows.filter((row) => {
-      const value = String(row[statusColumn] ?? "").trim().toLowerCase();
+      const value = String(row[statusColumn] ?? "")
+        .trim()
+        .toLowerCase();
 
       return [
         "not_decomposed",
@@ -708,7 +781,7 @@ const sourceSystemColumn = detectColumn(columns, [
     ];
 
     const existingStatusColumn = statusColumns.find((column) =>
-      rows.some((row) => row[column] !== undefined)
+      rows.some((row) => row[column] !== undefined),
     );
 
     if (!existingStatusColumn) return [];
@@ -740,7 +813,7 @@ const sourceSystemColumn = detectColumn(columns, [
           row.reference_date ??
           row.reporting_date ??
           row.valid_from ??
-          "unknown period"
+          "unknown period",
       )
       .join(", ");
 
@@ -778,11 +851,11 @@ const sourceSystemColumn = detectColumn(columns, [
     ];
 
     const existingMethodColumn = methodColumns.find((column) =>
-      rows.some((row) => row[column] !== undefined)
+      rows.some((row) => row[column] !== undefined),
     );
 
     const existingStatusColumn = statusColumns.find((column) =>
-      rows.some((row) => row[column] !== undefined)
+      rows.some((row) => row[column] !== undefined),
     );
 
     const riskyMethodValues = new Set([
@@ -834,7 +907,7 @@ const sourceSystemColumn = detectColumn(columns, [
           row.transaction_id ??
           row.event_date ??
           row.event_timestamp ??
-          "unknown event"
+          "unknown event",
       )
       .join(", ");
 
@@ -844,7 +917,7 @@ const sourceSystemColumn = detectColumn(columns, [
       evidence.push(
         `${riskyMethodRows.length} row${
           riskyMethodRows.length === 1 ? "" : "s"
-        } use ${existingMethodColumn} with a risky state-event alignment method.`
+        } use ${existingMethodColumn} with a risky state-event alignment method.`,
       );
     }
 
@@ -852,7 +925,7 @@ const sourceSystemColumn = detectColumn(columns, [
       evidence.push(
         `${riskyStatusRows.length} row${
           riskyStatusRows.length === 1 ? "" : "s"
-        } have ${existingStatusColumn} marked as no match, ambiguous match or wrong state.`
+        } have ${existingStatusColumn} marked as no match, ambiguous match or wrong state.`,
       );
     }
 
@@ -901,8 +974,8 @@ const sourceSystemColumn = detectColumn(columns, [
       ...detectInvalidVisibleIntervals(
         rows,
         detectedColumns.visibleFrom,
-        detectedColumns.visibleTo
-      )
+        detectedColumns.visibleTo,
+      ),
     );
   }
 
@@ -913,16 +986,16 @@ function buildResult(
   rows: any[],
   columns: string[],
   detectedColumns: DetectedColumns,
-  findings: TargetFinding[]
+  findings: TargetFinding[],
 ): TargetValidationResult {
   const uniqueFindings = uniqueFindingsById(findings);
 
   const highCount = uniqueFindings.filter(
-    (finding) => finding.severity === "high"
+    (finding) => finding.severity === "high",
   ).length;
 
   const mediumCount = uniqueFindings.filter(
-    (finding) => finding.severity === "medium"
+    (finding) => finding.severity === "medium",
   ).length;
 
   const qualitySummary =
@@ -934,18 +1007,18 @@ function buildResult(
           severity: "danger" as const,
         }
       : mediumCount > 0
-      ? {
-          label: "Historical assumptions should be reviewed",
-          description:
-            "The table is parseable, but some modeling assumptions may affect reporting correctness.",
-          severity: "warning" as const,
-        }
-      : {
-          label: "Historical table structure looks consistent",
-          description:
-            "The pasted sample has a stable grain and consistent historical structure based on the available checks.",
-          severity: "success" as const,
-        };
+        ? {
+            label: "Historical assumptions should be reviewed",
+            description:
+              "The table is parseable, but some modeling assumptions may affect reporting correctness.",
+            severity: "warning" as const,
+          }
+        : {
+            label: "Historical table structure looks consistent",
+            description:
+              "The pasted sample has a stable grain and consistent historical structure based on the available checks.",
+            severity: "success" as const,
+          };
 
   return {
     rowCount: rows.length,
@@ -960,21 +1033,21 @@ function detectDuplicateIntervals(
   rows: any[],
   keyColumn: string,
   validFromColumn: string,
-  validToColumn: string
+  validToColumn: string,
 ): TargetFinding[] {
   const counts = new Map<string, number>();
 
   rows.forEach((row) => {
-    const key = [
-      row[keyColumn],
-      row[validFromColumn],
-      row[validToColumn],
-    ].join("||");
+    const key = [row[keyColumn], row[validFromColumn], row[validToColumn]].join(
+      "||",
+    );
 
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
 
-  const duplicates = Array.from(counts.entries()).filter(([, count]) => count > 1);
+  const duplicates = Array.from(counts.entries()).filter(
+    ([, count]) => count > 1,
+  );
 
   if (duplicates.length === 0) return [];
 
@@ -997,7 +1070,7 @@ function detectDuplicateIntervals(
 function detectSnapshotDuplicates(
   rows: any[],
   keyColumn: string,
-  snapshotColumn: string
+  snapshotColumn: string,
 ): TargetFinding[] {
   const counts = new Map<string, number>();
 
@@ -1006,7 +1079,9 @@ function detectSnapshotDuplicates(
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
 
-  const duplicates = Array.from(counts.entries()).filter(([, count]) => count > 1);
+  const duplicates = Array.from(counts.entries()).filter(
+    ([, count]) => count > 1,
+  );
 
   if (duplicates.length === 0) return [];
 
@@ -1029,15 +1104,17 @@ function detectSnapshotDuplicates(
 function detectMissingSnapshotCoverage(
   rows: any[],
   keyColumn: string,
-  snapshotColumn: string
+  snapshotColumn: string,
 ): TargetFinding[] {
-  const snapshots = new Set(rows.map((row) => String(row[snapshotColumn] ?? "")));
+  const snapshots = new Set(
+    rows.map((row) => String(row[snapshotColumn] ?? "")),
+  );
   const byKey = groupRowsByKey(rows, keyColumn);
   let missingCoverageCount = 0;
 
   byKey.forEach((keyRows) => {
     const keySnapshots = new Set(
-      keyRows.map((row) => String(row[snapshotColumn] ?? ""))
+      keyRows.map((row) => String(row[snapshotColumn] ?? "")),
     );
 
     snapshots.forEach((snapshot) => {
@@ -1066,23 +1143,23 @@ function detectMissingSnapshotCoverage(
 function detectMonthlySnapshotGaps(
   rows: any[],
   keyColumn: string,
-  snapshotColumn: string
+  snapshotColumn: string,
 ): TargetFinding[] {
   const byKey = groupRowsByKey(rows, keyColumn);
   let missingCount = 0;
   const examples: string[] = [];
 
   byKey.forEach((keyRows, key) => {
-  const dates = Array.from(
-    new Set(
-      keyRows
-        .map((row) => parseDate(row[snapshotColumn]))
-        .filter((date): date is Date => date !== null)
-        .map((date) => formatDate(date))
+    const dates = Array.from(
+      new Set(
+        keyRows
+          .map((row) => parseDate(row[snapshotColumn]))
+          .filter((date): date is Date => date !== null)
+          .map((date) => formatDate(date)),
+      ),
     )
-  )
-    .map((date) => new Date(`${date}T00:00:00`))
-    .sort((a, b) => a.getTime() - b.getTime());
+      .map((date) => new Date(`${date}T00:00:00`))
+      .sort((a, b) => a.getTime() - b.getTime());
 
     for (let i = 1; i < dates.length; i++) {
       const expectedNext = nextMonthEnd(dates[i - 1]);
@@ -1092,7 +1169,7 @@ function detectMonthlySnapshotGaps(
 
         if (examples.length < 3) {
           examples.push(
-            `${key}: expected ${formatDate(expectedNext)} before ${formatDate(dates[i])}`
+            `${key}: expected ${formatDate(expectedNext)} before ${formatDate(dates[i])}`,
           );
         }
       }
@@ -1152,7 +1229,7 @@ function detectRiskyAlignmentMethods(rows: any[]): TargetFinding[] {
   ];
 
   const existingMethodColumn = methodColumns.find((column) =>
-    rows.some((row) => row[column] !== undefined)
+    rows.some((row) => row[column] !== undefined),
   );
 
   if (!existingMethodColumn) return [];
@@ -1184,7 +1261,7 @@ function detectRiskyAlignmentMethods(rows: any[]): TargetFinding[] {
         row.reference_date ??
         row.reporting_date ??
         row.valid_from ??
-        "unknown period"
+        "unknown period",
     )
     .join(", ");
 
@@ -1207,7 +1284,7 @@ function detectRiskyAlignmentMethods(rows: any[]): TargetFinding[] {
 
 function detectSnapshotReproducibilityRisk(
   rows: any[],
-  detectedColumns: DetectedColumns
+  detectedColumns: DetectedColumns,
 ): TargetFinding[] {
   const methodColumns = [
     "reproducibility_method",
@@ -1217,7 +1294,7 @@ function detectSnapshotReproducibilityRisk(
   ];
 
   const existingMethodColumn = methodColumns.find((column) =>
-    rows.some((row) => row[column] !== undefined)
+    rows.some((row) => row[column] !== undefined),
   );
 
   if (!existingMethodColumn) return [];
@@ -1243,7 +1320,7 @@ function detectSnapshotReproducibilityRisk(
 
   const hasSnapshotDate = Boolean(detectedColumns.snapshotDate);
   const hasVisibleTime = Boolean(
-    detectedColumns.visibleFrom && detectedColumns.visibleTo
+    detectedColumns.visibleFrom && detectedColumns.visibleTo,
   );
 
   if (!hasSnapshotDate) return [];
@@ -1252,7 +1329,7 @@ function detectSnapshotReproducibilityRisk(
 
   if (!hasVisibleTime) {
     evidence.push(
-      "The table has snapshot_date but no complete visible_from / visible_to interval."
+      "The table has snapshot_date but no complete visible_from / visible_to interval.",
     );
   }
 
@@ -1264,14 +1341,14 @@ function detectSnapshotReproducibilityRisk(
         row.reference_date ??
         row.reporting_date ??
         row.valid_from ??
-        "unknown period"
+        "unknown period",
     )
     .join(", ");
 
   evidence.push(
     `${riskyRows.length} row${
       riskyRows.length === 1 ? "" : "s"
-    } use ${existingMethodColumn} with a non-reproducible rebuild method.`
+    } use ${existingMethodColumn} with a non-reproducible rebuild method.`,
   );
 
   evidence.push(`Example affected periods: ${examplePeriods}.`);
@@ -1296,7 +1373,7 @@ function detectCoverageGapRisk(rows: any[]): TargetFinding[] {
   ];
 
   const existingStatusColumn = statusColumns.find((column) =>
-    rows.some((row) => row[column] !== undefined)
+    rows.some((row) => row[column] !== undefined),
   );
 
   if (!existingStatusColumn) return [];
@@ -1342,7 +1419,9 @@ function detectStateReductionRisk(rows: any[]): TargetFinding[] {
   if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
 
   const riskyRows = rows.filter((row) => {
-    const value = String(row[statusColumn] ?? "").trim().toLowerCase();
+    const value = String(row[statusColumn] ?? "")
+      .trim()
+      .toLowerCase();
 
     return [
       "redundant_state",
@@ -1375,7 +1454,9 @@ function detectEventPrioritizationRisk(rows: any[]): TargetFinding[] {
   if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
 
   const riskyRows = rows.filter((row) => {
-    const value = String(row[statusColumn] ?? "").trim().toLowerCase();
+    const value = String(row[statusColumn] ?? "")
+      .trim()
+      .toLowerCase();
 
     return [
       "operational_noise_kept",
@@ -1393,10 +1474,7 @@ function detectEventPrioritizationRisk(rows: any[]): TargetFinding[] {
     .slice(0, 3)
     .map(
       (row) =>
-        row.event_id ??
-        row.event_type ??
-        row.event_time ??
-        "unknown event"
+        row.event_id ?? row.event_type ?? row.event_time ?? "unknown event",
     )
     .join(", ");
 
@@ -1506,7 +1584,7 @@ function detectDimensionColumns(columns: string[]) {
 
 function detectMissingDimensionValues(
   rows: any[],
-  dimensionColumns: string[]
+  dimensionColumns: string[],
 ): TargetFinding[] {
   const findings: TargetFinding[] = [];
 
@@ -1523,7 +1601,7 @@ function detectMissingDimensionValues(
           row.reference_date ??
           row.reporting_date ??
           row.valid_from ??
-          "unknown period"
+          "unknown period",
       )
       .join(", ");
 
@@ -1564,7 +1642,7 @@ function isMissingValue(value: unknown) {
 function detectInvalidIntervals(
   rows: any[],
   validFromColumn: string,
-  validToColumn: string
+  validToColumn: string,
 ): TargetFinding[] {
   const invalidCount = rows.filter((row) => {
     const from = parseDate(row[validFromColumn]);
@@ -1591,7 +1669,7 @@ function detectInvalidIntervals(
 function detectInvalidVisibleIntervals(
   rows: any[],
   visibleFromColumn: string,
-  visibleToColumn: string
+  visibleToColumn: string,
 ): TargetFinding[] {
   const invalidCount = rows.filter((row) => {
     const from = parseDate(row[visibleFromColumn]);
@@ -1619,7 +1697,7 @@ function detectValidTimeOverlaps(
   rows: any[],
   keyColumn: string,
   validFromColumn: string,
-  validToColumn: string
+  validToColumn: string,
 ): TargetFinding[] {
   const byKey = groupRowsByKey(rows, keyColumn);
   let overlapCount = 0;
@@ -1662,7 +1740,7 @@ function detectValidTimeGaps(
   rows: any[],
   keyColumn: string,
   validFromColumn: string,
-  validToColumn: string
+  validToColumn: string,
 ): TargetFinding[] {
   const byKey = groupRowsByKey(rows, keyColumn);
   let gapCount = 0;
@@ -1717,7 +1795,7 @@ function detectColumn(columns: string[], candidates: string[]) {
 
   return (
     columns.find((column) =>
-      candidates.some((candidate) => column.includes(candidate))
+      candidates.some((candidate) => column.includes(candidate)),
     ) ?? null
   );
 }
@@ -1738,7 +1816,7 @@ function parseDate(value: unknown) {
 
 function uniqueFindingsById(findings: TargetFinding[]) {
   return Array.from(
-    new Map(findings.map((finding) => [finding.id, finding])).values()
+    new Map(findings.map((finding) => [finding.id, finding])).values(),
   );
 }
 
@@ -1750,7 +1828,7 @@ function sortFindings(findings: TargetFinding[]) {
   };
 
   return [...findings].sort(
-    (a, b) => severityRank[a.severity] - severityRank[b.severity]
+    (a, b) => severityRank[a.severity] - severityRank[b.severity],
   );
 }
 
@@ -1763,16 +1841,16 @@ function SummaryCard({ result }: { result: TargetValidationResult }) {
           color: "#9a3412",
         }
       : result.qualitySummary.severity === "warning"
-      ? {
-          background: "#fffbeb",
-          border: "#fde68a",
-          color: "#92400e",
-        }
-      : {
-          background: "#ecfdf5",
-          border: "#86efac",
-          color: "#166534",
-        };
+        ? {
+            background: "#fffbeb",
+            border: "#fde68a",
+            color: "#92400e",
+          }
+        : {
+            background: "#ecfdf5",
+            border: "#86efac",
+            color: "#166534",
+          };
 
   return (
     <div
@@ -1877,8 +1955,8 @@ function ColumnCard({
         border: value
           ? "1px solid #86efac"
           : missingRequired
-          ? "1px solid #fed7aa"
-          : "1px solid #e2e8f0",
+            ? "1px solid #fed7aa"
+            : "1px solid #e2e8f0",
       }}
     >
       <div
@@ -1917,16 +1995,16 @@ function FindingCard({ finding }: { finding: TargetFinding }) {
           border: "#fecaca",
         }
       : finding.severity === "medium"
-      ? {
-          color: "#92400e",
-          background: "#fffbeb",
-          border: "#fde68a",
-        }
-      : {
-          color: "#475569",
-          background: "#f8fafc",
-          border: "#e2e8f0",
-        };
+        ? {
+            color: "#92400e",
+            background: "#fffbeb",
+            border: "#fde68a",
+          }
+        : {
+            color: "#475569",
+            background: "#f8fafc",
+            border: "#e2e8f0",
+          };
 
   return (
     <div

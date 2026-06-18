@@ -205,9 +205,10 @@ AND intervals_overlap(
 )`}
               </code>
               <p style={codeNoteStyle}>
-                The exact overlap predicate depends on your interval convention, for example
-                closed daily intervals or half-open timestamp intervals. The important rule is
-                that every temporal join uses the same boundary semantics consistently.
+                The exact overlap predicate depends on your interval convention,
+                for example closed daily intervals or half-open timestamp
+                intervals. The important rule is that every temporal join uses
+                the same boundary semantics consistently.
               </p>
             </div>
           </WhiteCard>
@@ -311,15 +312,24 @@ function DarkExampleCard() {
         <div>
           <div style={questionBadgeStyle}>Reporting question</div>
           <div style={questionTextStyle}>
-            What should the joined history look like when either side changes?
-            A correct model must split the result at every relevant state boundary.
+            What should the joined history look like when either side changes? A
+            correct model must split the result at every relevant state
+            boundary.
           </div>
         </div>
       </div>
 
       <div style={comparisonGridStyle}>
-        <ResultCard title="Expected Result (Recommended)" rows={EXPECTED_ROWS} tone="good" />
-        <ResultCard title="Common Wrong Result (Risk)" rows={WRONG_ROWS} tone="bad" />
+        <ResultCard
+          title="Expected Result (Recommended)"
+          rows={EXPECTED_ROWS}
+          tone="good"
+        />
+        <ResultCard
+          title="Common Wrong Result (Risk)"
+          rows={WRONG_ROWS}
+          tone="bad"
+        />
       </div>
 
       <div style={exampleNoteStyle}>
@@ -430,7 +440,10 @@ function ResultCard({
 
       <div style={resultTableStyle}>
         {rows.map(([contract, period, status, customer]) => (
-          <div key={`${contract}-${period}-${status}-${customer}`} style={resultRowStyle}>
+          <div
+            key={`${contract}-${period}-${status}-${customer}`}
+            style={resultRowStyle}
+          >
             <div>
               <div style={resultPeriodStyle}>{period}</div>
               <div style={resultMetaStyle}>{contract}</div>
@@ -446,6 +459,8 @@ function ResultCard({
 }
 
 function PatternTestCaseCard() {
+  const [selectedExample, setSelectedExample] = useState<string | null>(null);
+
   return (
     <section style={testCaseCardStyle}>
       <div style={testCaseEyebrowStyle}>Test case</div>
@@ -472,6 +487,7 @@ function PatternTestCaseCard() {
           tableName="aligned_target"
           value={ALIGNED_TARGET_TABLE}
           tone="good"
+          onExampleReady={setSelectedExample}
         />
 
         <CopyTableCard
@@ -480,23 +496,37 @@ function PatternTestCaseCard() {
           tableName="wrong_target"
           value={WRONG_TARGET_TABLE}
           tone="bad"
+          onExampleReady={setSelectedExample}
         />
       </div>
 
-      <a
-        href="/#target-table-validation"
+      <button
+        type="button"
+        disabled={!selectedExample}
         onClick={() => {
+          if (!selectedExample) return;
+
           track("example_model_cta_clicked", {
-            example: "state-state-alignment",
-            cta: "open_target_validation",
+            example: "state_state_alignment",
+            cta: "open_target_validation_with_example",
             source: "test_case_card",
             page_type: "interactive_example",
+            selectedExample,
           });
+
+          window.location.href = "/#target-table-validation";
         }}
-        style={testCaseButtonStyle}
+        style={{
+          ...testCaseButtonStyle,
+          border: "none",
+          opacity: selectedExample ? 1 : 0.45,
+          cursor: selectedExample ? "pointer" : "not-allowed",
+        }}
       >
-        Open Target Table Validation →
-      </a>
+        {selectedExample
+          ? "Open Validation with Example →"
+          : "Use an example first"}
+      </button>
     </section>
   );
 }
@@ -507,12 +537,14 @@ function CopyTableCard({
   tableName,
   value,
   tone,
+  onExampleReady,
 }: {
   title: string;
   description: string;
-  tableName: "aligned_target" | "wrong_target";
+  tableName: string;
   value: string;
   tone: "good" | "bad";
+  onExampleReady: (tableName: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -534,26 +566,29 @@ function CopyTableCard({
   }, []);
 
   async function handleCopy() {
+    localStorage.setItem("target_validation_prefill", value);
+    localStorage.setItem("target_validation_prefill_name", tableName);
+
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        copyWithFallback(value);
-      }
+      await navigator.clipboard.writeText(value);
     } catch {
-      copyWithFallback(value);
+      // Prefill still works even if clipboard access is blocked.
     }
 
     setCopied(true);
+    onExampleReady(tableName);
 
-    track("example_table_copied", {
+    localStorage.setItem("target_validation_prefill", value);
+    localStorage.setItem("target_validation_prefill_name", tableName);
+    sessionStorage.setItem("target_validation_scroll_to_result", "true");
+
+    track("example_table_loaded_for_validation", {
       example: "state_state_alignment",
       table: tableName,
+      inputLength: value.length,
     });
 
-    window.setTimeout(() => {
-      setCopied(false);
-    }, 1800);
+    window.setTimeout(() => setCopied(false), 1800);
   }
 
   return (
@@ -579,20 +614,14 @@ function CopyTableCard({
         onMouseLeave={() => setHovered(false)}
         style={{
           ...copyTableButtonStyle,
-          background: copied
-            ? "#16a34a"
-            : isGood
-            ? "#15803d"
-            : "#b91c1c",
+          background: copied ? "#16a34a" : isGood ? "#15803d" : "#b91c1c",
           transform: hovered ? "translateY(-1px)" : "translateY(0)",
-          boxShadow: hovered
-            ? "0 10px 22px rgba(15, 23, 42, 0.22)"
-            : "none",
+          boxShadow: hovered ? "0 10px 22px rgba(15, 23, 42, 0.22)" : "none",
           touchAction: "manipulation",
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        {copied ? "✓ Copied" : "Copy table"}
+        {copied ? "✓ Example ready" : "Use this example"}
       </button>
     </div>
   );

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document captures observations, discussions, feedback, experiments, and insights gathered during the development of the Historical Modeling Workbench and its evolution toward a Historical Modeling Advisor.
+This document captures observations, discussions, feedback, experiments, and insights gathered during the development of the Historical Modeling Workbench and its evolution toward a Historical Modeling Assessment.
 
 The goal is not to document implementation details.
 
@@ -320,7 +320,7 @@ Still heavily focused on post-implementation validation.
 
 ---
 
-## Historical Modeling Advisor
+## Historical Modeling Assessment
 
 Emerging hypothesis:
 

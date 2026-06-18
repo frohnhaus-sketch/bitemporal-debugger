@@ -101,7 +101,8 @@ export default function Home() {
                   color: "#ffffff",
                 }}
               >
-                Build reliable historized and snapshot reporting models.
+                Learn historical modeling patterns, design better data models
+                and validate historized reporting solutions.
               </h1>
 
               <p
@@ -158,12 +159,12 @@ export default function Home() {
           }
         />
 
-        <div id="advisor-section" ref={advisorRef}>
-          <AdvisorPanel />
-        </div>
-
         <div ref={patternsRef}>
           <PatternEntrySection isMobile={isMobile} />
+        </div>
+
+        <div id="advisor-section" ref={advisorRef}>
+          <AdvisorPanel />
         </div>
 
         <div id="model-review-section" ref={validateModelRef}>
@@ -205,31 +206,35 @@ function WorkflowSection({
 }) {
   const steps = [
     {
-      step: "design_model",
-      title: "Design your model",
-      text: "Use the Advisor to identify historical modeling patterns, architecture options, risks and engineering decisions.",
-      button: "Open Advisor →",
-      onClick: onOpenAdvisor,
-    },
-    {
       step: "learn_pattern",
-      title: "Learn the pattern",
-      text: "Explore practical examples for SCD2, bitemporal modeling, snapshot reporting, dimension completion and temporal joins.",
-      button: "Browse Pattern Catalog →",
+      number: "1",
+      title: "Understand the pattern",
+      text: "Learn the historical modeling concept first: SCD2, bitemporal history, snapshot reporting, dimension completion or temporal joins.",
+      button: "Browse Patterns →",
       onClick: onOpenPatterns,
     },
     {
+      step: "design_model",
+      number: "2",
+      title: "Design the model",
+      text: "Answer 6 questions and get a recommended modeling strategy, risks, validation checks and implementation blueprint.",
+      button: "Design My Model →",
+      onClick: onOpenAdvisor,
+    },
+    {
       step: "review_model",
+      number: "3",
       title: "Review your model",
-      text: "Describe your model logic and get feedback on assumptions, historical risks and missing validation checks.",
+      text: "Paste SQL, PySpark, dbt or architecture notes and check whether the historical assumptions are explicit and safe.",
       button: "Review My Model →",
       onClick: onOpenModelReview,
     },
     {
       step: "validate_output",
-      title: "Validate generated output",
-      text: "Paste a generated historical target table and validate coverage, overlaps, gaps and snapshot consistency.",
-      button: "Open Validation →",
+      number: "4",
+      title: "Validate the output",
+      text: "Paste the generated target table and detect gaps, overlaps, duplicate grain, missing coverage and snapshot risks.",
+      button: "Validate Output →",
       onClick: onOpenTargetValidation,
     },
   ];
@@ -267,7 +272,7 @@ function WorkflowSection({
             color: "#0f172a",
           }}
         >
-          Historical modeling workflow
+          What are you trying to do?
         </h2>
 
         <p
@@ -279,10 +284,25 @@ function WorkflowSection({
             lineHeight: 1.6,
           }}
         >
-          Start with the question you are facing right now. The workbench helps
-          you move from modeling problem to pattern, implementation decision,
-          validation and advanced debugging.
+          Choose the task that matches your current problem. The workbench will
+          guide you to the right historical modeling pattern, review workflow or
+          validation tool.
         </p>
+        <div
+          style={{
+            marginTop: 12,
+            padding: "8px 12px",
+            borderRadius: 999,
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            color: "#1e40af",
+            fontSize: 13,
+            fontWeight: 800,
+            display: "inline-flex",
+          }}
+        >
+          New here? Start with Step 2: Design the model.
+        </div>
       </div>
 
       <div
@@ -294,63 +314,85 @@ function WorkflowSection({
           gap: 14,
         }}
       >
-          {steps.map((item) => (
-        <div
-          key={item.step}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            padding: 18,
-            borderRadius: 18,
-            background: "#f8fafc",
-            border: "1px solid #e2e8f0",
-          }}
-        >
-          <h3
+        {steps.map((item) => (
+          <div
+            key={item.step}
             style={{
-              margin: 0,
-              fontSize: 18,
-              color: "#0f172a",
-              letterSpacing: "-0.02em",
+              position: "relative",
+              display: "flex",
+              flexDirection: "column",
+              padding: 20,
+              paddingTop: 22,
+              borderRadius: 20,
+              background: "#ffffff",
+              border: "1px solid #dbeafe",
+              boxShadow: "0 16px 34px rgba(15, 23, 42, 0.06)",
             }}
           >
-            {item.title}
-          </h3>
-          <p
-            style={{
-              margin: "10px 0 18px",
-              color: "#475569",
-              fontSize: 14,
-              lineHeight: 1.55,
-              flex: 1,
-            }}
-          >
-            {item.text}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              track("workflow_step_clicked", {
-                step: item.step,
-              });
-              item.onClick();
-            }}
-            style={{
-              alignSelf: "flex-start",
-              border: "none",
-              borderRadius: 13,
-              padding: "12px 14px",
-              background: "#0f172a",
-              color: "#ffffff",
-              fontWeight: 900,
-              fontSize: 14,
-              cursor: "pointer",
-            }}
-          >
-            {item.button}
-          </button>
-        </div>
-      ))}
+            <div
+              style={{
+                position: "absolute",
+                top: 14,
+                right: 14,
+                width: 32,
+                height: 32,
+                borderRadius: 999,
+                display: "grid",
+                placeItems: "center",
+                background: "#2563eb",
+                color: "#ffffff",
+                fontWeight: 900,
+                fontSize: 14,
+              }}
+            >
+              {item.number}
+            </div>
+            <h3
+              style={{
+                margin: 0,
+                paddingRight: 42,
+                fontSize: 18,
+                color: "#0f172a",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {item.title}
+            </h3>
+            <p
+              style={{
+                margin: "10px 0 18px",
+                color: "#475569",
+                fontSize: 14,
+                lineHeight: 1.55,
+                flex: 1,
+              }}
+            >
+              {item.text}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                track("workflow_step_clicked", {
+                  step: item.step,
+                });
+                item.onClick();
+              }}
+              style={{
+                alignSelf: "flex-start",
+                border: "none",
+                borderRadius: 13,
+                padding: "11px 14px",
+                background: "#0f172a",
+                color: "#ffffff",
+                fontWeight: 900,
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+            >
+              {item.button}
+            </button>
+          </div>
+        ))}
       </div>
       <div
         style={{
@@ -372,7 +414,7 @@ function WorkflowSection({
         >
           Advanced Investigation
         </div>
-        
+
         <h3
           style={{
             margin: 0,
@@ -382,7 +424,7 @@ function WorkflowSection({
         >
           Debug historical source behavior
         </h3>
-        
+
         <p
           style={{
             marginTop: 10,
@@ -390,25 +432,24 @@ function WorkflowSection({
             lineHeight: 1.6,
           }}
         >
-          Compare historized sources, inspect temporal joins,
-          investigate gaps, overlaps, ambiguous matches and
-          visible-time behavior.
+          Compare historized sources, inspect temporal joins, investigate gaps,
+          overlaps, ambiguous matches and visible-time behavior.
         </p>
-        
+
         <button
           type="button"
           onClick={() => {
             track("workflow_step_clicked", {
               step: "advanced_investigation",
             });
-          
+
             onOpenAdvancedInvestigation();
           }}
           style={{
             marginTop: 14,
             border: "none",
             borderRadius: 13,
-            padding: "12px 14px",
+            padding: "11px 14px",
             background: "#2563eb",
             color: "#ffffff",
             fontWeight: 900,
@@ -426,14 +467,14 @@ function WorkflowSection({
 function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
   const patterns = [
     {
-      title: "State ↔ State Alignment",
-      href: "/learn/state-state-alignment",
-      text: "Join two historized state sources across overlapping valid-time intervals.",
-    },
-    {
       title: "Dimension Completion",
       href: "/learn/dimension-completion",
       text: "Fill missing dimension history before joining facts to dimensions.",
+    },
+    {
+      title: "SCD2 vs Bitemporal",
+      href: "/learn/scd2-vs-bitemporal",
+      text: "Understand when valid-time history is not enough for corrected or as-known reporting.",
     },
     {
       title: "Snapshot Reproducibility",
@@ -441,9 +482,9 @@ function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
       text: "Make historical reports rebuildable with the same result.",
     },
     {
-      title: "Historical Conformance",
-      href: "/learn/historical-conformance",
-      text: "Align multiple historical source timelines into one reporting history.",
+      title: "Hierarchical State Derivation",
+      href: "/learn/hierarchical-state-derivation",
+      text: "Derive historized parent states from historized child entities using business rules.",
     },
   ];
 
@@ -502,8 +543,8 @@ function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
               lineHeight: 1.55,
             }}
           >
-            Browse practical patterns for historized sources, temporal joins, snapshot
-            reporting and bitemporal validation.
+            Browse practical patterns for historized sources, temporal joins,
+            snapshot reporting and bitemporal validation.
           </p>
         </div>
 
@@ -528,16 +569,14 @@ function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
             whiteSpace: "nowrap",
           }}
         >
-          Browse Pattern Catalog →
+          Explore 20+ Historical Modeling Patterns →
         </a>
       </div>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile
-            ? "1fr"
-            : "repeat(auto-fit, minmax(220px, 1fr))",
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(4, 1fr)",
           gap: 12,
         }}
       >
@@ -602,8 +641,9 @@ function AdvancedInvestigationSection({
         marginBottom: 28,
         padding: isMobile ? 18 : 26,
         borderRadius: 24,
-        background: "rgba(15, 23, 42, 0.72)",
-        border: "1px solid rgba(148, 163, 184, 0.32)",
+        background:
+          "linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.9))",
+        border: "1px solid rgba(96, 165, 250, 0.35)",
         color: "#e2e8f0",
       }}
     >
@@ -644,6 +684,22 @@ function AdvancedInvestigationSection({
           temporal joins, investigate gaps, overlaps, ambiguous matches or
           visible-time behavior.
         </p>
+        <div
+          style={{
+            marginTop: 16,
+            padding: 14,
+            borderRadius: 14,
+            background: "rgba(37, 99, 235, 0.14)",
+            border: "1px solid rgba(96, 165, 250, 0.28)",
+            color: "#dbeafe",
+            fontSize: 14,
+            lineHeight: 1.55,
+          }}
+        >
+          Expert workflow: use this after the model exists and you need
+          row-level temporal evidence for joins, gaps, overlaps or visibility
+          issues.
+        </div>
       </div>
 
       {children}
