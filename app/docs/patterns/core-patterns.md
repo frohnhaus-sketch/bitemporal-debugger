@@ -1,44 +1,55 @@
-# Core Historical Modeling Patterns
+# Historical Data Modeling Pattern Taxonomy
 
 ## Purpose
 
-This document defines the canonical pattern taxonomy used throughout the Historical Data Engineering Toolkit.
+This document defines the canonical pattern taxonomy used throughout the Historical Data Modeling Workbench.
 
-Its purpose is to provide a small set of stable, reusable modeling patterns that describe the majority of historical reporting architectures.
+The goal is to provide a stable vocabulary for understanding, discussing, designing, reviewing, and validating historical data models.
 
-All implementation patterns, validation patterns and community findings should ultimately map back to one of these core patterns.
+Historical data platforms appear diverse, but most architectures are combinations of a relatively small set of recurring modeling patterns.
+
+The Workbench uses these patterns to power:
+
+* Advisor recommendations
+* Model reviews
+* Validation workflows
+* Pattern catalog navigation
+* Learn pages
+* Historical modeling education
 
 ---
 
 # Pattern Hierarchy
 
 ```text
-Core Patterns
+Foundational Patterns
 ↓
-Implementation Patterns
+Modeling Patterns
 ↓
-Validation Patterns
+Reporting Patterns
 ↓
-Common Use Cases
+Engineering Patterns
+↓
+Validation & Review
 ```
 
-Core patterns describe the problem.
+Foundational patterns describe how history is represented.
 
-Implementation patterns describe how the problem is solved.
+Modeling patterns describe how business reality is modeled.
 
-Validation patterns describe how the solution can fail.
+Reporting patterns describe how history is consumed.
 
-Common Use Cases demonstrates that the problem exists outside a specific project.
+Engineering patterns describe how historical models are implemented.
+
+Validation workflows verify that the chosen approach behaves as intended.
 
 ---
 
 # Foundations
 
-## 01 — State Modeling
+## State Modeling
 
-### Description
-
-Represents business entities that exist over a time interval.
+Represents entities that exist over a time interval.
 
 Examples:
 
@@ -48,184 +59,309 @@ Examples:
 * Product
 * Vehicle
 
-### Typical Goal
+Core Question:
 
-Describe what was true during a period of time.
-
-### Related Validation Patterns
-
-* Historical Overlap
-* Invalid Intervals
+```text
+What was true during a period of time?
+```
 
 ---
 
-## 02 — Event Modeling
-
-### Description
+## Event Modeling
 
 Represents business occurrences at a specific point in time.
 
 Examples:
 
 * Payment Received
-* Contract Mutation
 * Claim Filed
 * Status Change
+* Contract Mutation
 
-### Typical Goal
+Core Question:
 
-Describe what happened.
-
-### Related Validation Patterns
-
-* Event Ordering Risk
-* Duplicate Events
+```text
+What happened?
+```
 
 ---
 
-## 03 — Bitemporal Modeling
-
-### Description
+## Bitemporal Modeling
 
 Separates business-effective time from system-visible time.
 
-### Core Question
+Core Questions:
 
 ```text
 What was true?
 
-vs.
+What did we know?
 
-What did we believe was true at a specific point in time?
+When did we know it?
 ```
 
-### Typical Goal
+Common Drivers:
 
-Support auditability and historical reconstruction.
-
-### Related Validation Patterns
-
-* Snapshot Reproducibility Risk
-* Visibility Lag
+* Historical corrections
+* Auditability
+* Regulatory requirements
+* Snapshot reproducibility
 
 ---
 
-# Alignment
+# Alignment Patterns
 
-## 04 — State Alignment
+## State-to-State Alignment
 
-### Description
-
-Historical states must be aligned across time.
+Align two historical state timelines.
 
 Examples:
 
 ```text
 Contract ↔ Customer
 
-Customer ↔ Segment
+Policy ↔ Object
 
 Product ↔ Pricing
 ```
 
-### Typical Goal
+Common Challenges:
 
-Create valid historical relationships.
-
-### Related Validation Patterns
-
-* Historical Match Ambiguity
-* Missing Historical Match
-* Historical Coverage Gap
+* Missing matches
+* Coverage gaps
+* Ambiguous matches
 
 ---
 
-## 05 — Historical Conformance
+## State-to-Event Alignment
 
-### Description
+Combine state history with business events.
 
-Multiple systems describe the same business reality using different historical timelines.
+Examples:
+
+```text
+Contract ↔ Contract Mutation
+
+Policy ↔ Claim
+
+Customer ↔ Interaction
+```
+
+Common Challenges:
+
+* Temporal join complexity
+* Event attribution
+* Missing context
+
+---
+
+## Historical Conformance
+
+Multiple systems describe the same business reality.
 
 Examples:
 
 ```text
 CRM + ERP
 
-Policy System + Partner System
+Policy + Billing
 
-Sales System + Billing System
+Partner + Internal Systems
 ```
 
-### Typical Goal
+Goal:
 
-Create a unified historical truth.
-
-### Related Validation Patterns
-
-* Historical Conformance Risk
-* Visibility Lag
+Create a consistent historical interpretation.
 
 ---
 
-# Resolution
+# Dimension & Relationship Patterns
 
-## 06 — Winner Selection
+## Dimension Completion
 
-### Description
-
-Multiple valid candidates exist and one must be selected.
+Dimension history does not fully cover the reporting timeline.
 
 Examples:
 
 ```text
-Preferred Address
+Fact starts before dimension.
 
-Preferred Policyholder
-
-Preferred Customer Record
+Customer history starts after contract history.
 ```
 
-### Typical Goal
+Common Solutions:
 
-Produce deterministic results.
+* Placeholder records
+* Earliest-known extension
+* Business default members
 
-### Related Validation Patterns
+Industry Observation:
 
-* Historical Match Ambiguity
+One of the most common historical modeling problems.
 
 ---
 
-## 07 — Event Prioritization
+## Relationship History
 
-### Description
+Relationships change over time.
 
-Multiple events compete to represent the same business outcome.
+Examples:
+
+```text
+Employee ↔ Manager
+
+Customer ↔ Segment
+
+Policy ↔ Broker
+```
+
+Goal:
+
+Preserve historical relationship changes.
+
+---
+
+## Identity Resolution
+
+Multiple identifiers represent the same business entity.
+
+Examples:
+
+```text
+Customer Merge
+
+Contract Migration
+
+Account Consolidation
+```
+
+Goal:
+
+Create a stable business identity over time.
+
+---
+
+# Reporting Patterns
+
+## Snapshot Fact Modeling
+
+Create historical reporting snapshots.
+
+Examples:
+
+```text
+Month-End Portfolio
+
+Daily Active Customers
+
+Quarter-End Exposure
+```
+
+Goal:
+
+Represent business state at reporting points.
+
+---
+
+## Snapshot Reproducibility
+
+Historical reports should return the same result regardless of when they are rerun.
+
+Core Question:
+
+```text
+Can I reproduce last month's report today?
+```
+
+Common Drivers:
+
+* Late-arriving data
+* Historical corrections
+* Data restatements
+
+Industry Observation:
+
+One of the most frequently discussed reporting challenges.
+
+---
+
+## As-Known Reporting
+
+Report based on information available at a specific point in time.
+
+Examples:
+
+```text
+Regulatory Reporting
+
+Operational Reporting
+
+Management Reporting
+```
+
+Goal:
+
+Preserve historical knowledge state.
+
+---
+
+# Engineering Patterns
+
+## Historical Backfill
+
+Historical data becomes available after initial loading.
+
+Examples:
+
+* Late-arriving data
+* Migration loads
+* Historical reconstruction
+
+Goal:
+
+Incorporate historical information safely.
+
+---
+
+## Historical Correction
+
+Previously known history is corrected.
+
+Examples:
+
+* Data quality fixes
+* Regulatory corrections
+* Source system restatements
+
+Goal:
+
+Preserve both original and corrected interpretations.
+
+---
+
+## Event Prioritization
+
+Multiple events compete to represent a business outcome.
 
 Examples:
 
 ```text
 Workflow Events
 
-Contract Mutations
+Contract Events
 
-Claim Status Events
+Status Changes
 ```
 
-### Typical Goal
+Goal:
 
-Identify the reporting-relevant event.
-
-### Related Validation Patterns
-
-* Event Ordering Risk
+Identify reporting-relevant events.
 
 ---
 
-## 08 — State Reduction
+## State Reduction
 
-### Description
-
-Large technical histories are condensed into reporting-relevant business states.
+Large technical histories are condensed into reporting-relevant states.
 
 Examples:
 
@@ -237,137 +373,35 @@ Status Consolidation
 Event Reduction
 ```
 
-### Typical Goal
+Goal:
 
 Reduce reporting complexity.
 
-### Related Validation Patterns
-
-* State Explosion Risk
-
 ---
 
-# Dimensions
+## Event-to-State Projection
 
-## 09 — Dimension Completion
-
-### Description
-
-Dimension history does not fully cover the required reporting timeline.
+Transform events into state history.
 
 Examples:
 
 ```text
-Fact starts before dimension.
+Order Events → Order State
 
-Customer history starts after contract history.
+Workflow Events → Status Timeline
 ```
 
-### Typical Goal
+Goal:
 
-Ensure complete historical coverage.
-
-### Related Validation Patterns
-
-* Historical Coverage Gap
-* Late Arriving Dimension Risk
-* Missing Historical Match
-
-### Industry Evidence
-
-One of the most common historical modeling problems.
+Create queryable historical states.
 
 ---
 
-## 10 — Relationship History
+## Rectangle Decomposition
 
-### Description
-
-Relationships change over time.
+Project multiple temporal attributes onto a common timeline.
 
 Examples:
-
-```text
-Customer ↔ Segment
-
-Employee ↔ Manager
-
-Policy ↔ Broker
-```
-
-### Typical Goal
-
-Preserve historical relationship changes.
-
-### Related Validation Patterns
-
-* Historical Coverage Gap
-
----
-
-## 11 — Identity Resolution
-
-### Description
-
-Multiple identifiers represent the same business entity.
-
-Examples:
-
-```text
-Customer Merge
-
-Account Migration
-
-Contract Migration
-```
-
-### Typical Goal
-
-Create a consistent business identity.
-
-### Related Validation Patterns
-
-* Identity Resolution Failure
-
----
-
-# Reporting
-
-## 12 — Snapshot Reproducibility
-
-### Description
-
-Historical reports must return the same result regardless of when they are rerun.
-
-### Typical Goal
-
-Ensure reproducible reporting.
-
-### Related Validation Patterns
-
-* Snapshot Reproducibility Risk
-* Duplicate Snapshot Records
-
-### Industry Evidence
-
-One of the most frequently discussed historical reporting challenges.
-
----
-
-# Advanced
-
-## 13 — Temporal Pivot
-
-### Description
-
-Multiple temporal attributes are projected onto a common timeline.
-
-Also known as:
-
-* Rectangle Decomposition
-* Temporal Projection
-
-### Examples
 
 ```text
 Coverage Modeling
@@ -377,25 +411,23 @@ Risk Characteristics
 Pricing Attributes
 ```
 
-### Typical Goal
+Goal:
 
-Create complete reporting timelines.
-
-### Related Validation Patterns
-
-* Historical Coverage Gap
-* Duplicate Snapshot Records
+Create complete reporting intervals.
 
 ---
 
 # Long-Term Vision
 
-Historical reporting architectures are usually combinations of a small number of recurring patterns.
+The Historical Data Modeling Workbench is built on the idea that historical data engineering is not a collection of isolated techniques.
 
-The purpose of this taxonomy is to provide a stable vocabulary for:
+Most historical architectures can be understood as combinations of recurring modeling patterns.
 
-* Advisor recommendations
-* Model reviews
-* Validation findings
-* Historical modeling education
-* Industry research
+A shared pattern vocabulary makes it easier to:
+
+* Design historical models
+* Review existing architectures
+* Explain modeling decisions
+* Validate generated outputs
+* Teach historical data concepts
+* Build reusable engineering solutions

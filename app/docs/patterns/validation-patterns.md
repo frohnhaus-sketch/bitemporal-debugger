@@ -1,95 +1,100 @@
-# Validation Patterns
+# Historical Validation Findings
 
 ## Purpose
 
-This document defines recurring validation patterns used to assess historical data models, historized dimensions, snapshot facts, temporal joins and historical reporting products.
+This document defines the recurring validation findings used throughout the Historical Data Modeling Workbench.
 
-The goal is to provide a reusable validation framework for:
+The goal is to provide a reusable framework for evaluating:
 
-* Historical Data Engineering Toolkit
-* Target Table Validation
-* Historical Modeling Assessment
-* Model Review
-* Automated Validation Rules
+* Historical Data Models
+* Snapshot Fact Models
+* Historized Dimensions
+* Temporal Joins
+* Historical Reporting Products
 
-Unlike historical-modeling-patterns.md, which focuses on architectural problems, this document focuses on how those problems can be detected.
+Validation findings are not modeling patterns.
+
+A modeling pattern describes a solution.
+
+A validation finding describes how a solution can fail.
 
 ---
 
 # Validation Categories
 
-## Structural Validation
-
-Checks whether the required historical structure exists.
-
-Examples:
-
-* Required columns exist
-* Historical keys exist
-* Validity intervals exist
-* Snapshot keys exist
-
----
-
-## Historical Consistency Validation
+## Timeline Integrity
 
 Checks whether historical timelines are internally consistent.
 
 Examples:
 
-* Overlaps
-* Gaps
-* Invalid intervals
+* Historical Overlap
+* Historical Coverage Gap
+* Invalid Intervals
 
 ---
 
-## Temporal Join Validation
+## Historical Alignment
 
 Checks whether historical relationships can be resolved correctly.
 
 Examples:
 
-* Missing matches
-* Multiple matches
-* Ambiguous joins
+* Missing Historical Match
+* Historical Match Ambiguity
+* Event Alignment Failure
 
 ---
 
-## Reporting Validation
+## Reporting Reliability
 
-Checks whether reporting outputs are reproducible and complete.
+Checks whether historical reporting outputs are reproducible and complete.
 
 Examples:
 
-* Snapshot reproducibility
-* Dimension coverage
-* Reporting completeness
+* Snapshot Drift
+* Duplicate Snapshot Records
+* Reporting Coverage Gaps
 
 ---
 
-# Validation Pattern 01 — Historical Coverage Gap
+## Historical Synchronization
+
+Checks whether multiple systems describe the same business reality consistently.
+
+Examples:
+
+* Visibility Lag
+* Historical Conformance Risk
+
+---
+
+## Historical Complexity
+
+Checks whether historical models remain understandable and maintainable.
+
+Examples:
+
+* State Explosion Risk
+* Event Ordering Risk
+
+---
+
+# Historical Coverage Gap
+
+## Category
+
+Timeline Integrity
 
 ## Description
 
-Required historical coverage is missing.
+A required historical period is not covered.
 
-## Example
+## Typical Symptoms
 
-Contract
-
-```text
-01.01 → 31.12
-```
-
-Customer
-
-```text
-01.03 → 31.12
-```
-
-## Detection
-
-Identify intervals where required source history does not exist.
+* Missing dimension history
+* Missing source records
+* Missing reporting periods
 
 ## Risks
 
@@ -97,420 +102,394 @@ Identify intervals where required source history does not exist.
 * Missing joins
 * Incomplete reporting
 
-## Severity
+## Related Patterns
 
-Medium
-
-## Related Pattern
-
-Dimension Completion
+* Dimension Completion
+* Relationship History
 
 ---
 
-# Validation Pattern 02 — Historical Overlap
+# Historical Overlap
+
+## Category
+
+Timeline Integrity
 
 ## Description
 
-Multiple records are active simultaneously when they should be mutually exclusive.
+Multiple historical records are active simultaneously when they should be mutually exclusive.
 
-## Detection
+## Typical Symptoms
 
-```text
-valid_from < other.valid_to
-AND
-other.valid_from < valid_to
-```
+* Overlapping SCD2 rows
+* Duplicate active states
+* Conflicting histories
 
 ## Risks
 
 * Ambiguous reporting
-* Duplicate facts
+* Double counting
 * Nondeterministic joins
 
-## Severity
+## Related Patterns
 
-High
-
-## Related Pattern
-
-State Modeling
+* State Modeling
 
 ---
 
-# Validation Pattern 03 — Historical Match Ambiguity
+# Missing Historical Match
+
+## Category
+
+Historical Alignment
 
 ## Description
 
-Multiple records satisfy temporal join conditions.
+A historical join produces no valid match.
 
-## Detection
+## Typical Symptoms
 
-```text
-Join produces > 1 valid match
-```
-
-## Risks
-
-* Duplicate reporting rows
-* Fact inflation
-* Incorrect aggregations
-
-## Severity
-
-High
-
-## Related Pattern
-
-Historical Match Ambiguity
-
----
-
-# Validation Pattern 04 — Missing Historical Match
-
-## Description
-
-A historical join cannot find a valid match.
-
-## Detection
-
-```text
-Join produces 0 matches
-```
-
-## Risks
-
-* Missing attributes
-* Missing reporting records
-
-## Severity
-
-Medium
-
-## Related Pattern
-
-Dimension Completion
-
----
-
-# Validation Pattern 05 — Snapshot Reproducibility Risk
-
-## Description
-
-Historical reports may change when rerun.
-
-## Detection Signals
-
-* Missing snapshot grain
-* Missing reporting date
-* Missing visibility timeline
-* Reconstructed history without versioning
-
-## Risks
-
-* Snapshot drift
-* Audit failure
-* Reporting inconsistencies
-
-## Severity
-
-High
-
-## Related Pattern
-
-Snapshot Reproducibility
-
----
-
-# Validation Pattern 06 — Dimension Completion Risk
-
-## Description
-
-Dimension history does not fully cover fact history.
-
-## Detection
-
-```text
-Fact interval not fully covered
-by dimension interval
-```
+* Fact without dimension
+* Unresolved relationship
+* Missing historical context
 
 ## Risks
 
 * Missing attributes
 * Incomplete reporting
-* Incorrect segmentation
+* Broken historical lineage
 
-## Severity
+## Related Patterns
 
-High
-
-## Related Pattern
-
-Dimension Completion
+* State-to-State Alignment
+* Dimension Completion
 
 ---
 
-# Validation Pattern 07 — Late Arriving Dimension Risk
+# Historical Match Ambiguity
+
+## Category
+
+Historical Alignment
 
 ## Description
 
-Facts exist before the required dimension history becomes available.
+A historical join produces multiple valid matches.
 
-## Detection Signals
+## Typical Symptoms
 
-* Fact starts before dimension
-* Missing historical dimension periods
-* Synthetic backfill logic detected
+* Two active dimension rows
+* Multiple valid relationship states
+* Duplicate join candidates
 
 ## Risks
 
-* Missing surrogate keys
-* Reporting instability
-* Incomplete dimensions
+* Fact inflation
+* Duplicate reporting rows
+* Nondeterministic results
 
-## Severity
+## Related Patterns
 
-Medium
-
-## Related Pattern
-
-Dimension Completion
+* State-to-State Alignment
 
 ---
 
-# Validation Pattern 08 — Historical Conformance Risk
+# Event Alignment Failure
+
+## Category
+
+Historical Alignment
 
 ## Description
 
-Multiple source systems disagree on history.
+An event cannot be mapped to exactly one historical state.
 
-## Detection Signals
+## Typical Symptoms
 
-* Conflicting timelines
-* Different effective dates
-* Identity mismatches
+* Event → no state
+* Event → multiple states
 
 ## Risks
 
-* Multiple versions of truth
-* Inconsistent reporting
+* Incorrect attribution
+* Invalid historical reporting
 
-## Severity
+## Related Patterns
 
-Medium
-
-## Related Pattern
-
-Historical Conformance
+* State-to-Event Alignment
 
 ---
 
-# Validation Pattern 09 — Visibility Lag
+# Snapshot Drift
+
+## Category
+
+Reporting Reliability
 
 ## Description
 
-The same business event becomes visible at different times across systems.
+A historical report changes when rerun.
 
-## Detection
+## Typical Symptoms
 
-```text
-visible_from differs significantly
-between systems
-```
+* Month-end reports differ
+* Historical KPIs change unexpectedly
+* Reconstructed history differs from original outputs
 
 ## Risks
 
-* Reporting inconsistencies
-* Data freshness issues
+* Audit failure
+* Loss of trust
+* Irreproducible reporting
 
-## Severity
+## Related Patterns
 
-Low
-
-## Related Pattern
-
-Historical Conformance
+* Snapshot Reproducibility
+* As-Known Reporting
 
 ---
 
-# Validation Pattern 10 — Duplicate Snapshot Records
+# Duplicate Snapshot Records
+
+## Category
+
+Reporting Reliability
 
 ## Description
 
 Multiple records exist for the same reporting grain.
 
-## Detection
+## Typical Symptoms
 
 ```text
 business_key
 +
 snapshot_date
 
-appears multiple times
+appears more than once
 ```
 
 ## Risks
 
 * Double counting
-* Reporting inflation
+* Incorrect aggregations
 
-## Severity
+## Related Patterns
 
-High
-
-## Related Pattern
-
-Snapshot Fact Construction
+* Snapshot Fact Modeling
 
 ---
 
-# Validation Pattern 11 — Event Alignment Failure
+# Reporting Coverage Gap
+
+## Category
+
+Reporting Reliability
 
 ## Description
 
-An event cannot be mapped to exactly one state.
+A reporting product cannot answer the required historical question.
 
-## Detection
+## Typical Symptoms
 
-```text
-Event → 0 matches
-Event → >1 matches
-```
+* Missing dimensions
+* Missing history
+* Missing reporting grain
 
 ## Risks
 
-* Incorrect event attribution
-* Reporting inconsistencies
+* Incomplete analytics
+* Incorrect business decisions
 
-## Severity
+## Related Patterns
 
-High
-
-## Related Pattern
-
-State ↔ Event Alignment
+* Snapshot Fact Modeling
+* Dimension Completion
 
 ---
 
-# Validation Pattern 12 — Identity Resolution Failure
+# Visibility Lag
+
+## Category
+
+Historical Synchronization
+
+## Description
+
+Information becomes visible significantly later than it becomes valid.
+
+## Typical Symptoms
+
+* Delayed source updates
+* Late-arriving records
+* Different visibility dates across systems
+
+## Risks
+
+* Inconsistent reporting
+* Data freshness concerns
+* Snapshot drift
+
+## Related Patterns
+
+* Bitemporal Modeling
+* Historical Conformance
+
+---
+
+# Historical Conformance Risk
+
+## Category
+
+Historical Synchronization
+
+## Description
+
+Multiple systems describe the same business reality differently.
+
+## Typical Symptoms
+
+* Conflicting timelines
+* Different effective dates
+* Different historical interpretations
+
+## Risks
+
+* Multiple versions of truth
+* Reconciliation effort
+* Reporting inconsistencies
+
+## Related Patterns
+
+* Historical Conformance
+* Identity Resolution
+
+---
+
+# Identity Resolution Failure
+
+## Category
+
+Historical Synchronization
 
 ## Description
 
 Multiple identifiers represent the same business entity.
 
-## Detection Signals
+## Typical Symptoms
 
-* Duplicate business entities
-* Conflicting surrogate keys
-* Multiple active identities
+* Duplicate customers
+* Duplicate contracts
+* Conflicting identities
 
 ## Risks
 
 * Double counting
 * Fragmented history
 
-## Severity
+## Related Patterns
 
-Medium
-
-## Related Pattern
-
-Identity Resolution
+* Identity Resolution
 
 ---
 
-# Validation Pattern 13 — Historical Backfill Risk
+# Event Ordering Risk
 
-## Description
+## Category
 
-Reconstructed history may differ from original history.
-
-## Detection Signals
-
-* Historical reload
-* CDC replay
-* Synthetic reconstruction
-
-## Risks
-
-* Historical inconsistencies
-* Lost history
-* Rebuild differences
-
-## Severity
-
-Medium
-
-## Related Pattern
-
-Historical Backfill
-
----
-
-# Validation Pattern 14 — Event Ordering Risk
+Historical Complexity
 
 ## Description
 
 Events are not ordered consistently.
 
-## Detection
+## Typical Symptoms
 
-```text
-event_timestamp decreases
-within the same entity
-```
+* Out-of-order events
+* Retroactive events
+* Timestamp inconsistencies
 
 ## Risks
 
 * Invalid state reconstruction
 * Incorrect reporting
 
-## Severity
+## Related Patterns
 
-Medium
-
-## Related Pattern
-
-Event Modeling
+* Event Modeling
+* Event Prioritization
 
 ---
 
-# Validation Pattern 15 — State Explosion Risk
+# State Explosion Risk
+
+## Category
+
+Historical Complexity
 
 ## Description
 
 Technical history contains excessive state fragmentation.
 
-## Detection Signals
+## Typical Symptoms
 
-* Very short intervals
-* Excessive state count
-* Frequent transitions
+* Thousands of tiny intervals
+* Excessive state transitions
+* Highly fragmented timelines
 
 ## Risks
 
-* Complex reporting
+* Difficult reporting
+* Poor explainability
 * Performance degradation
-* Difficult explainability
 
-## Severity
+## Related Patterns
 
-Low
+* State Reduction
 
-## Related Pattern
+---
 
-State Reduction
+# Historical Backfill Risk
+
+## Category
+
+Historical Complexity
+
+## Description
+
+Reconstructed history may differ from originally observed history.
+
+## Typical Symptoms
+
+* Historical reloads
+* CDC replay
+* Rebuilt dimensions
+* Migration projects
+
+## Risks
+
+* Historical inconsistencies
+* Snapshot drift
+* Audit concerns
+
+## Related Patterns
+
+* Historical Backfill
+* Historical Correction
 
 ---
 
 # Long-Term Vision
 
-Historical modeling quality can be assessed through a relatively small set of recurring validation patterns.
+Most historical data quality problems can be described using a relatively small set of recurring validation findings.
 
-These validation patterns should become reusable building blocks for:
+These findings provide the common language used by:
 
-* Advisor recommendations
-* Notebook reviews
-* Target table validation
-* Automated historical quality scoring
-* Explainable historical model assessments
+* Advisor
+* Model Review
+* Target Table Validation
+* Two Source Validation
+* Learn Pages
+* Historical Data Modeling Research
+
+The objective is not merely to detect technical issues, but to explain how historical models behave and where they are likely to fail.

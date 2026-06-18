@@ -88,7 +88,7 @@ export default function Home() {
                   marginBottom: 16,
                 }}
               >
-                HISTORICAL DATA ENGINEERING TOOLKIT
+                DESIGN • REVIEW • VALIDATE HISTORICAL DATA MODELS
               </div>
 
               <h1
