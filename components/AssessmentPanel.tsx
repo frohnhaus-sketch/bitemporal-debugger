@@ -146,7 +146,7 @@ export function AssessmentPanel({
 
   return (
     <>
-      <details open style={assessmentShellStyle}>
+      <details style={assessmentShellStyle}>
         <summary style={summaryStyle}>Historical Modeling Assessment</summary>
 
         <div style={assessmentBodyStyle}>
@@ -536,7 +536,10 @@ function getFindingSeverity(name: string) {
 
 const assessmentShellStyle: CSSProperties = {
   width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
   boxSizing: "border-box",
+  overflow: "hidden",
   background: "#ffffff",
   border: "1px solid #dbeafe",
   borderRadius: 18,
@@ -562,7 +565,7 @@ const assessmentBodyStyle: CSSProperties = {
 const primaryPatternStyle: CSSProperties = {
   position: "relative",
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
   gap: 18,
   alignItems: "center",
   padding: 24,
