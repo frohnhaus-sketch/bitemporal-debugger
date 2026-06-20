@@ -10,6 +10,7 @@ type TargetFinding = {
   severity: "low" | "medium" | "high";
   evidence: string[];
   recommendation: string;
+  assumptions?: string[];
 };
 
 type DetectedColumns = {
@@ -22,10 +23,29 @@ type DetectedColumns = {
   dimensionColumns: string[];
 };
 
+type IntervalEndSemantics = "exclusive" | "inclusive";
+type SnapshotMeaning =
+  | "period_end"
+  | "period_start"
+  | "reporting_timestamp"
+  | "none";
+type OpenEndedValue = "9999-12-31" | "null" | "custom" | "none";
+type CorrectionMode = "valid_time" | "bitemporal" | "published_snapshot";
+
+type HistoricalSemantics = {
+  validIntervalEnd: IntervalEndSemantics;
+  visibleIntervalEnd: IntervalEndSemantics;
+  snapshotMeaning: SnapshotMeaning;
+  openEndedValue: OpenEndedValue;
+  correctionMode: CorrectionMode;
+  detectedSignals: string[];
+};
+
 type TargetValidationResult = {
   rowCount: number;
   columns: string[];
   detectedColumns: DetectedColumns;
+  semantics: HistoricalSemantics;
   findings: TargetFinding[];
   qualitySummary: {
     label: string;
@@ -82,6 +102,9 @@ export function TargetTableValidationPanel() {
   const [input, setInput] = useState("");
   const [activeExampleId, setActiveExampleId] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
+  const [semanticsOverride, setSemanticsOverride] = useState<
+    Partial<HistoricalSemantics>
+  >({});
 
   function loadExampleValidation(
     example: (typeof TARGET_VALIDATION_EXAMPLES)[number],
@@ -123,8 +146,8 @@ export function TargetTableValidationPanel() {
 
   const result = useMemo(() => {
     if (!input.trim()) return null;
-    return validateTargetTable(input);
-  }, [input]);
+    return validateTargetTable(input, semanticsOverride);
+  }, [input, semanticsOverride]);
 
   useEffect(() => {
     if (!result) return;
@@ -166,6 +189,16 @@ export function TargetTableValidationPanel() {
       sessionStorage.removeItem("target_validation_scroll_to_result");
     }, 250);
   }, [result]);
+
+  useEffect(() => {
+    const keys = Object.keys(semanticsOverride);
+
+    if (keys.length === 0) return;
+
+    track("target_validation_semantics_overridden", {
+      overriddenFields: keys.join(","),
+    });
+  }, [semanticsOverride]);
 
   const requiresValidTime =
     !result ||
@@ -403,6 +436,191 @@ export function TargetTableValidationPanel() {
             </div>
           </div>
 
+          <div style={{ marginTop: 18 }}>
+            <SectionTitle>Historical semantics</SectionTitle>
+
+            <div
+              style={{
+                padding: 14,
+                borderRadius: 14,
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                marginBottom: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 900,
+                  color: "#0f172a",
+                  marginBottom: 4,
+                }}
+              >
+                Review the assumptions used for validation
+              </div>
+
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#64748b",
+                  lineHeight: 1.5,
+                }}
+              >
+                These settings describe how the target table should be
+                interpreted. The validator auto-detects them where possible, but
+                you can override them.
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                gap: 10,
+              }}
+            >
+              <SemanticSelect
+                label="Valid-time interval end"
+                value={result.semantics.validIntervalEnd}
+                options={[
+                  { value: "exclusive", label: "Exclusive [from, to)" },
+                  { value: "inclusive", label: "Inclusive [from, to]" },
+                ]}
+                onChange={(value) =>
+                  setSemanticsOverride((current) => ({
+                    ...current,
+                    validIntervalEnd: value as IntervalEndSemantics,
+                  }))
+                }
+              />
+
+              <SemanticSelect
+                label="Visible-time interval end"
+                value={result.semantics.visibleIntervalEnd}
+                options={[
+                  { value: "exclusive", label: "Exclusive [from, to)" },
+                  { value: "inclusive", label: "Inclusive [from, to]" },
+                ]}
+                onChange={(value) =>
+                  setSemanticsOverride((current) => ({
+                    ...current,
+                    visibleIntervalEnd: value as IntervalEndSemantics,
+                  }))
+                }
+              />
+
+              <SemanticSelect
+                label="Snapshot date means"
+                value={result.semantics.snapshotMeaning}
+                options={[
+                  { value: "period_end", label: "Period end" },
+                  { value: "period_start", label: "Period start" },
+                  {
+                    value: "reporting_timestamp",
+                    label: "Reporting timestamp",
+                  },
+                  { value: "none", label: "No snapshot" },
+                ]}
+                onChange={(value) =>
+                  setSemanticsOverride((current) => ({
+                    ...current,
+                    snapshotMeaning: value as SnapshotMeaning,
+                  }))
+                }
+              />
+
+              <SemanticSelect
+                label="Open-ended value"
+                value={result.semantics.openEndedValue}
+                options={[
+                  { value: "9999-12-31", label: "9999-12-31" },
+                  { value: "null", label: "NULL" },
+                  { value: "custom", label: "Custom" },
+                  { value: "none", label: "Not detected" },
+                ]}
+                onChange={(value) =>
+                  setSemanticsOverride((current) => ({
+                    ...current,
+                    openEndedValue: value as OpenEndedValue,
+                  }))
+                }
+              />
+
+              <SemanticSelect
+                label="Correction mode"
+                value={result.semantics.correctionMode}
+                options={[
+                  { value: "valid_time", label: "Valid-time only" },
+                  { value: "bitemporal", label: "As-known / bitemporal" },
+                  { value: "published_snapshot", label: "Published snapshot" },
+                ]}
+                onChange={(value) =>
+                  setSemanticsOverride((current) => ({
+                    ...current,
+                    correctionMode: value as CorrectionMode,
+                  }))
+                }
+              />
+            </div>
+
+            {Object.keys(semanticsOverride).length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSemanticsOverride({})}
+                style={{
+                  marginTop: 10,
+                  padding: "8px 12px",
+                  borderRadius: 10,
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#334155",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Reset to auto-detected semantics
+              </button>
+            )}
+
+            <div
+              style={{
+                marginTop: 10,
+                padding: 12,
+                borderRadius: 10,
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                color: "#1e40af",
+                fontSize: 13,
+                lineHeight: 1.5,
+                fontWeight: 700,
+              }}
+            >
+              Validation uses the selected historical semantics. Changing
+              interval semantics may change gap and overlap findings.
+            </div>
+
+            {result.semantics.detectedSignals.length > 0 && (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 12,
+                  borderRadius: 10,
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  color: "#475569",
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>Auto-detected signals:</strong>
+                {result.semantics.detectedSignals.map((signal) => (
+                  <div key={signal}>• {signal}</div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {result.findings.length > 0 ? (
             <div style={{ marginTop: 18 }}>
               <SectionTitle>Validation findings</SectionTitle>
@@ -466,7 +684,10 @@ export function TargetTableValidationPanel() {
   );
 }
 
-function validateTargetTable(rawInput: string): TargetValidationResult {
+function validateTargetTable(
+  rawInput: string,
+  semanticsOverride: Partial<HistoricalSemantics> = {},
+): TargetValidationResult {
   const parsed = parseCSV(rawInput, { maxColumns: "all" });
   const rows = parsed.rows;
   const columns = parsed.headerMappings.map((mapping) => mapping.normalized);
@@ -528,6 +749,18 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
     dimensionColumns: detectDimensionColumns(columns),
   };
 
+  const detectedSemantics = detectHistoricalSemantics(
+    rows,
+    columns,
+    detectedColumns,
+  );
+
+  const semantics: HistoricalSemantics = {
+    ...detectedSemantics,
+    ...semanticsOverride,
+    detectedSignals: detectedSemantics.detectedSignals,
+  };
+
   const sourceSystemColumn = detectColumn(columns, [
     "source_system",
     "source",
@@ -564,7 +797,7 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
         "Paste a tabular result including a header row and at least one data row.",
     });
 
-    return buildResult(rows, columns, detectedColumns, findings);
+    return buildResult(rows, columns, detectedColumns, semantics, findings);
   }
 
   if (!detectedColumns.businessKey) {
@@ -638,6 +871,7 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
           effectiveBusinessKey,
           detectedColumns.validFrom,
           detectedColumns.validTo,
+          semantics,
         ),
       );
     }
@@ -649,6 +883,7 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
           effectiveBusinessKey,
           detectedColumns.validFrom,
           detectedColumns.validTo,
+          semantics,
         ),
       );
     }
@@ -979,13 +1214,14 @@ function validateTargetTable(rawInput: string): TargetValidationResult {
     );
   }
 
-  return buildResult(rows, columns, detectedColumns, findings);
+  return buildResult(rows, columns, detectedColumns, semantics, findings);
 }
 
 function buildResult(
   rows: any[],
   columns: string[],
   detectedColumns: DetectedColumns,
+  semantics: HistoricalSemantics,
   findings: TargetFinding[],
 ): TargetValidationResult {
   const uniqueFindings = uniqueFindingsById(findings);
@@ -1024,9 +1260,113 @@ function buildResult(
     rowCount: rows.length,
     columns,
     detectedColumns,
+    semantics,
     findings: uniqueFindings,
     qualitySummary,
   };
+}
+
+function detectHistoricalSemantics(
+  rows: any[],
+  columns: string[],
+  detectedColumns: DetectedColumns,
+): HistoricalSemantics {
+  const detectedSignals: string[] = [];
+
+  const hasValidTime = Boolean(
+    detectedColumns.validFrom && detectedColumns.validTo,
+  );
+
+  const hasVisibleTime = Boolean(
+    detectedColumns.visibleFrom && detectedColumns.visibleTo,
+  );
+
+  const hasSnapshotDate = Boolean(detectedColumns.snapshotDate);
+
+  const hasPublishedAt = columns.some((column) =>
+    [
+      "published_at",
+      "publication_time",
+      "published_time",
+      "report_published_at",
+    ].includes(column),
+  );
+
+  const hasSnapshotVersion = columns.some((column) =>
+    [
+      "snapshot_version",
+      "reporting_run_id",
+      "run_id",
+      "freeze_date",
+      "publication_version",
+    ].includes(column),
+  );
+
+  const has9999OpenEnd = rows.some((row) =>
+    Object.values(row).some((value) =>
+      String(value ?? "")
+        .trim()
+        .startsWith("9999-12-31"),
+    ),
+  );
+
+  const hasNullOpenEnd =
+    detectedColumns.validTo &&
+    rows.some((row) => isMissingValue(row[detectedColumns.validTo!]));
+
+  if (hasValidTime) detectedSignals.push("Valid-time interval detected.");
+  if (hasVisibleTime) detectedSignals.push("Visible-time interval detected.");
+  if (hasSnapshotDate) detectedSignals.push("Snapshot date detected.");
+  if (hasPublishedAt || hasSnapshotVersion) {
+    detectedSignals.push("Publication or freeze metadata detected.");
+  }
+  if (has9999OpenEnd) detectedSignals.push("9999-12-31 open end detected.");
+  if (hasNullOpenEnd) detectedSignals.push("NULL open end detected.");
+
+  const openEndedValue: OpenEndedValue = has9999OpenEnd
+    ? "9999-12-31"
+    : hasNullOpenEnd
+      ? "null"
+      : "none";
+
+  const snapshotMeaning: SnapshotMeaning = hasSnapshotDate
+    ? inferSnapshotMeaning(detectedColumns.snapshotDate!)
+    : "none";
+
+  const correctionMode: CorrectionMode =
+    hasSnapshotDate && (hasPublishedAt || hasSnapshotVersion)
+      ? "published_snapshot"
+      : hasVisibleTime
+        ? "bitemporal"
+        : "valid_time";
+
+  return {
+    validIntervalEnd: "exclusive",
+    visibleIntervalEnd: "exclusive",
+    snapshotMeaning,
+    openEndedValue,
+    correctionMode,
+    detectedSignals,
+  };
+}
+
+function inferSnapshotMeaning(snapshotColumn: string): SnapshotMeaning {
+  if (
+    [
+      "month_end",
+      "snapshot_date",
+      "reference_date",
+      "bk_reference_date",
+    ].includes(snapshotColumn)
+  ) {
+    return "period_end";
+  }
+
+  if (["reporting_date", "as_of_date", "stichtag"].includes(snapshotColumn)) {
+    return "reporting_timestamp";
+  }
+
+  return "period_end";
 }
 
 function detectDuplicateIntervals(
@@ -1094,6 +1434,10 @@ function detectSnapshotDuplicates(
         `${duplicates.length} duplicate business-key / snapshot-date combination${
           duplicates.length === 1 ? "" : "s"
         } found.`,
+      ],
+      assumptions: [
+        "snapshot_date is interpreted as part of the target table grain.",
+        "The expected grain is one row per business key and snapshot date unless another grain is explicitly modeled.",
       ],
       recommendation:
         "A snapshot fact table should usually have one row per business key and snapshot date unless another grain is explicitly defined.",
@@ -1205,6 +1549,41 @@ function sameDay(a: Date, b: Date) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+function intervalsOverlap(
+  leftFrom: Date,
+  leftTo: Date,
+  rightFrom: Date,
+  rightTo: Date,
+  intervalEnd: IntervalEndSemantics,
+) {
+  if (intervalEnd === "exclusive") {
+    return (
+      leftFrom.getTime() < rightTo.getTime() &&
+      rightFrom.getTime() < leftTo.getTime()
+    );
+  }
+
+  return (
+    leftFrom.getTime() <= rightTo.getTime() &&
+    rightFrom.getTime() <= leftTo.getTime()
+  );
+}
+
+function hasIntervalGap(
+  previousTo: Date,
+  nextFrom: Date,
+  intervalEnd: IntervalEndSemantics,
+) {
+  if (intervalEnd === "exclusive") {
+    return previousTo.getTime() < nextFrom.getTime();
+  }
+
+  const nextAllowed = new Date(previousTo);
+  nextAllowed.setDate(nextAllowed.getDate() + 1);
+
+  return nextAllowed.getTime() < nextFrom.getTime();
 }
 
 function isSameOrNextDay(previousTo: Date, nextFrom: Date) {
@@ -1359,6 +1738,10 @@ function detectSnapshotReproducibilityRisk(
       title: "Snapshot reproducibility risk detected",
       severity: "high",
       evidence,
+      assumptions: [
+        "snapshot_date indicates a published or reportable snapshot.",
+        "Without visible-time or publication metadata, old reports may not be reproducible after corrections.",
+      ],
       recommendation:
         "If published reports must be reproducible, include visible-time information or persist the exact snapshot state used at publication time. Otherwise, rebuilding old reports may silently use later corrections or future knowledge.",
     },
@@ -1698,6 +2081,7 @@ function detectValidTimeOverlaps(
   keyColumn: string,
   validFromColumn: string,
   validToColumn: string,
+  semantics: HistoricalSemantics,
 ): TargetFinding[] {
   const byKey = groupRowsByKey(rows, keyColumn);
   let overlapCount = 0;
@@ -1712,7 +2096,15 @@ function detectValidTimeOverlaps(
       .sort((a, b) => a.from!.getTime() - b.from!.getTime());
 
     for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i].from!.getTime() < sorted[i - 1].to!.getTime()) {
+      if (
+        intervalsOverlap(
+          sorted[i - 1].from!,
+          sorted[i - 1].to!,
+          sorted[i].from!,
+          sorted[i].to!,
+          semantics.validIntervalEnd,
+        )
+      ) {
         overlapCount += 1;
       }
     }
@@ -1730,6 +2122,12 @@ function detectValidTimeOverlaps(
           overlapCount === 1 ? "" : "s"
         } found.`,
       ],
+      assumptions: [
+        semantics.validIntervalEnd === "exclusive"
+          ? "valid_to is treated as exclusive. Touching intervals such as [2024-01-01, 2024-02-01) and [2024-02-01, 2024-03-01) do not overlap."
+          : "valid_to is treated as inclusive. Touching intervals with the same boundary date are considered overlapping.",
+        "Overlaps are checked within each detected business key.",
+      ],
       recommendation:
         "Review whether overlapping intervals are expected. If not, apply winner selection, interval splitting or source correction logic.",
     },
@@ -1741,6 +2139,7 @@ function detectValidTimeGaps(
   keyColumn: string,
   validFromColumn: string,
   validToColumn: string,
+  semantics: HistoricalSemantics,
 ): TargetFinding[] {
   const byKey = groupRowsByKey(rows, keyColumn);
   let gapCount = 0;
@@ -1755,7 +2154,13 @@ function detectValidTimeGaps(
       .sort((a, b) => a.from!.getTime() - b.from!.getTime());
 
     for (let i = 1; i < sorted.length; i++) {
-      if (!isSameOrNextDay(sorted[i - 1].to!, sorted[i].from!)) {
+      if (
+        hasIntervalGap(
+          sorted[i - 1].to!,
+          sorted[i].from!,
+          semantics.validIntervalEnd,
+        )
+      ) {
         gapCount += 1;
       }
     }
@@ -1770,6 +2175,11 @@ function detectValidTimeGaps(
       severity: "medium",
       evidence: [
         `${gapCount} gap${gapCount === 1 ? "" : "s"} between intervals found.`,
+      ],
+      assumptions: [
+        semantics.validIntervalEnd === "exclusive"
+          ? "valid_to is treated as exclusive. Intervals are continuous when valid_to equals the next valid_from."
+          : "valid_to is treated as inclusive. Intervals are continuous when the next valid_from is the next calendar day.",
       ],
       recommendation:
         "Check whether gaps are expected. For continuous state histories, gaps may indicate missing source records or incomplete dimension coverage.",
@@ -1986,6 +2396,101 @@ function ColumnCard({
   );
 }
 
+function formatSnapshotMeaning(value: SnapshotMeaning) {
+  switch (value) {
+    case "period_end":
+      return "Period end";
+    case "period_start":
+      return "Period start";
+    case "reporting_timestamp":
+      return "Reporting timestamp";
+    case "none":
+      return "No snapshot";
+  }
+}
+
+function formatOpenEndedValue(value: OpenEndedValue) {
+  switch (value) {
+    case "9999-12-31":
+      return "9999-12-31";
+    case "null":
+      return "NULL";
+    case "custom":
+      return "Custom";
+    case "none":
+      return "Not detected";
+  }
+}
+
+function formatCorrectionMode(value: CorrectionMode) {
+  switch (value) {
+    case "valid_time":
+      return "Valid-time only";
+    case "bitemporal":
+      return "As-known / bitemporal";
+    case "published_snapshot":
+      return "Published snapshot";
+  }
+}
+
+function SemanticSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label
+      style={{
+        display: "block",
+        padding: 12,
+        borderRadius: 12,
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 800,
+          textTransform: "uppercase",
+          color: "#64748b",
+          letterSpacing: 0.5,
+          marginBottom: 6,
+        }}
+      >
+        {label}
+      </div>
+
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        style={{
+          width: "100%",
+          padding: "8px 10px",
+          borderRadius: 8,
+          border: "1px solid #cbd5e1",
+          background: "#f8fafc",
+          color: "#0f172a",
+          fontSize: 13,
+          fontWeight: 700,
+        }}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function FindingCard({ finding }: { finding: TargetFinding }) {
   const accent =
     finding.severity === "high"
@@ -2029,6 +2534,26 @@ function FindingCard({ finding }: { finding: TargetFinding }) {
 
       <div style={{ fontWeight: 900, marginBottom: 6 }}>{finding.title}</div>
 
+      {finding.assumptions && finding.assumptions.length > 0 && (
+        <div
+          style={{
+            display: "inline-block",
+            marginBottom: 8,
+            padding: "3px 8px",
+            borderRadius: 999,
+            background: "#ffffff",
+            border: "1px solid rgba(148, 163, 184, 0.45)",
+            color: "#475569",
+            fontSize: 11,
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: 0.4,
+          }}
+        >
+          Semantics-sensitive finding
+        </div>
+      )}
+
       <div
         style={{
           color: "#475569",
@@ -2041,6 +2566,26 @@ function FindingCard({ finding }: { finding: TargetFinding }) {
           <div key={item}>• {item}</div>
         ))}
       </div>
+
+      {finding.assumptions && finding.assumptions.length > 0 && (
+        <div
+          style={{
+            marginBottom: 8,
+            padding: 10,
+            borderRadius: 10,
+            background: "#ffffff",
+            border: "1px solid rgba(148, 163, 184, 0.35)",
+            color: "#475569",
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          <strong>Assumptions:</strong>
+          {finding.assumptions.map((assumption) => (
+            <div key={assumption}>• {assumption}</div>
+          ))}
+        </div>
+      )}
 
       <div style={{ color: "#0f172a", fontSize: 14, lineHeight: 1.5 }}>
         <strong>Recommendation:</strong> {finding.recommendation}

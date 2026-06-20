@@ -74,8 +74,19 @@ export default function HistoricalCorrectionPage() {
             ← Back to Pattern Catalog
           </a>
 
-          <div>
-            <div style={badgeStyle}>Interactive Pattern</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={badgeStyle}>Composite Pattern</div>
+
+            <div
+              style={{
+                ...badgeStyle,
+                background: "#fef3c7",
+                border: "1px solid #fde68a",
+                color: "#92400e",
+              }}
+            >
+              Interactive Example
+            </div>
           </div>
 
           <h1 style={h1Style}>Historical Correction</h1>
@@ -220,11 +231,13 @@ function DarkExampleCard() {
       <div style={darkEyebrowStyle}>Interactive Pattern</div>
 
       <h2 style={darkTitleStyle}>
-        A January report shows Retail. In March, a correction says January should have been Premium.
+        A January report shows Retail. In March, a correction says January
+        should have been Premium.
       </h2>
 
       <p style={darkIntroTextStyle}>
-        Choose how the model handles the correction. Each strategy answers a different reporting question.
+        Choose how the model handles the correction. Each strategy answers a
+        different reporting question.
       </p>
 
       <div style={interactiveGridStyle}>
@@ -312,8 +325,8 @@ function DarkExampleCard() {
         <div style={exampleNoteLabelStyle}>Reporting question</div>
 
         <p style={exampleNoteTextStyle}>
-          Should a rebuilt January report show Retail because that was known in January,
-          or Premium because that is the corrected business truth?
+          Should a rebuilt January report show Retail because that was known in
+          January, or Premium because that is the corrected business truth?
         </p>
       </div>
     </section>

@@ -74,6 +74,7 @@ const PATTERN_ORDER = [
   "Historical Correction",
   "Dimension Completion",
   "Bitemporal Modeling",
+  "Publication-Time Modeling",
   "Snapshot Reproducibility",
   "Event Prioritization",
   "CDC History Modeling",
@@ -115,6 +116,7 @@ const VALIDATION_ORDER = [
   "Snapshot reproducibility",
   "Snapshot completeness validation",
   "One row per entity per snapshot",
+  "Publication-time validation",
 ];
 
 const COMMUNITY_EVIDENCE: Record<string, CommunityEvidence> = {
@@ -206,17 +208,30 @@ const COMMUNITY_EVIDENCE: Record<string, CommunityEvidence> = {
     summary:
       "Historical records may change after reporting periods were already produced.",
   },
+
+  "Publication-Time Modeling": {
+    pattern: "Publication-Time Modeling",
+    priority: "HIGH",
+    observedIn: [
+      "Published reports",
+      "Frozen snapshots",
+      "Regulatory submissions",
+      "Restatements",
+    ],
+    summary:
+      "Teams need publication time when corrected history must not silently rewrite outputs that were already published.",
+  },
 };
 
 export function generateAdvisorBlueprint(
-  answers: AdvisorAnswers
+  answers: AdvisorAnswers,
 ): AdvisorBlueprint {
   const architecture: string[] = [];
   const operations: string[] = [];
   const patterns: string[] = [];
   const engineeringChallenges: string[] = [];
   const modelingPatterns: string[] = [];
-  const engineeringPatterns: string[] = [];  
+  const engineeringPatterns: string[] = [];
   const validationChecklist: string[] = [];
   const notebookStructure: string[] = [
     "01_load_sources",
@@ -244,7 +259,9 @@ export function generateAdvisorBlueprint(
     architecture.push("Point-in-time historical query layer");
     operations.push("Apply valid-time and visible-time filtering");
     patterns.push("State Modeling");
-    validationChecklist.push("Validate as-of results for selected reporting dates");
+    validationChecklist.push(
+      "Validate as-of results for selected reporting dates",
+    );
   }
 
   if (answers.reportingGoal === "SNAPSHOT") {
@@ -257,15 +274,12 @@ export function generateAdvisorBlueprint(
     patterns.push("Snapshot Reproducibility");
     validationChecklist.push("Check one row per entity and snapshot date");
     notebookStructure.push("07_generate_month_end_snapshots");
-    risks.push(
-      "Snapshot drift",
-      "Missing snapshot coverage"
-    );
+    risks.push("Snapshot drift", "Missing snapshot coverage");
 
     validationChecks.push(
       "Snapshot reproducibility",
       "One row per entity per snapshot",
-      "Snapshot completeness validation"
+      "Snapshot completeness validation",
     );
   }
 
@@ -284,7 +298,9 @@ export function generateAdvisorBlueprint(
     architecture.push("Event-centric historical fact model");
     operations.push("Normalize and prioritize business events");
     patterns.push("Event Modeling", "Event Prioritization");
-    validationChecklist.push("Check event ordering and duplicate event handling");
+    validationChecklist.push(
+      "Check event ordering and duplicate event handling",
+    );
     risks.push("Duplicate events", "Incorrect event ordering");
     validationChecks.push("Event sequencing", "Duplicate event detection");
   }
@@ -294,11 +310,13 @@ export function generateAdvisorBlueprint(
     architecture.push("Bitemporal audit model");
     operations.push("Preserve business validity and technical visibility");
     patterns.push("Historical Correction", "CDC History Modeling");
-    validationChecklist.push("Check that corrected history remains reproducible");
+    validationChecklist.push(
+      "Check that corrected history remains reproducible",
+    );
     risks.push("Lost correction history", "Non-reproducible audit results");
     validationChecks.push(
       "Visible-time validation",
-      "Historical correction validation"
+      "Historical correction validation",
     );
   }
 
@@ -313,7 +331,9 @@ export function generateAdvisorBlueprint(
   if (answers.sourceTypes.includes("Events")) {
     patterns.push("Event Modeling");
     operations.push("Model business events as point-in-time records");
-    validationChecklist.push("Check event ordering and duplicate event handling");
+    validationChecklist.push(
+      "Check event ordering and duplicate event handling",
+    );
     risks.push("Duplicate events", "Incorrect event ordering");
     validationChecks.push("Event sequencing", "Duplicate event detection");
   }
@@ -322,15 +342,21 @@ export function generateAdvisorBlueprint(
     answers.sourceTypes.includes("Events") &&
     answers.sourceTypes.includes("State Records")
   ) {
-    operations.push("Align business events to the relevant state at reporting time");
+    operations.push(
+      "Align business events to the relevant state at reporting time",
+    );
     patterns.push("State ↔ Event Alignment");
-    validationChecklist.push("Check that each event maps to the expected state");
+    validationChecklist.push(
+      "Check that each event maps to the expected state",
+    );
     risks.push("Event-to-state mismatch");
     validationChecks.push("Event alignment validation");
   }
 
   if (answers.sourceTypes.includes("Change Log / CDC")) {
-    operations.push("Reconstruct historical state from change log / CDC records");
+    operations.push(
+      "Reconstruct historical state from change log / CDC records",
+    );
     patterns.push("CDC History Modeling");
     validationChecklist.push("Validate ordering of changes per business key");
   }
@@ -353,7 +379,22 @@ export function generateAdvisorBlueprint(
     patterns.push("Historical Correction");
     validationChecklist.push("Validate visible_from / visible_to intervals");
     risks.push("Lost correction history");
-    validationChecks.push("Visible-time validation", "Historical correction validation");
+    validationChecks.push(
+      "Visible-time validation",
+      "Historical correction validation",
+    );
+  }
+
+  if (
+    answers.historyCorrected === "YES" &&
+    (answers.reportingGoal === "SNAPSHOT" || answers.reportingGoal === "AUDIT")
+  ) {
+    operations.push("Track when reports, snapshots or outputs were published");
+    patterns.push("Publication-Time Modeling");
+    validationChecklist.push(
+      "Validate published_at, snapshot_version or reporting_run_id behavior",
+    );
+    validationChecks.push("Publication-time validation");
   }
 
   if (answers.multipleSystems === "YES") {
@@ -364,7 +405,7 @@ export function generateAdvisorBlueprint(
     risks.push("Identity mismatch", "Cross-system timeline drift");
     validationChecks.push(
       "Identity resolution validation",
-      "Cross-system conformance"
+      "Cross-system conformance",
     );
   }
 
@@ -372,7 +413,9 @@ export function generateAdvisorBlueprint(
     architecture.push("Historized relationship bridge");
     operations.push("Build historized relationship bridge");
     patterns.push("Relationship History");
-    validationChecklist.push("Check relationship changes against snapshot dates");
+    validationChecklist.push(
+      "Check relationship changes against snapshot dates",
+    );
     risks.push("Incorrect historical relationships");
     validationChecks.push("Relationship history validation");
   }
@@ -405,7 +448,7 @@ export function generateAdvisorBlueprint(
     operations.push("Apply valid-time and visible-time logic to attributes");
     patterns.push("Bitemporal Modeling", "Snapshot Reproducibility");
     validationChecklist.push(
-      "Check reproducibility of attribute values per as-of date"
+      "Check reproducibility of attribute values per as-of date",
     );
 
     validationChecks.push("Bitemporal reproducibility validation");
@@ -431,7 +474,7 @@ export function generateAdvisorBlueprint(
       "Dimension Completion",
       "Historical Conformance",
       "Relationship History",
-      "State ↔ Event Alignment"
+      "State ↔ Event Alignment",
     );
 
     risks.push(
@@ -442,7 +485,7 @@ export function generateAdvisorBlueprint(
       "Lost correction history",
       "Identity mismatch",
       "Cross-system timeline drift",
-      "Incorrect historical relationships"
+      "Incorrect historical relationships",
     );
 
     validationChecks.push(
@@ -453,7 +496,7 @@ export function generateAdvisorBlueprint(
       "Historical correction validation",
       "Identity resolution validation",
       "Cross-system conformance",
-      "Relationship history validation"
+      "Relationship history validation",
     );
   }
 
@@ -461,17 +504,17 @@ export function generateAdvisorBlueprint(
 
   const uniqueEngineeringChallenges = sortByPreferredOrder(
     unique([...engineeringChallenges, ...categorized.engineeringChallenges]),
-    CHALLENGE_ORDER
+    CHALLENGE_ORDER,
   ).slice(0, 5);
 
   const uniqueModelingPatterns = sortByPreferredOrder(
     unique([...modelingPatterns, ...categorized.modelingPatterns]),
-    MODELING_PATTERN_ORDER
+    MODELING_PATTERN_ORDER,
   ).slice(0, 6);
 
   const uniqueEngineeringPatterns = sortByPreferredOrder(
     unique([...engineeringPatterns, ...categorized.engineeringPatterns]),
-    ENGINEERING_PATTERN_ORDER
+    ENGINEERING_PATTERN_ORDER,
   ).slice(0, 4);
 
   const uniquePatterns = [
@@ -483,7 +526,7 @@ export function generateAdvisorBlueprint(
 
   const uniqueValidationChecks = sortByPreferredOrder(
     unique(validationChecks),
-    VALIDATION_ORDER
+    VALIDATION_ORDER,
   );
 
   const communityEvidence = uniquePatterns
@@ -520,6 +563,7 @@ const MODELING_PATTERN_ORDER = [
   "State Modeling",
   "Event Modeling",
   "Bitemporal Modeling",
+  "Publication-Time Modeling",
   "SCD2 vs Bitemporal Modeling",
   "State ↔ State Alignment",
   "State ↔ Event Alignment",
@@ -641,7 +685,7 @@ function isBrokenAdvisorPattern(pattern: string) {
 
 export function generateAdvisorMarkdown(
   answers: AdvisorAnswers,
-  blueprint: AdvisorBlueprint
+  blueprint: AdvisorBlueprint,
 ) {
   return `# Historical Modeling Recommendation
 
@@ -733,7 +777,7 @@ ${item.summary}
 
 Observed in:
 
-${toMarkdownList(item.observedIn)}`
+${toMarkdownList(item.observedIn)}`,
     )
     .join("\n\n");
 }
@@ -746,35 +790,35 @@ function toMarkdownList(items: string[]) {
 
 function generateModelingObjective(
   answers: AdvisorAnswers,
-  blueprint: AdvisorBlueprint
+  blueprint: AdvisorBlueprint,
 ) {
   const goals: string[] = [];
 
   if (answers.reportingGoal === "SNAPSHOT") {
     goals.push(
       "produce reproducible reporting snapshots",
-      "keep one consistent reporting view per snapshot date"
+      "keep one consistent reporting view per snapshot date",
     );
   }
 
   if (answers.reportingGoal === "POINT_IN_TIME") {
     goals.push(
       "support point-in-time reporting",
-      "return the correct historical state for a selected reporting date"
+      "return the correct historical state for a selected reporting date",
     );
   }
 
   if (answers.reportingGoal === "EVENT") {
     goals.push(
       "produce an event-oriented reporting product",
-      "preserve and interpret business events"
+      "preserve and interpret business events",
     );
   }
 
   if (answers.reportingGoal === "AUDIT") {
     goals.push(
       "preserve historical corrections",
-      "support auditability and reproducibility"
+      "support auditability and reproducibility",
     );
   }
 
@@ -795,7 +839,9 @@ function generateModelingObjective(
   }
 
   if (answers.historizedDimensions === "BITEMPORAL") {
-    goals.push("attach attributes as they were known at the reporting snapshot");
+    goals.push(
+      "attach attributes as they were known at the reporting snapshot",
+    );
   }
 
   if (goals.length === 0) {
@@ -813,7 +859,7 @@ function generateGroupedOperationsMarkdown(operations: string[]) {
       "Model source",
       "Reconstruct historical state",
       "Attach stable lookup",
-    ])
+    ]),
   );
 
   const historicalAlignment = operations.filter((operation) =>
@@ -823,7 +869,7 @@ function generateGroupedOperationsMarkdown(operations: string[]) {
       "Conform identities",
       "Build historized relationship",
       "Track when historical corrections",
-    ])
+    ]),
   );
 
   const productBuild = operations.filter((operation) =>
@@ -834,7 +880,7 @@ function generateGroupedOperationsMarkdown(operations: string[]) {
       "Normalize and prioritize",
       "Apply valid-time",
       "Preserve business validity",
-    ])
+    ]),
   );
 
   const used = new Set([
@@ -1047,7 +1093,7 @@ Recommended checks:
   - month-end or business cut-off logic
   - late-arriving data handling
   - rerun behavior
-  - expected row count per snapshot`
+  - expected row count per snapshot`,
     );
   }
 
@@ -1064,7 +1110,7 @@ Check:
 - missing dimension matches
 - ambiguous dimension matches
 - valid-time alignment
-- visible-time alignment if bitemporal`
+- visible-time alignment if bitemporal`,
     );
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { track } from "@/lib/analytics";
 
 type PatternCategory = "challenge" | "modeling" | "engineering";
+type PatternKind = "elementary" | "composite" | "engineering" | "challenge";
 
 type PatternItem = {
   name: string;
@@ -12,6 +13,7 @@ type PatternItem = {
   href?: string;
   interactive?: boolean;
   category: PatternCategory;
+  kind?: PatternKind;
 };
 
 const PATTERN_GROUPS: {
@@ -21,53 +23,9 @@ const PATTERN_GROUPS: {
   patterns: PatternItem[];
 }[] = [
   {
-    title: "Engineering Challenges",
+    title: "Elementary Patterns",
     description:
-      "Historical modeling problems, risks and validation findings engineers need to detect and explain.",
-    category: "challenge",
-    patterns: [
-      {
-        name: "Historical Coverage Gap",
-        text: "Occurs when required history is missing for a reporting period.",
-        examples: ["Missing dimension row", "Uncovered fact interval"],
-        href: "/learn/historical-coverage-gap",
-        interactive: true,
-        category: "challenge",
-      },
-      {
-        name: "Historical Overlap",
-        text: "Occurs when multiple records are active at the same time.",
-        examples: ["Overlapping SCD2 rows", "Ambiguous current state"],
-        href: "/learn/historical-overlap",
-        interactive: true,
-        category: "challenge",
-      },
-      {
-        name: "Historical Match Ambiguity",
-        text: "Occurs when multiple historical records satisfy the same temporal join.",
-        examples: [
-          "Duplicate fact rows",
-          "Join explosion",
-          "Multiple valid matches",
-        ],
-        href: "/learn/historical-match-ambiguity",
-        interactive: true,
-        category: "challenge",
-      },
-      {
-        name: "Snapshot Reproducibility Risk",
-        text: "Occurs when reports cannot be reproduced for the same reporting date.",
-        examples: ["Month-end snapshots", "Audit reports", "Restatements"],
-        href: "/learn/snapshot-reproducibility",
-        interactive: true,
-        category: "challenge",
-      },
-    ],
-  },
-  {
-    title: "Modeling Patterns",
-    description:
-      "Target modeling approaches for historized sources, dimensions, relationships and reporting models.",
+      "Fundamental historical modeling building blocks such as state, event, bitemporal and publication-time modeling.",
     category: "modeling",
     patterns: [
       {
@@ -76,6 +34,7 @@ const PATTERN_GROUPS: {
         examples: ["Customer", "Contract", "Policy", "Product"],
         href: "/learn/state-modeling",
         category: "modeling",
+        kind: "elementary",
       },
       {
         name: "Event Modeling",
@@ -83,6 +42,7 @@ const PATTERN_GROUPS: {
         examples: ["Order created", "Claim filed", "Payment received"],
         href: "/learn/event-modeling",
         category: "modeling",
+        kind: "elementary",
       },
       {
         name: "Bitemporal Modeling",
@@ -94,15 +54,29 @@ const PATTERN_GROUPS: {
         ],
         href: "/learn/bitemporal-modeling",
         category: "modeling",
+        kind: "elementary",
       },
       {
-        name: "Tritemporal Modeling",
-        text: "Separates valid time, visibility time and publication time when facts become true, known and externally published at different moments.",
-        examples: ["Valid time", "Visibility time", "Publication time"],
-        href: "/learn/tritemporal-modeling",
+        name: "Publication-Time Modeling",
+        text: "Also known as tritemporal modeling. Separates valid time, visibility time and publication time to answer what was true, what was known and what was officially published.",
+        examples: [
+          "Published reports",
+          "Regulatory submissions",
+          "Snapshot freezes",
+        ],
+        href: "/learn/publication-time-modeling",
         interactive: true,
         category: "modeling",
+        kind: "elementary",
       },
+    ],
+  },
+  {
+    title: "Composite Patterns",
+    description:
+      "Higher-level historical modeling solutions built from multiple elementary patterns.",
+    category: "modeling",
+    patterns: [
       {
         name: "SCD2 vs Bitemporal Modeling",
         text: "Compares valid-time-only history with models that also preserve when information became known.",
@@ -110,6 +84,7 @@ const PATTERN_GROUPS: {
         href: "/learn/scd2-vs-bitemporal",
         interactive: true,
         category: "modeling",
+        kind: "composite",
       },
       {
         name: "State ↔ State Alignment",
@@ -118,6 +93,7 @@ const PATTERN_GROUPS: {
         href: "/learn/state-state-alignment",
         interactive: true,
         category: "modeling",
+        kind: "composite",
       },
       {
         name: "State ↔ Event Alignment",
@@ -125,6 +101,7 @@ const PATTERN_GROUPS: {
         examples: ["Claim ↔ Policy", "Mutation ↔ Contract"],
         href: "/learn/state-event-alignment",
         category: "modeling",
+        kind: "composite",
       },
       {
         name: "Historical Conformance",
@@ -133,6 +110,7 @@ const PATTERN_GROUPS: {
         href: "/learn/historical-conformance",
         interactive: true,
         category: "modeling",
+        kind: "composite",
       },
       {
         name: "Dimension Completion",
@@ -141,6 +119,7 @@ const PATTERN_GROUPS: {
         href: "/learn/dimension-completion",
         interactive: true,
         category: "modeling",
+        kind: "composite",
       },
       {
         name: "Relationship History",
@@ -149,6 +128,7 @@ const PATTERN_GROUPS: {
         href: "/learn/relationship-history",
         interactive: true,
         category: "modeling",
+        kind: "composite",
       },
       {
         name: "Identity Resolution",
@@ -156,6 +136,7 @@ const PATTERN_GROUPS: {
         examples: ["Customer merge", "Contract migration"],
         href: "/learn/identity-resolution",
         category: "modeling",
+        kind: "composite",
       },
       {
         name: "Snapshot Fact Modeling",
@@ -167,6 +148,16 @@ const PATTERN_GROUPS: {
         ],
         href: "/learn/snapshot-fact-modeling",
         category: "modeling",
+        kind: "composite",
+      },
+      {
+        name: "Snapshot Reproducibility",
+        text: "Ensures reports can be reproduced for the same reporting date.",
+        examples: ["Month-end snapshots", "Audit reports", "Restatements"],
+        href: "/learn/snapshot-reproducibility",
+        interactive: true,
+        category: "modeling",
+        kind: "composite",
       },
       {
         name: "As-Known Reporting",
@@ -174,6 +165,7 @@ const PATTERN_GROUPS: {
         examples: ["Visible time", "Audit reports", "As-of knowledge"],
         href: "/learn/as-known-reporting",
         category: "modeling",
+        kind: "composite",
       },
       {
         name: "Historical Correction",
@@ -186,6 +178,7 @@ const PATTERN_GROUPS: {
         href: "/learn/historical-correction",
         interactive: true,
         category: "modeling",
+        kind: "composite",
       },
     ],
   },
@@ -202,6 +195,7 @@ const PATTERN_GROUPS: {
         href: "/learn/event-prioritization",
         interactive: true,
         category: "engineering",
+        kind: "engineering",
       },
       {
         name: "Historical Winner Selection",
@@ -214,6 +208,7 @@ const PATTERN_GROUPS: {
         href: "/learn/historical-winner-selection",
         interactive: true,
         category: "engineering",
+        kind: "engineering",
       },
       {
         name: "Event-to-State Projection",
@@ -221,6 +216,7 @@ const PATTERN_GROUPS: {
         examples: ["Event streams", "Status history", "Snapshot derivation"],
         href: "/learn/event-to-state-projection",
         category: "engineering",
+        kind: "engineering",
       },
       {
         name: "State Reduction",
@@ -229,6 +225,7 @@ const PATTERN_GROUPS: {
         href: "/learn/state-reduction",
         interactive: true,
         category: "engineering",
+        kind: "engineering",
       },
       {
         name: "Hierarchical State Derivation",
@@ -241,6 +238,7 @@ const PATTERN_GROUPS: {
         href: "/learn/hierarchical-state-derivation",
         interactive: true,
         category: "engineering",
+        kind: "engineering",
       },
       {
         name: "Rectangle Decomposition",
@@ -253,6 +251,7 @@ const PATTERN_GROUPS: {
         href: "/learn/rectangle-decomposition",
         interactive: true,
         category: "engineering",
+        kind: "engineering",
       },
       {
         name: "Historical Backfill",
@@ -260,6 +259,59 @@ const PATTERN_GROUPS: {
         examples: ["CDC replay", "Historical reload"],
         href: "/learn/historical-backfill",
         category: "engineering",
+        kind: "engineering",
+      },
+    ],
+  },
+  {
+    title: "Engineering Challenges",
+    description:
+      "Historical modeling problems, risks and validation findings engineers need to detect and explain.",
+    category: "challenge",
+    patterns: [
+      {
+        name: "Historical Coverage Gap",
+        text: "Occurs when required history is missing for a reporting period.",
+        examples: ["Missing dimension row", "Uncovered fact interval"],
+        href: "/learn/historical-coverage-gap",
+        interactive: true,
+        category: "challenge",
+        kind: "challenge",
+      },
+      {
+        name: "Historical Overlap",
+        text: "Occurs when multiple records are active at the same time.",
+        examples: ["Overlapping SCD2 rows", "Ambiguous current state"],
+        href: "/learn/historical-overlap",
+        interactive: true,
+        category: "challenge",
+        kind: "challenge",
+      },
+      {
+        name: "Historical Match Ambiguity",
+        text: "Occurs when multiple historical records satisfy the same temporal join.",
+        examples: [
+          "Duplicate fact rows",
+          "Join explosion",
+          "Multiple valid matches",
+        ],
+        href: "/learn/historical-match-ambiguity",
+        interactive: true,
+        category: "challenge",
+        kind: "challenge",
+      },
+      {
+        name: "Snapshot Drift",
+        text: "Occurs when a historical snapshot changes after the same reporting period is rebuilt later.",
+        examples: [
+          "Changed month-end totals",
+          "Late corrections",
+          "Rebuilt reports",
+        ],
+        href: "/learn/snapshot-drift",
+        interactive: true,
+        category: "challenge",
+        kind: "challenge",
       },
     ],
   },
@@ -367,8 +419,8 @@ export default function PatternsPage() {
               lineHeight: 1.55,
             }}
           >
-            A practical vocabulary for historical modeling challenges, target
-            modeling patterns and engineering implementation techniques.
+            Learn the fundamental patterns, composite solutions and engineering
+            techniques used to build reliable historical data products.
           </p>
         </section>
 
@@ -433,6 +485,11 @@ export default function PatternsPage() {
                       border: "1px solid #dbeafe",
                     }}
                   >
+                    {pattern.kind && (
+                      <div style={kindBadgeStyle}>
+                        {formatPatternKind(pattern.kind)}
+                      </div>
+                    )}
                     <div
                       style={{
                         display: "flex",
@@ -520,6 +577,33 @@ export default function PatternsPage() {
     </main>
   );
 }
+
+function formatPatternKind(kind: PatternKind) {
+  switch (kind) {
+    case "elementary":
+      return "Elementary Pattern";
+    case "composite":
+      return "Composite Pattern";
+    case "engineering":
+      return "Engineering Pattern";
+    case "challenge":
+      return "Challenge";
+  }
+}
+
+const kindBadgeStyle = {
+  display: "inline-flex",
+  marginBottom: 10,
+  padding: "5px 8px",
+  borderRadius: 999,
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  color: "#475569",
+  fontSize: 10,
+  fontWeight: 900,
+  textTransform: "uppercase" as const,
+  letterSpacing: 0.5,
+};
 
 function LearnMoreLink({
   href,

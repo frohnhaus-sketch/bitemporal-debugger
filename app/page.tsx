@@ -147,6 +147,10 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <div id="advisor-section" ref={advisorRef}>
+          <AdvisorPanel />
+        </div>
+
         <WorkflowSection
           isMobile={isMobile}
           onOpenAdvisor={() => scrollToSection(advisorRef)}
@@ -161,11 +165,6 @@ export default function Home() {
         <div ref={patternsRef}>
           <PatternEntrySection isMobile={isMobile} />
         </div>
-
-        <div id="advisor-section" ref={advisorRef}>
-          <AdvisorPanel />
-        </div>
-
         <div id="model-review-section" ref={validateModelRef}>
           <ModelReviewPanel />
         </div>
@@ -203,33 +202,33 @@ function WorkflowSection({
 }) {
   const steps = [
     {
-      step: "learn_pattern",
+      step: "design_model",
       number: "1",
-      title: "Understand the pattern",
-      text: "Learn the historical modeling concept first: SCD2, bitemporal history, snapshot reporting, dimension completion or temporal joins.",
+      title: "I am designing a model",
+      text: "Answer a few questions and get a recommended modeling strategy, risks, validation checks and implementation blueprint.",
+      button: "Start with Advisor →",
+      onClick: onOpenAdvisor,
+    },
+    {
+      step: "learn_patterns",
+      number: "2",
+      title: "I want to learn historical modeling",
+      text: "Browse elementary patterns, composite patterns, engineering techniques and validation challenges.",
       button: "Browse Patterns →",
       onClick: onOpenPatterns,
     },
     {
-      step: "design_model",
-      number: "2",
-      title: "Design the model",
-      text: "Answer 6 questions and get a recommended modeling strategy, risks, validation checks and implementation blueprint.",
-      button: "Design My Model →",
-      onClick: onOpenAdvisor,
-    },
-    {
       step: "review_model",
       number: "3",
-      title: "Review your model",
+      title: "I want feedback on a model",
       text: "Paste SQL, PySpark, dbt or architecture notes and check whether the historical assumptions are explicit and safe.",
-      button: "Review My Model →",
+      button: "Review Model →",
       onClick: onOpenModelReview,
     },
     {
       step: "validate_output",
       number: "4",
-      title: "Validate the output",
+      title: "I want to validate generated output",
       text: "Paste the generated target table and detect gaps, overlaps, duplicate grain, missing coverage and snapshot risks.",
       button: "Validate Output →",
       onClick: onOpenTargetValidation,
@@ -269,7 +268,7 @@ function WorkflowSection({
             color: "#0f172a",
           }}
         >
-          What are you trying to do?
+          Choose your starting point
         </h2>
 
         <p
@@ -281,9 +280,8 @@ function WorkflowSection({
             lineHeight: 1.6,
           }}
         >
-          Choose the task that matches your current problem. The workbench will
-          guide you to the right historical modeling pattern, review workflow or
-          validation tool.
+          Most historical modeling problems fall into one of four situations.
+          Start with the option that best matches your current task.
         </p>
         <div
           style={{
@@ -298,7 +296,7 @@ function WorkflowSection({
             display: "inline-flex",
           }}
         >
-          New here? Start with Step 2: Design the model.
+          New here? Start with Step 1: Design the model.
         </div>
       </div>
 
@@ -419,7 +417,7 @@ function WorkflowSection({
             color: "#0f172a",
           }}
         >
-          Debug historical source behavior
+          Compare Historical Sources
         </h3>
 
         <p
@@ -429,8 +427,8 @@ function WorkflowSection({
             lineHeight: 1.6,
           }}
         >
-          Compare historized sources, inspect temporal joins, investigate gaps,
-          overlaps, ambiguous matches and visible-time behavior.
+          Investigate temporal joins, overlaps, gaps, visibility lag and
+          historical inconsistencies between two sources.
         </p>
 
         <button
@@ -527,7 +525,7 @@ function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
               color: "#ffffff",
             }}
           >
-            Historical Modeling Pattern Catalog
+            Learn Historical Modeling Patterns
           </h2>
 
           <p
@@ -540,8 +538,8 @@ function PatternEntrySection({ isMobile }: { isMobile: boolean }) {
               lineHeight: 1.55,
             }}
           >
-            Browse practical patterns for historized sources, temporal joins,
-            snapshot reporting and bitemporal validation.
+            Explore the most common modeling patterns, engineering techniques
+            and reporting challenges.
           </p>
         </div>
 
@@ -666,7 +664,7 @@ function AdvancedInvestigationSection({
             color: "#ffffff",
           }}
         >
-          Debug historical source behavior
+          Compare Historical Sources
         </h2>
 
         <p
@@ -677,9 +675,8 @@ function AdvancedInvestigationSection({
             lineHeight: 1.6,
           }}
         >
-          Use this when you need to compare two historized sources, inspect
-          temporal joins, investigate gaps, overlaps, ambiguous matches or
-          visible-time behavior.
+          Investigate temporal joins, overlaps, gaps, visibility lag and
+          historical inconsistencies between two sources.
         </p>
         <div
           style={{

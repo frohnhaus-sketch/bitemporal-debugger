@@ -30,7 +30,7 @@ export default function BitemporalModelingPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Foundation Pattern</div>
+            <div style={badgeStyle}>Elementary Pattern</div>
           </div>
 
           <h1 style={h1Style}>Bitemporal Modeling</h1>

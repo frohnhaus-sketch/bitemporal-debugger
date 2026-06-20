@@ -30,7 +30,7 @@ export default function SnapshotFactModelingPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Reporting Pattern</div>
+            <div style={badgeStyle}>Composite Pattern</div>
           </div>
 
           <h1 style={h1Style}>Snapshot Fact Modeling</h1>

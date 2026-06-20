@@ -103,11 +103,22 @@ export default function Scd2VsBitemporalPage() {
             ← Back to Pattern Catalog
           </a>
 
-          <div>
-            <div style={badgeStyle}>Interactive Pattern</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={badgeStyle}>Modeling Comparison</div>
+
+            <div
+              style={{
+                ...badgeStyle,
+                background: "#fef3c7",
+                border: "1px solid #fde68a",
+                color: "#92400e",
+              }}
+            >
+              Interactive Example
+            </div>
           </div>
 
-          <h1 style={h1Style}>SCD2 vs Bitemporal Modeling</h1>
+          <h1 style={h1Style}>SCD2 vs Bitemporal Dimensions</h1>
 
           <WhiteCard
             eyebrow="Quick answer"
@@ -116,10 +127,11 @@ export default function Scd2VsBitemporalPage() {
             <p style={paragraphStyle}>
               Use SCD2 when you only need business-valid history.
             </p>
-          
+
             <p style={paragraphStyle}>
-              Use bitemporal modeling when you must preserve both business-valid history
-              and the history of when information became visible to the platform.
+              Use bitemporal modeling when you must preserve both business-valid
+              history and the history of when information became visible to the
+              platform.
             </p>
           </WhiteCard>
         </header>
@@ -130,10 +142,10 @@ export default function Scd2VsBitemporalPage() {
             title="SCD2 answers what was valid. Bitemporal modeling also answers what was visible."
           >
             <p style={paragraphStyle}>
-              Slowly Changing Dimension Type 2 is one of the most common ways
-              to model changing attributes over time. It creates a new row when
-              a relevant attribute changes and uses validity intervals to
-              resolve the correct version for a reporting date.
+              Slowly Changing Dimension Type 2 is one of the most common ways to
+              model changing attributes over time. It creates a new row when a
+              relevant attribute changes and uses validity intervals to resolve
+              the correct version for a reporting date.
             </p>
 
             <p style={paragraphStyle}>
@@ -475,13 +487,12 @@ function TryItCard() {
     <section style={tryItCardStyle}>
       <div style={tryItEyebrowStyle}>Try it</div>
 
-      <h2 style={tryItTitleStyle}>
-        Explore the Advisor for your own model.
-      </h2>
+      <h2 style={tryItTitleStyle}>Explore the Advisor for your own model.</h2>
 
       <p style={tryItTextStyle}>
-        Use the advisor when you are unsure whether your historical model only needs
-        valid-time history or must also preserve what was known at reporting time.
+        Use the advisor when you are unsure whether your historical model only
+        needs valid-time history or must also preserve what was known at
+        reporting time.
       </p>
 
       <a

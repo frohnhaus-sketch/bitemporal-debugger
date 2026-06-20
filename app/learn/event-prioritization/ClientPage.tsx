@@ -40,8 +40,19 @@ export default function EventPrioritizationPage() {
             ← Back to Pattern Catalog
           </a>
 
-          <div>
-            <div style={badgeStyle}>Interactive Pattern</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={badgeStyle}>Engineering Pattern</div>
+
+            <div
+              style={{
+                ...badgeStyle,
+                background: "#fef3c7",
+                border: "1px solid #fde68a",
+                color: "#92400e",
+              }}
+            >
+              Interactive Example
+            </div>
           </div>
 
           <h1 style={h1Style}>Event Prioritization</h1>

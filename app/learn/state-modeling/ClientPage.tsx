@@ -30,7 +30,7 @@ export default function StateModelingPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Foundation Pattern</div>
+            <div style={badgeStyle}>Composite Pattern</div>
           </div>
 
           <h1 style={h1Style}>State Modeling</h1>

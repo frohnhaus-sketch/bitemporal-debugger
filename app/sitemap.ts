@@ -10,7 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/learn/state-modeling",
     "/learn/event-modeling",
     "/learn/bitemporal-modeling",
-    "/learn/tritemporal-modeling",
+    "/learn/publication-time-modeling",
     "/learn/scd2-vs-bitemporal",
 
     "/learn/state-state-alignment",
@@ -23,6 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     "/learn/snapshot-fact-modeling",
     "/learn/snapshot-reproducibility",
+    "/learn/snapshot-drift",
     "/learn/as-known-reporting",
 
     "/learn/historical-correction",
@@ -43,16 +44,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency:
-      route === ""
-        ? "weekly"
-        : route === "/patterns"
-        ? "weekly"
-        : "monthly",
+      route === "" ? "weekly" : route === "/patterns" ? "weekly" : "monthly",
     priority:
       route === ""
         ? 1
         : route === "/patterns"
-        ? 0.9
-        : 0.8,
+          ? 0.95
+          : route.includes("state-modeling") ||
+              route.includes("event-modeling") ||
+              route.includes("bitemporal-modeling") ||
+              route.includes("dimension-completion") ||
+              route.includes("historical-conformance") ||
+              route.includes("snapshot-reproducibility")
+            ? 0.9
+            : 0.8,
   }));
 }

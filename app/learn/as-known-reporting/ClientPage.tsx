@@ -6,9 +6,11 @@ import { track } from "@/lib/analytics";
 
 export default function AsKnownReportingPage() {
   useEffect(() => {
-    return initializeScrollDepthTracking({
-      page: "as-known-reporting",
-      pageType: "learn_page",
+    track("learn_page_opened", {
+      page: "as_known_reporting",
+      path: window.location.pathname,
+      referrer: document.referrer,
+      url: window.location.href,
     });
   }, []);
 
@@ -40,20 +42,38 @@ export default function AsKnownReportingPage() {
           </a>
 
           <div>
-            <div
-              style={{
-                display: "inline-flex",
-                padding: "8px 12px",
-                borderRadius: 999,
-                background: "#dbeafe",
-                color: "#075985",
-                fontSize: 12,
-                fontWeight: 900,
-                letterSpacing: 0.6,
-                textTransform: "uppercase",
-              }}
-            >
-              Reporting Pattern
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "#dbeafe",
+                  color: "#075985",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                }}
+              >
+                Composite Pattern
+              </div>
+
+              <div
+                style={{
+                  display: "inline-flex",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "#fef3c7",
+                  color: "#92400e",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                }}
+              >
+                Example
+              </div>
             </div>
           </div>
 
@@ -86,11 +106,14 @@ export default function AsKnownReportingPage() {
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
-          <WhiteCard eyebrow="Problem" title="Past reports can be rewritten by future knowledge.">
+          <WhiteCard
+            eyebrow="Problem"
+            title="Past reports can be rewritten by future knowledge."
+          >
             <p style={paragraphStyle}>
-              A report can be historically correct in two different ways. It
-              can show the corrected truth as we know it today, or it can show
-              what was known when the report was originally produced.
+              A report can be historically correct in two different ways. It can
+              show the corrected truth as we know it today, or it can show what
+              was known when the report was originally produced.
             </p>
 
             <p style={paragraphStyle}>
@@ -111,7 +134,10 @@ export default function AsKnownReportingPage() {
 
           <DarkExampleCard />
 
-          <WhiteCard eyebrow="Why it happens" title="Business time and knowledge time are different.">
+          <WhiteCard
+            eyebrow="Why it happens"
+            title="Business time and knowledge time are different."
+          >
             <p style={paragraphStyle}>
               The business effective date tells you when something was true in
               the real world. The visible or knowledge date tells you when the
@@ -154,7 +180,10 @@ export default function AsKnownReportingPage() {
             </div>
           </WhiteCard>
 
-          <WhiteCard eyebrow="Validation checks" title="Check that the past stays reproducible.">
+          <WhiteCard
+            eyebrow="Validation checks"
+            title="Check that the past stays reproducible."
+          >
             <CheckChipRow
               checks={[
                 "Validate visible-time intervals",
@@ -166,7 +195,10 @@ export default function AsKnownReportingPage() {
             />
           </WhiteCard>
 
-          <WhiteCard eyebrow="Why it matters" title="As-known logic is often the reason bitemporal modeling exists.">
+          <WhiteCard
+            eyebrow="Why it matters"
+            title="As-known logic is often the reason bitemporal modeling exists."
+          >
             <p style={paragraphStyle}>
               As-Known Reporting is essential when historical reports must be
               reproduced exactly as they were seen at the time.

@@ -30,7 +30,7 @@ export default function IdentityResolutionPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Dimension Pattern</div>
+            <div style={badgeStyle}>Composite Pattern</div>
           </div>
 
           <h1 style={h1Style}>Identity Resolution</h1>

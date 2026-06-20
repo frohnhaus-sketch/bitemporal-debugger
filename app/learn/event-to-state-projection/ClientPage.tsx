@@ -30,7 +30,7 @@ export default function EventToStateProjectionPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Advanced Modeling Pattern</div>
+            <div style={badgeStyle}>Engineering Pattern</div>
           </div>
 
           <h1 style={h1Style}>Event-to-State Projection</h1>

@@ -16,7 +16,7 @@ const TIME_AXES = [
   {
     title: "Visibility time",
     question: "When did the platform know it?",
-    example: "Change arrived on 10 Jan",
+    example: "Correction arrived on 15 Feb",
   },
   {
     title: "Publication time",
@@ -49,7 +49,7 @@ const REPORT_MODES = [
     title: "Platform-visible perspective",
     value: "Premium",
     explanation:
-      "The correction became visible to the data platform on 10 Jan.",
+      "The correction became visible to the data platform on 15 Feb. From that knowledge date onward, the platform can explain the corrected history.",
   },
   {
     key: "published" as ReportMode,
@@ -64,7 +64,7 @@ const REPORT_MODES = [
 export default function TritemporalModelingPage() {
   useEffect(() => {
     track("learn_page_opened", {
-      page: "tritemporal_modeling",
+      page: "publication_time_modeling",
       path: window.location.pathname,
       referrer: document.referrer,
       url: window.location.href,
@@ -73,7 +73,7 @@ export default function TritemporalModelingPage() {
 
   useEffect(() => {
     return initializeScrollDepthTracking({
-      page: "tritemporal-modeling",
+      page: "publication-time-modeling",
       pageType: "learn_page",
     });
   }, []);
@@ -86,18 +86,29 @@ export default function TritemporalModelingPage() {
             ← Back to Pattern Catalog
           </a>
 
-          <div>
-            <div style={badgeStyle}>Historical Modeling Pattern</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={badgeStyle}>Elementary Pattern</div>
+
+            <div
+              style={{
+                ...badgeStyle,
+                background: "#fef3c7",
+                border: "1px solid #fde68a",
+                color: "#92400e",
+              }}
+            >
+              Advanced
+            </div>
           </div>
 
-          <h1 style={h1Style}>Tritemporal Modeling</h1>
+          <h1 style={h1Style}>Publication-Time Modeling</h1>
 
           <WhiteCard
             eyebrow="Quick answer"
-            title="Tritemporal modeling separates valid time, visibility time and publication time."
+            title="Publication-Time modeling separates valid time, visibility time and publication time."
           >
             <p style={paragraphStyle}>
-              Use tritemporal modeling when it is not enough to know what was
+              Use Publication-Time modeling when it is not enough to know what was
               true and what was known. You also need to know what was officially
               published, disclosed or used in a reporting output.
             </p>
@@ -113,7 +124,7 @@ export default function TritemporalModelingPage() {
         <section style={{ display: "grid", gap: 24 }}>
           <WhiteCard
             eyebrow="Core idea"
-            title="Bitemporal modeling tracks truth and knowledge. Tritemporal modeling also tracks publication."
+            title="Bitemporal modeling tracks truth and knowledge. Publication-Time modeling also tracks publication."
           >
             <p style={paragraphStyle}>
               Bitemporal models usually separate business-valid time from
@@ -123,7 +134,7 @@ export default function TritemporalModelingPage() {
             </p>
 
             <p style={paragraphStyle}>
-              Tritemporal modeling adds a third axis: publication time. This
+              Publication-Time modeling adds a third axis: publication time. This
               captures when a result was officially published, frozen, disclosed
               or used by a downstream reporting process.
             </p>
@@ -148,7 +159,7 @@ export default function TritemporalModelingPage() {
 
           <WhiteCard
             eyebrow="When it matters"
-            title="Use tritemporal modeling when published outputs have their own lifecycle."
+            title="Use Publication-Time modeling when published outputs have their own lifecycle."
           >
             <ChipRow
               chips={[
@@ -165,7 +176,7 @@ export default function TritemporalModelingPage() {
             <p style={{ ...paragraphStyle, marginTop: 18 }}>
               If a corrected record arrives after a report has already been
               published, the corrected business truth and the published output
-              may intentionally differ. Tritemporal modeling makes that
+              may intentionally differ. Publication-Time modeling makes that
               difference explicit instead of hiding it inside ad-hoc reporting
               logic.
             </p>
@@ -199,13 +210,13 @@ export default function TritemporalModelingPage() {
 
           <WhiteCard
             eyebrow="Related concepts"
-            title="Tritemporal modeling connects to several historical modeling patterns."
+            title="Publication-Time modeling connects to several historical modeling patterns."
           >
             <div style={solutionGridStyle}>
               <RelatedConcept
                 title="Bitemporal Modeling"
                 href="/learn/bitemporal-modeling"
-                text="Tritemporal modeling extends bitemporal modeling by adding publication time."
+                text="Publication-Time modeling extends bitemporal modeling by adding publication time."
               />
 
               <RelatedConcept
@@ -249,7 +260,7 @@ function DarkExampleCard() {
     setMode(nextMode);
 
     track("interactive_example_changed", {
-      example: "tritemporal_modeling",
+      example: "publication_time_modeling",
       mode: nextMode,
     });
   }
@@ -275,8 +286,8 @@ function DarkExampleCard() {
 
           <div style={timeAxisStyle}>
             <div>01 Jan</div>
-            <div>10 Jan</div>
             <div>31 Jan</div>
+            <div>15 Feb</div>
           </div>
 
           <div style={timelineLineWrapperStyle}>
@@ -287,11 +298,11 @@ function DarkExampleCard() {
             </div>
 
             <div style={{ ...timelineDotStyle, left: "50%" }}>
-              <span style={timelineDotLabelStyle}>Visible</span>
+              <span style={timelineDotLabelStyle}>Published</span>
             </div>
 
             <div style={{ ...timelineDotStyle, left: "94%" }}>
-              <span style={timelineDotLabelStyle}>Published</span>
+              <span style={timelineDotLabelStyle}>Visible</span>
             </div>
           </div>
 
@@ -300,6 +311,14 @@ function DarkExampleCard() {
               <div style={scenarioEyebrowStyle}>Business-valid time</div>
               <div style={valueRowStyle}>
                 <span style={valueLabelStyle}>Corrected truth</span>
+                <span style={premiumValueStyle}>Premium</span>
+              </div>
+            </div>
+
+            <div style={stateBoxStyle}>
+              <div style={scenarioEyebrowStyle}>Visibility time</div>
+              <div style={valueRowStyle}>
+                <span style={valueLabelStyle}>Known by platform</span>
                 <span style={premiumValueStyle}>Premium</span>
               </div>
             </div>
@@ -366,7 +385,7 @@ function DarkExampleCard() {
         <div style={exampleNoteLabelStyle}>Key idea</div>
 
         <p style={exampleNoteTextStyle}>
-          Tritemporal modeling prevents one timeline from pretending to answer
+          Publication-Time modeling prevents one timeline from pretending to answer
           every historical question. Truth, knowledge and publication are
           related, but they are not the same thing.
         </p>
@@ -431,7 +450,7 @@ function RelatedConcept({
       href={href}
       onClick={() => {
         track("related_pattern_clicked", {
-          page: "tritemporal_modeling",
+          page: "publication_time_modeling",
           title,
           href,
         });
@@ -460,7 +479,7 @@ function TryItCard() {
         href="/"
         onClick={() => {
           track("learn_cta_clicked", {
-            page: "tritemporal_modeling",
+            page: "publication_time_modeling",
             cta: "explore_advisor",
             source: "bottom_cta",
           });

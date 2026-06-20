@@ -62,15 +62,14 @@ function isLikelyBot() {
 
   const botSignals = [
     "headlesschrome",
-    "bot",
+    "googlebot",
+    "bingbot",
     "crawler",
     "spider",
-    "preview",
     "facebookexternalhit",
     "linkedinbot",
     "slackbot",
     "twitterbot",
-    "whatsapp",
   ];
 
   const detected = botSignals.some((signal) => userAgent.includes(signal));
@@ -108,7 +107,7 @@ function sanitizeAnalyticsData(data?: AnalyticsData) {
           typeof item === "number" ||
           typeof item === "boolean"
             ? item
-            : String(item)
+            : String(item),
         );
       return;
     }

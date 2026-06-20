@@ -30,7 +30,7 @@ export default function HistoricalBackfillPage() {
           </a>
 
           <div>
-            <div style={badgeStyle}>Reporting Pattern</div>
+            <div style={badgeStyle}>Engineering Pattern</div>
           </div>
 
           <h1 style={h1Style}>Historical Backfill</h1>

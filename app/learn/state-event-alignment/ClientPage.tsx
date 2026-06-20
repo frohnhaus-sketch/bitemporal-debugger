@@ -91,9 +91,22 @@ export default function StateEventAlignmentPage() {
             ← Back to Pattern Catalog
           </a>
 
-          <div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <div style={badgeStyle}>Interactive Pattern</div>
+
+            <div
+              style={{
+                ...badgeStyle,
+                background: "#fef3c7",
+                border: "1px solid #fde68a",
+                color: "#92400e",
+              }}
+            >
+              Interactive Example
+            </div>
           </div>
+
+          <h1 style={h1Style}>Historical Conformance</h1>
 
           <h1 style={h1Style}>State ↔ Event Alignment</h1>
 
@@ -217,7 +230,8 @@ function DarkExampleCard() {
       <div style={darkEyebrowStyle}>Example</div>
 
       <h2 style={darkTitleStyle}>
-        A claim event occurs in August. It must align to the state valid in August.
+        A claim event occurs in August. It must align to the state valid in
+        August.
       </h2>
 
       <div style={alignmentGridStyle}>
@@ -239,16 +253,24 @@ function DarkExampleCard() {
       </div>
 
       <div style={comparisonGridStyle}>
-        <ResultCard title="Expected Result (Aligned)" rows={EXPECTED_ROWS} tone="good" />
-        <ResultCard title="Common Wrong Result (Risk)" rows={WRONG_ROWS} tone="bad" />
+        <ResultCard
+          title="Expected Result (Aligned)"
+          rows={EXPECTED_ROWS}
+          tone="good"
+        />
+        <ResultCard
+          title="Common Wrong Result (Risk)"
+          rows={WRONG_ROWS}
+          tone="bad"
+        />
       </div>
 
       <div style={exampleNoteStyle}>
         <div style={exampleNoteLabelStyle}>Key idea</div>
 
         <p style={exampleNoteTextStyle}>
-          Events are points in time. States are intervals. A correct model aligns
-          the event timestamp to exactly one valid state interval.
+          Events are points in time. States are intervals. A correct model
+          aligns the event timestamp to exactly one valid state interval.
         </p>
       </div>
     </section>
@@ -328,10 +350,10 @@ function ExampleDatasetCard() {
       </div>
 
       <div style={explanationBoxStyle}>
-        <strong>Why the wrong interpretation is wrong:</strong> The claim happened on
-        August 15. The only state interval valid on August 15 is July–December.
-        Joining the event to the January–June state is current-state leakage or an
-        incorrect point-in-interval join.
+        <strong>Why the wrong interpretation is wrong:</strong> The claim
+        happened on August 15. The only state interval valid on August 15 is
+        July–December. Joining the event to the January–June state is
+        current-state leakage or an incorrect point-in-interval join.
       </div>
     </WhiteCard>
   );
@@ -380,7 +402,10 @@ function DatasetTable({
             {rows.map((row, rowIndex) => (
               <tr key={`${title}-${rowIndex}`}>
                 {row.map((cell, cellIndex) => (
-                  <td key={`${title}-${rowIndex}-${cellIndex}`} style={datasetTdStyle}>
+                  <td
+                    key={`${title}-${rowIndex}-${cellIndex}`}
+                    style={datasetTdStyle}
+                  >
                     {cell}
                   </td>
                 ))}
@@ -455,7 +480,8 @@ function DetectionCard() {
       </div>
 
       <h2 style={detectionTitleStyle}>
-        The Workbench can surface symptoms that often indicate state-event alignment problems.
+        The Workbench can surface symptoms that often indicate state-event
+        alignment problems.
       </h2>
 
       <CheckChipRow

@@ -92,6 +92,14 @@ export function AdvisorPanel() {
     ],
   );
 
+  const elementaryPatterns = advisorItems.modelingPatterns.filter(
+    (item) => item.kind === "elementary",
+  );
+
+  const compositePatterns = advisorItems.modelingPatterns.filter(
+    (item) => item.kind === "composite",
+  );
+
   function trackAdvisorStarted() {
     if (hasStartedAdvisor.current) return;
 
@@ -875,9 +883,19 @@ export function AdvisorPanel() {
           />
 
           <AdvisorRecommendationSection
-            title="Recommended Modeling Patterns"
-            description="What the target historical model should look like."
-            items={advisorItems.modelingPatterns}
+            title="Recommended Elementary Patterns"
+            description="Core historical modeling building blocks."
+            items={elementaryPatterns}
+            recommendation={blueprint.recommendation}
+            eventName="advisor_modeling_pattern_clicked"
+            actionLabel="Learn Pattern →"
+            validationLabel="Open Validation →"
+          />
+
+          <AdvisorRecommendationSection
+            title="Recommended Composite Patterns"
+            description="Higher-level solutions built from multiple historical modeling patterns."
+            items={compositePatterns}
             recommendation={blueprint.recommendation}
             eventName="advisor_modeling_pattern_clicked"
             actionLabel="Learn Pattern →"
@@ -1208,11 +1226,73 @@ const SOURCE_TYPES: SourceType[] = [
   "Business Relationships",
 ];
 
+type AdvisorKind = "elementary" | "composite" | "engineering" | "challenge";
+
 type AdvisorItem = {
   name: string;
   href: string;
   category: "challenge" | "modeling" | "engineering";
+  kind: AdvisorKind;
 };
+
+function getAdvisorKind(name: string): AdvisorKind {
+  if (
+    [
+      "Historical Coverage Gap",
+      "Historical Overlap",
+      "Historical Match Ambiguity",
+      "Snapshot Reproducibility Risk",
+      "Late Arriving Dimensions",
+      "Event-to-State Mismatch",
+      "Cross-System Timeline Drift",
+    ].includes(name)
+  ) {
+    return "challenge";
+  }
+
+  if (
+    [
+      "State Modeling",
+      "Event Modeling",
+      "Bitemporal Modeling",
+      "Publication-Time Modeling",
+      "Event Prioritization",
+      "Historical Winner Selection",
+      "Event-to-State Projection",
+      "State Reduction",
+    ].includes(name)
+  ) {
+    return "elementary";
+  }
+
+  if (
+    [
+      "Event Prioritization",
+      "Historical Winner Selection",
+      "Event-to-State Projection",
+      "State Reduction",
+      "Rectangle Decomposition",
+      "Historical Backfill",
+    ].includes(name)
+  ) {
+    return "engineering";
+  }
+
+  return "composite";
+}
+
+function formatAdvisorKind(kind: AdvisorKind) {
+  switch (kind) {
+    case "elementary":
+      return "Elementary Pattern";
+    case "composite":
+      return "Composite Pattern";
+    case "challenge":
+      return "Challenge";
+    case "engineering":
+      return "Engineering Pattern";
+  }
+}
 
 function getAdvisorItem(name: string): AdvisorItem | null {
   const normalized = name.toLowerCase();
@@ -1230,6 +1310,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/historical-coverage-gap",
       category: "challenge",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1238,6 +1319,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/historical-overlap",
       category: "challenge",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1246,6 +1328,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/historical-match-ambiguity",
       category: "challenge",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1254,6 +1337,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/snapshot-reproducibility",
       category: "challenge",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1262,6 +1346,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/dimension-completion",
       category: "challenge",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1270,6 +1355,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/state-event-alignment",
       category: "challenge",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1278,31 +1364,71 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/historical-conformance",
       category: "challenge",
+      kind: getAdvisorKind(name),
     };
   }
 
   if (name === "State Modeling") {
-    return { name, href: "/learn/state-modeling", category: "modeling" };
+    return {
+      name,
+      href: "/learn/state-modeling",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Event Modeling") {
-    return { name, href: "/learn/event-modeling", category: "modeling" };
+    return {
+      name,
+      href: "/learn/event-modeling",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Bitemporal Modeling") {
-    return { name, href: "/learn/bitemporal-modeling", category: "modeling" };
+    return {
+      name,
+      href: "/learn/bitemporal-modeling",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
+  }
+
+  if (name === "Publication-Time Modeling") {
+    return {
+      name,
+      href: "/learn/publication-time-modeling",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "SCD2 vs Bitemporal Modeling") {
-    return { name, href: "/learn/scd2-vs-bitemporal", category: "modeling" };
+    return {
+      name,
+      href: "/learn/scd2-vs-bitemporal",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "State ↔ State Alignment") {
-    return { name, href: "/learn/state-state-alignment", category: "modeling" };
+    return {
+      name,
+      href: "/learn/state-state-alignment",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "State ↔ Event Alignment") {
-    return { name, href: "/learn/state-event-alignment", category: "modeling" };
+    return {
+      name,
+      href: "/learn/state-event-alignment",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Historical Conformance") {
@@ -1310,19 +1436,35 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/historical-conformance",
       category: "modeling",
+      kind: getAdvisorKind(name),
     };
   }
 
   if (name === "Dimension Completion") {
-    return { name, href: "/learn/dimension-completion", category: "modeling" };
+    return {
+      name,
+      href: "/learn/dimension-completion",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Relationship History") {
-    return { name, href: "/learn/relationship-history", category: "modeling" };
+    return {
+      name,
+      href: "/learn/relationship-history",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Identity Resolution") {
-    return { name, href: "/learn/identity-resolution", category: "modeling" };
+    return {
+      name,
+      href: "/learn/identity-resolution",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Snapshot Fact Modeling") {
@@ -1330,6 +1472,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/snapshot-fact-modeling",
       category: "modeling",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1338,15 +1481,26 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/snapshot-reproducibility",
       category: "modeling",
+      kind: getAdvisorKind(name),
     };
   }
 
   if (name === "As-Known Reporting") {
-    return { name, href: "/learn/as-known-reporting", category: "modeling" };
+    return {
+      name,
+      href: "/learn/as-known-reporting",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Historical Correction") {
-    return { name, href: "/learn/historical-correction", category: "modeling" };
+    return {
+      name,
+      href: "/learn/historical-correction",
+      category: "modeling",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Event Prioritization") {
@@ -1354,6 +1508,16 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/event-prioritization",
       category: "engineering",
+      kind: getAdvisorKind(name),
+    };
+  }
+
+  if (name === "Historical Winner Selection") {
+    return {
+      name,
+      href: "/learn/historical-winner-selection",
+      category: "engineering",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1362,11 +1526,17 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/event-to-state-projection",
       category: "engineering",
+      kind: getAdvisorKind(name),
     };
   }
 
   if (name === "State Reduction") {
-    return { name, href: "/learn/state-reduction", category: "engineering" };
+    return {
+      name,
+      href: "/learn/state-reduction",
+      category: "engineering",
+      kind: getAdvisorKind(name),
+    };
   }
 
   if (name === "Rectangle Decomposition") {
@@ -1374,6 +1544,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/rectangle-decomposition",
       category: "engineering",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1382,6 +1553,7 @@ function getAdvisorItem(name: string): AdvisorItem | null {
       name,
       href: "/learn/historical-backfill",
       category: "engineering",
+      kind: getAdvisorKind(name),
     };
   }
 
@@ -1453,6 +1625,10 @@ function AdvisorRecommendationSection({
               border: "1px solid #bfdbfe",
             }}
           >
+            <div style={advisorKindBadgeStyle}>
+              {formatAdvisorKind(item.kind)}
+            </div>
+
             <div
               style={{
                 fontSize: 14,
@@ -1640,6 +1816,10 @@ function getAdvisorPatternDescription(pattern: string) {
 
   if (pattern === "Bitemporal Modeling") {
     return "Separate business-valid time from system-visible time.";
+  }
+
+  if (pattern === "Publication-Time Modeling") {
+    return "Separate valid time, visible time and publication time for reproducible published reports.";
   }
 
   if (pattern === "Snapshot Reproducibility") {
@@ -1996,6 +2176,20 @@ function renderMarkdownPreview(markdown: string) {
     );
   });
 }
+
+const advisorKindBadgeStyle = {
+  display: "inline-flex",
+  marginBottom: 8,
+  padding: "4px 7px",
+  borderRadius: 999,
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  color: "#475569",
+  fontSize: 10,
+  fontWeight: 900,
+  textTransform: "uppercase" as const,
+  letterSpacing: 0.45,
+};
 
 const inputStyle = {
   display: "block",
