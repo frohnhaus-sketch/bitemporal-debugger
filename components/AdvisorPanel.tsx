@@ -20,8 +20,12 @@ export function AdvisorPanel() {
   const lastTrackedRecommendationKey = useRef<string | null>(null);
 
   useEffect(() => {
+    const sessionKey = "advisor_viewed_tracked";
+
+    if (sessionStorage.getItem(sessionKey) === "true") return;
     if (hasTrackedAdvisorOpened.current) return;
 
+    sessionStorage.setItem(sessionKey, "true");
     hasTrackedAdvisorOpened.current = true;
 
     track("advisor_viewed", {
@@ -310,7 +314,6 @@ export function AdvisorPanel() {
 
   return (
     <details
-      open
       onToggle={(event) => {
         track("advisor_toggled", {
           open: event.currentTarget.open,
@@ -323,6 +326,10 @@ export function AdvisorPanel() {
         borderRadius: 16,
         marginBottom: 24,
         boxShadow: "0 4px 16px rgba(15, 23, 42, 0.08)",
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
       <summary
@@ -381,7 +388,8 @@ export function AdvisorPanel() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(190px, 100%), 1fr))",
               gap: 10,
               marginBottom: 18,
             }}
@@ -402,6 +410,8 @@ export function AdvisorPanel() {
                   color: "#1e293b",
                   fontSize: 13,
                   fontWeight: 800,
+                  minWidth: 0,
+                  boxSizing: "border-box",
                 }}
               >
                 ✓ {item}
@@ -915,13 +925,12 @@ export function AdvisorPanel() {
             <details style={{ marginTop: 18 }}>
               <summary
                 style={{
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  color: "#1e40af",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                  marginBottom: 8,
+                  padding: 12,
+                  borderRadius: 12,
+                  background: "#ffffff",
+                  border: "1px solid #bfdbfe",
+                  minWidth: 0,
+                  boxSizing: "border-box",
                 }}
               >
                 Common Use Cases
@@ -931,7 +940,8 @@ export function AdvisorPanel() {
                 style={{
                   marginTop: 10,
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(min(230px, 100%), 1fr))",
                   gap: 10,
                 }}
               >
@@ -1256,10 +1266,6 @@ function getAdvisorKind(name: string): AdvisorKind {
       "Event Modeling",
       "Bitemporal Modeling",
       "Publication-Time Modeling",
-      "Event Prioritization",
-      "Historical Winner Selection",
-      "Event-to-State Projection",
-      "State Reduction",
     ].includes(name)
   ) {
     return "elementary";
@@ -1611,7 +1617,8 @@ function AdvisorRecommendationSection({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(230px, 100%), 1fr))",
           gap: 12,
         }}
       >
@@ -1623,6 +1630,8 @@ function AdvisorRecommendationSection({
               borderRadius: 16,
               background: "#ffffff",
               border: "1px solid #bfdbfe",
+              minWidth: 0,
+              boxSizing: "border-box",
             }}
           >
             <div style={advisorKindBadgeStyle}>

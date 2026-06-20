@@ -147,9 +147,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <div id="advisor-section" ref={advisorRef}>
-          <AdvisorPanel />
-        </div>
 
         <WorkflowSection
           isMobile={isMobile}
@@ -165,6 +162,11 @@ export default function Home() {
         <div ref={patternsRef}>
           <PatternEntrySection isMobile={isMobile} />
         </div>
+
+        <div id="advisor-section" ref={advisorRef}>
+          <AdvisorPanel />
+        </div>
+
         <div id="model-review-section" ref={validateModelRef}>
           <ModelReviewPanel />
         </div>
@@ -202,20 +204,20 @@ function WorkflowSection({
 }) {
   const steps = [
     {
-      step: "design_model",
-      number: "1",
-      title: "I am designing a model",
-      text: "Answer a few questions and get a recommended modeling strategy, risks, validation checks and implementation blueprint.",
-      button: "Start with Advisor →",
-      onClick: onOpenAdvisor,
-    },
-    {
       step: "learn_patterns",
-      number: "2",
+      number: "1",
       title: "I want to learn historical modeling",
       text: "Browse elementary patterns, composite patterns, engineering techniques and validation challenges.",
       button: "Browse Patterns →",
       onClick: onOpenPatterns,
+    },
+    {
+      step: "design_model",
+      number: "2",
+      title: "I am designing a model",
+      text: "Answer a few questions and get a recommended modeling strategy, risks, validation checks and implementation blueprint.",
+      button: "Start with Advisor →",
+      onClick: onOpenAdvisor,
     },
     {
       step: "review_model",
@@ -296,7 +298,7 @@ function WorkflowSection({
             display: "inline-flex",
           }}
         >
-          New here? Start with Step 1: Design the model.
+          New here? Start with Step 1: Learn historical modeling.
         </div>
       </div>
 

@@ -77,10 +77,10 @@ export function TwoSourceValidationWorkflow() {
   const [headerMappingsA, setHeaderMappingsA] = useState<HeaderMapping[]>([]);
   const [headerMappingsB, setHeaderMappingsB] = useState<HeaderMapping[]>([]);
   const [columnMappingA, setColumnMappingA] = useState<Record<string, string>>(
-    {}
+    {},
   );
   const [columnMappingB, setColumnMappingB] = useState<Record<string, string>>(
-    {}
+    {},
   );
 
   const [rows, setRows] = useState<BitemporalRow[]>([]);
@@ -88,15 +88,16 @@ export function TwoSourceValidationWorkflow() {
   const [drifts, setDrifts] = useState<DriftSummary[]>([]);
   const [overlapMarkers, setOverlapMarkers] = useState<OverlapIssue[]>([]);
   const [joinIssues, setJoinIssues] = useState<AggregatedJoinabilityIssue[]>(
-    []
+    [],
   );
 
   const [selectedIssue, setSelectedIssue] =
     useState<AggregatedJoinabilityIssue | null>(null);
   const [selectedTemporalIssue, setSelectedTemporalIssue] =
     useState<TemporalIssue | null>(null);
-  const [highlightedRow, setHighlightedRow] =
-    useState<HighlightTarget | null>(null);
+  const [highlightedRow, setHighlightedRow] = useState<HighlightTarget | null>(
+    null,
+  );
 
   const [asOfDate, setAsOfDate] = useState("");
   const [visibleAsOf, setVisibleAsOf] = useState("");
@@ -104,8 +105,7 @@ export function TwoSourceValidationWorkflow() {
   const [validationMode, setValidationMode] =
     useState<ValidationMode>("monotemporal");
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
-  const [showAssessmentGenerated, setShowAssessmentGenerated] =
-    useState(false);
+  const [showAssessmentGenerated, setShowAssessmentGenerated] = useState(false);
   const [expandedSources, setExpandedSources] = useState<string[]>([]);
   const [pendingScrollTarget, setPendingScrollTarget] = useState<
     | "validation"
@@ -150,7 +150,7 @@ export function TwoSourceValidationWorkflow() {
           return !String(r.valid_to).includes("T")
             ? t + 24 * 60 * 60 * 1000
             : t;
-        })
+        }),
       )
     : 1;
 
@@ -178,7 +178,7 @@ export function TwoSourceValidationWorkflow() {
   const activeJoinIssues = useMemo(
     () =>
       analyzeJoinability(activeRows, sourceNameA, sourceNameB, validationMode),
-    [activeRows, sourceNameA, sourceNameB, validationMode]
+    [activeRows, sourceNameA, sourceNameB, validationMode],
   );
 
   const activeGaps = useMemo(() => detectGaps(activeRows), [activeRows]);
@@ -186,7 +186,7 @@ export function TwoSourceValidationWorkflow() {
 
   const activeOverlapMarkers = useMemo(
     () => detectOverlapMarkers(activeRows, validationMode),
-    [activeRows, validationMode]
+    [activeRows, validationMode],
   );
 
   const activeTemporalIssues = useMemo(
@@ -210,11 +210,11 @@ export function TwoSourceValidationWorkflow() {
       activeOverlapMarkers,
       activeDrifts,
       validationMode,
-    ]
+    ],
   );
 
   const activeMissingMatchCount = activeJoinIssues.filter(
-    (issue) => issue.type === "JOIN_GAP"
+    (issue) => issue.type === "JOIN_GAP",
   ).length;
 
   const snapshotDriftDetected =
@@ -247,30 +247,33 @@ export function TwoSourceValidationWorkflow() {
   const hasActiveFindings = activeTemporalIssuesWithSnapshotDrift.length > 0;
 
   const sourceRecordRowsA = activeRows.filter(
-    (row) => row.source === sourceNameA
+    (row) => row.source === sourceNameA,
   );
 
   const sourceRecordRowsB = activeRows.filter(
-    (row) => row.source === sourceNameB
+    (row) => row.source === sourceNameB,
   );
 
   const joinGapCount = joinIssues.filter(
-    (issue) => issue.type === "JOIN_GAP"
+    (issue) => issue.type === "JOIN_GAP",
   ).length;
 
   const joinAmbiguityCount = joinIssues.filter(
-    (issue) => issue.type === "JOIN_AMBIGUITY"
+    (issue) => issue.type === "JOIN_AMBIGUITY",
   ).length;
 
   const relationshipAnalysis =
     sourcePatterns.sourceA && sourcePatterns.sourceB
-      ? analyzeSourceRelationship(sourcePatterns.sourceA, sourcePatterns.sourceB)
+      ? analyzeSourceRelationship(
+          sourcePatterns.sourceA,
+          sourcePatterns.sourceB,
+        )
       : null;
 
   const historicalPatterns = detectHistoricalPatterns(
     joinAmbiguityCount,
     joinGapCount,
-    drifts.length
+    drifts.length,
   );
 
   const relationshipComplexityStyle = relationshipAnalysis
@@ -291,7 +294,7 @@ export function TwoSourceValidationWorkflow() {
 
   function buildColumnMapping(
     mappings: HeaderMapping[],
-    currentMapping: Record<string, string>
+    currentMapping: Record<string, string>,
   ) {
     const nextMapping: Record<string, string> = {};
 
@@ -313,7 +316,7 @@ export function TwoSourceValidationWorkflow() {
     const parsedA = parseCSV(nextInputA, { maxColumns });
     setHeaderMappingsA(parsedA.headerMappings);
     setColumnMappingA(
-      buildColumnMapping(parsedA.headerMappings, columnMappingA)
+      buildColumnMapping(parsedA.headerMappings, columnMappingA),
     );
   }
 
@@ -327,7 +330,7 @@ export function TwoSourceValidationWorkflow() {
     const parsedB = parseCSV(nextInputB, { maxColumns });
     setHeaderMappingsB(parsedB.headerMappings);
     setColumnMappingB(
-      buildColumnMapping(parsedB.headerMappings, columnMappingB)
+      buildColumnMapping(parsedB.headerMappings, columnMappingB),
     );
   }
 
@@ -336,7 +339,7 @@ export function TwoSourceValidationWorkflow() {
       const parsedA = parseCSV(nextInputA, { maxColumns });
       setHeaderMappingsA(parsedA.headerMappings);
       setColumnMappingA(
-        buildColumnMapping(parsedA.headerMappings, columnMappingA)
+        buildColumnMapping(parsedA.headerMappings, columnMappingA),
       );
     } else {
       setHeaderMappingsA([]);
@@ -347,7 +350,7 @@ export function TwoSourceValidationWorkflow() {
       const parsedB = parseCSV(nextInputB, { maxColumns });
       setHeaderMappingsB(parsedB.headerMappings);
       setColumnMappingB(
-        buildColumnMapping(parsedB.headerMappings, columnMappingB)
+        buildColumnMapping(parsedB.headerMappings, columnMappingB),
       );
     } else {
       setHeaderMappingsB([]);
@@ -357,7 +360,7 @@ export function TwoSourceValidationWorkflow() {
 
   function loadCsvFile(
     event: ChangeEvent<HTMLInputElement>,
-    target: "A" | "B"
+    target: "A" | "B",
   ) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -395,7 +398,7 @@ export function TwoSourceValidationWorkflow() {
   function applyColumnMapping(
     rawRows: any[],
     mappings: HeaderMapping[],
-    activeMapping: Record<string, string>
+    activeMapping: Record<string, string>,
   ) {
     return rawRows.map((row) => {
       const mappedRow: any = {};
@@ -425,7 +428,7 @@ export function TwoSourceValidationWorkflow() {
   function parseOneSource(
     rawInput: string,
     sourceName: string,
-    activeMapping: Record<string, string>
+    activeMapping: Record<string, string>,
   ) {
     const parsed = parseCSV(rawInput, { maxColumns });
 
@@ -440,7 +443,7 @@ export function TwoSourceValidationWorkflow() {
     const mappedRows = applyColumnMapping(
       parsed.rows,
       parsed.headerMappings,
-      mappingToUse
+      mappingToUse,
     ).map((row) => ({
       ...row,
       source: sourceName || "source",
@@ -457,7 +460,7 @@ export function TwoSourceValidationWorkflow() {
     if (parsedRows.length === 0) return false;
 
     return REQUIRED_COLUMNS.every((column) =>
-      Object.prototype.hasOwnProperty.call(parsedRows[0], column)
+      Object.prototype.hasOwnProperty.call(parsedRows[0], column),
     );
   }
 
@@ -466,17 +469,28 @@ export function TwoSourceValidationWorkflow() {
     rawB: string,
     sourceAName: string,
     sourceBName: string,
-    mode: ValidationMode = validationMode
+    mode: ValidationMode = validationMode,
   ) {
     if (!rawA.trim() || !rawB.trim()) {
       resetAnalysis();
       return;
     }
 
-    const parsedA = parseOneSource(rawA, sourceAName || "source_a", columnMappingA);
-    const parsedB = parseOneSource(rawB, sourceBName || "source_b", columnMappingB);
+    const parsedA = parseOneSource(
+      rawA,
+      sourceAName || "source_a",
+      columnMappingA,
+    );
+    const parsedB = parseOneSource(
+      rawB,
+      sourceBName || "source_b",
+      columnMappingB,
+    );
 
-    if (!hasRequiredColumns(parsedA.rows) || !hasRequiredColumns(parsedB.rows)) {
+    if (
+      !hasRequiredColumns(parsedA.rows) ||
+      !hasRequiredColumns(parsedB.rows)
+    ) {
       track("analysis_failed", {
         reason: "missing_required_columns",
         sourceA: sourceAName,
@@ -484,12 +498,16 @@ export function TwoSourceValidationWorkflow() {
         mode,
         rowCountA: parsedA.rows.length,
         rowCountB: parsedB.rows.length,
-        columnsA: [...new Set(parsedA.headerMappings.map((m) => m.original))].slice(0, 20),
-        columnsB: [...new Set(parsedB.headerMappings.map((m) => m.original))].slice(0, 20),
+        columnsA: [
+          ...new Set(parsedA.headerMappings.map((m) => m.original)),
+        ].slice(0, 20),
+        columnsB: [
+          ...new Set(parsedB.headerMappings.map((m) => m.original)),
+        ].slice(0, 20),
       });
 
       alert(
-        "Could not analyze the input. Please provide tabular data with at least entity_id, valid_from and valid_to columns."
+        "Could not analyze the input. Please provide tabular data with at least entity_id, valid_from and valid_to columns.",
       );
 
       resetAnalysis();
@@ -506,7 +524,7 @@ export function TwoSourceValidationWorkflow() {
       combinedRows,
       sourceAName,
       sourceBName,
-      mode
+      mode,
     );
 
     setRows(combinedRows);
@@ -536,8 +554,11 @@ export function TwoSourceValidationWorkflow() {
       hasUploadedB: !!fileNameB,
       ownData: !!fileNameA || !!fileNameB,
       joinIssues: computedJoinIssues.length,
-      joinGaps: computedJoinIssues.filter((issue) => issue.type === "JOIN_GAP").length,
-      ambiguities: computedJoinIssues.filter((issue) => issue.type === "JOIN_AMBIGUITY").length,
+      joinGaps: computedJoinIssues.filter((issue) => issue.type === "JOIN_GAP")
+        .length,
+      ambiguities: computedJoinIssues.filter(
+        (issue) => issue.type === "JOIN_AMBIGUITY",
+      ).length,
       validGaps: computedGaps.length,
       overlaps: computedOverlapMarkers.length,
       mode,
@@ -572,7 +593,7 @@ export function TwoSourceValidationWorkflow() {
       inputB,
       sourceNameA,
       sourceNameB,
-      validationMode
+      validationMode,
     );
   }
 
@@ -580,7 +601,13 @@ export function TwoSourceValidationWorkflow() {
     setValidationMode(next);
 
     if (inputA.trim() && inputB.trim() && hasAnalyzed) {
-      analyzeTwoSourcesFromValues(inputA, inputB, sourceNameA, sourceNameB, next);
+      analyzeTwoSourcesFromValues(
+        inputA,
+        inputB,
+        sourceNameA,
+        sourceNameB,
+        next,
+      );
     }
   }
 
@@ -605,7 +632,7 @@ export function TwoSourceValidationWorkflow() {
         EXAMPLE_B,
         "Source_A",
         "Source_B",
-        validationMode
+        validationMode,
       );
     }, 0);
   }
@@ -701,7 +728,7 @@ export function TwoSourceValidationWorkflow() {
       activeTemporalIssues.find(
         (temporalIssue) =>
           temporalIssue.originalIssue?.kind === "join" &&
-          temporalIssue.originalIssue.issue === issue
+          temporalIssue.originalIssue.issue === issue,
       ) ?? null;
 
     setSelectedTemporalIssue(matchingTemporalIssue);
@@ -731,7 +758,7 @@ export function TwoSourceValidationWorkflow() {
 
     if (visibleAsOf) {
       sqlParts.push(
-        `'${visibleAsOf}' >= visible_from AND '${visibleAsOf}' < visible_to`
+        `'${visibleAsOf}' >= visible_from AND '${visibleAsOf}' < visible_to`,
       );
     }
 
@@ -770,7 +797,8 @@ WHERE ${sqlParts.join(" AND ")};`);
   function scrollToElement(element: HTMLElement | null, offset = 90) {
     if (!element) return;
 
-    const target = element.getBoundingClientRect().top + window.scrollY - offset;
+    const target =
+      element.getBoundingClientRect().top + window.scrollY - offset;
 
     window.scrollTo({
       top: Math.max(target, 0),
@@ -791,12 +819,12 @@ WHERE ${sqlParts.join(" AND ")};`);
           pendingScrollTarget === "guidedDemo"
             ? guidedDemoRef.current
             : pendingScrollTarget === "validationContext"
-            ? validationContextRef.current
-            : pendingScrollTarget === "snapshotActive"
-            ? snapshotActiveRef.current
-            : pendingScrollTarget === "findings"
-            ? analysisRef.current
-            : validationResultTopRef.current;
+              ? validationContextRef.current
+              : pendingScrollTarget === "snapshotActive"
+                ? snapshotActiveRef.current
+                : pendingScrollTarget === "findings"
+                  ? analysisRef.current
+                  : validationResultTopRef.current;
 
         if (!target) return;
 
@@ -825,6 +853,10 @@ WHERE ${sqlParts.join(" AND ")};`);
         borderRadius: 16,
         border: "1px solid #334155",
         background: "#020617",
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
       <summary
@@ -846,8 +878,8 @@ WHERE ${sqlParts.join(" AND ")};`);
             lineHeight: 1.45,
           }}
         >
-          Compare two historized sources when you need row-level timeline evidence,
-          temporal joins or overlap diagnostics.
+          Compare two historized sources when you need row-level timeline
+          evidence, temporal joins or overlap diagnostics.
         </div>
       </summary>
 
@@ -887,7 +919,9 @@ WHERE ${sqlParts.join(" AND ")};`);
             <select
               value={validationMode}
               onChange={(event) =>
-                setValidationModeAndAnalyze(event.target.value as ValidationMode)
+                setValidationModeAndAnalyze(
+                  event.target.value as ValidationMode,
+                )
               }
               style={{
                 padding: "8px 10px",
@@ -1164,7 +1198,9 @@ WHERE ${sqlParts.join(" AND ")};`);
                   onSelectIssue={selectJoinIssue}
                   highlightedRow={highlightedRow}
                   onHighlightRow={scheduleHighlightRow}
-                  forceOpen={hasSelectedFinding || expandedSources.includes(sourceNameA)}
+                  forceOpen={
+                    hasSelectedFinding || expandedSources.includes(sourceNameA)
+                  }
                   overlapMarkers={activeOverlapMarkers}
                 />
 
@@ -1175,7 +1211,9 @@ WHERE ${sqlParts.join(" AND ")};`);
                   onSelectIssue={selectJoinIssue}
                   highlightedRow={highlightedRow}
                   onHighlightRow={scheduleHighlightRow}
-                  forceOpen={hasSelectedFinding || expandedSources.includes(sourceNameB)}
+                  forceOpen={
+                    hasSelectedFinding || expandedSources.includes(sourceNameB)
+                  }
                   overlapMarkers={activeOverlapMarkers}
                 />
               </div>
@@ -1230,15 +1268,15 @@ function ColumnMappingControls({
         }}
       >
         <div>
-          <label style={{ fontSize: 12, color: "#94a3b8" }}>
-            Column scope
-          </label>
+          <label style={{ fontSize: 12, color: "#94a3b8" }}>Column scope</label>
           <br />
           <select
             value={maxColumns}
             onChange={(event) => {
               const value =
-                event.target.value === "all" ? "all" : Number(event.target.value);
+                event.target.value === "all"
+                  ? "all"
+                  : Number(event.target.value);
               setMaxColumns(value);
             }}
             style={{
@@ -1272,7 +1310,9 @@ function ColumnMappingControls({
               whiteSpace: "nowrap",
             }}
           >
-            {showMapping ? "▼ Hide column mapping" : "✓ Auto-mapped columns · Click to review"}
+            {showMapping
+              ? "▼ Hide column mapping"
+              : "✓ Auto-mapped columns · Click to review"}
           </button>
         )}
       </div>
@@ -1281,13 +1321,16 @@ function ColumnMappingControls({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
             gap: 12,
             background: "#0f172a",
             border: "1px solid #1e293b",
             borderRadius: 10,
             padding: 12,
             marginTop: 12,
+            minWidth: 0,
+            boxSizing: "border-box",
           }}
         >
           <MappingBox
@@ -1327,6 +1370,8 @@ function MappingBox({
         borderRadius: 8,
         padding: 10,
         background: "#020617",
+        minWidth: 0,
+        boxSizing: "border-box",
       }}
     >
       <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 8 }}>
