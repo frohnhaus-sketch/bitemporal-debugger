@@ -100,17 +100,17 @@ function inferHeaderlessMapping(firstValues: string[]): HeaderMapping[] {
     columnCount <= 3
       ? ["entity_id", "valid_from", "valid_to"]
       : columnCount === 4
-      ? ["entity_id", "value", "valid_from", "valid_to"]
-      : columnCount === 5
-      ? ["entity_id", "value", "valid_from", "valid_to", "visible_from"]
-      : [
-          "entity_id",
-          "value",
-          "valid_from",
-          "valid_to",
-          "visible_from",
-          "visible_to",
-        ];
+        ? ["entity_id", "value", "valid_from", "valid_to"]
+        : columnCount === 5
+          ? ["entity_id", "value", "valid_from", "valid_to", "visible_from"]
+          : [
+              "entity_id",
+              "value",
+              "valid_from",
+              "valid_to",
+              "visible_from",
+              "visible_to",
+            ];
 
   return firstValues.map((_, index) => ({
     original: `column_${index + 1}`,
@@ -122,14 +122,10 @@ function hasUsableHeaders(values: string[]) {
   const normalized = values.map((value) => normalizeHeader(value).normalized);
 
   const hasRequiredColumns = REQUIRED_COLUMNS.every((required) =>
-    normalized.includes(required)
+    normalized.includes(required),
   );
 
-  const hasHeaderLikeCells = values.some((value) => looksLikeHeaderCell(value));
-  const firstRowLooksLikeData =
-    values.length >= 3 && looksLikeDate(values[1]) && looksLikeDate(values[2]);
-
-  return hasRequiredColumns || (hasHeaderLikeCells && !firstRowLooksLikeData);
+  return hasRequiredColumns;
 }
 
 export function normalizeHeader(header: string): HeaderMapping {
@@ -141,14 +137,14 @@ export function normalizeHeader(header: string): HeaderMapping {
     (key.includes("valid_from")
       ? "valid_from"
       : key.includes("valid_to")
-      ? "valid_to"
-      : key.includes("visible_from") || key.includes("system_from")
-      ? "visible_from"
-      : key.includes("visible_to") || key.includes("system_to")
-      ? "visible_to"
-      : key.includes("entity_id") || key.endsWith("_id")
-      ? "entity_id"
-      : key);
+        ? "valid_to"
+        : key.includes("visible_from") || key.includes("system_from")
+          ? "visible_from"
+          : key.includes("visible_to") || key.includes("system_to")
+            ? "visible_to"
+            : key.includes("entity_id") || key.endsWith("_id")
+              ? "entity_id"
+              : key);
 
   normalized = normalized
     .replace(/^bk_/, "")
@@ -181,10 +177,25 @@ export function detectDelimiter(text: string) {
 
   if (firstLine.includes("\t")) return "\t";
   if (firstLine.includes(";")) return ";";
-  return ",";
+  if (firstLine.includes(",")) return ",";
+
+  if (/\s{2,}/.test(firstLine)) return "whitespace";
+
+  return "whitespace";
 }
 
-export function parseCSV(text: string, options: ParseOptions = {}): ParseResult {
+function splitLine(line: string, delimiter: string) {
+  if (delimiter === "\t") return line.split("\t");
+  if (delimiter === ";") return line.split(";");
+  if (delimiter === ",") return line.split(",");
+
+  return line.split(/\s{2,}|\t+/);
+}
+
+export function parseCSV(
+  text: string,
+  options: ParseOptions = {},
+): ParseResult {
   const lines = text
     .split("\n")
     .map((line) => line.trim())
@@ -205,10 +216,16 @@ export function parseCSV(text: string, options: ParseOptions = {}): ParseResult 
     maxColumns === "all" ? values : values.slice(0, maxColumns);
 
   const firstValues = scopeValues(
-    lines[0].split(delimiter).map(normalizeValue)
+    splitLine(lines[0], delimiter).map(normalizeValue),
   );
 
-  const useHeaderRow = hasUsableHeaders(firstValues);
+  const normalizedFirstRow = firstValues.map(
+    (v) => normalizeHeader(v).normalized,
+  );
+
+  const useHeaderRow = REQUIRED_COLUMNS.every((col) =>
+    normalizedFirstRow.includes(col),
+  );
 
   const headerMappings = useHeaderRow
     ? firstValues.map((h) => normalizeHeader(h))
@@ -218,7 +235,7 @@ export function parseCSV(text: string, options: ParseOptions = {}): ParseResult 
   const dataLines = useHeaderRow ? lines.slice(1) : lines;
 
   const rows = dataLines.map((line) => {
-    const values = scopeValues(line.split(delimiter));
+    const values = scopeValues(splitLine(line, delimiter));
     const obj: any = {};
 
     headers.forEach((h, i) => {

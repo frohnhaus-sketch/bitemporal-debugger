@@ -684,13 +684,70 @@ export function TargetTableValidationPanel() {
   );
 }
 
+function detectValidTimeOverlapsWithinVisibleSlices(
+  rows: any[],
+  businessKey: string,
+  validFromKey: string,
+  validToKey: string,
+  visibleFromKey: string,
+  visibleToKey: string,
+  semantics: HistoricalSemantics,
+): TargetFinding[] {
+  const groups = new Map<string, any[]>();
+
+  for (const row of rows) {
+    const key = row[businessKey];
+    if (!key) continue;
+
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(row);
+  }
+
+  const findings: TargetFinding[] = [];
+
+  for (const [key, group] of groups.entries()) {
+    const sorted = group
+      .filter((r) => r[validFromKey] && r[validToKey])
+      .sort(
+        (a, b) =>
+          new Date(a[validFromKey]).getTime() -
+          new Date(b[validFromKey]).getTime(),
+      );
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const current = sorted[i];
+      const next = sorted[i + 1];
+
+      const currentTo = new Date(current[validToKey]).getTime();
+      const nextFrom = new Date(next[validFromKey]).getTime();
+
+      if (currentTo > nextFrom) {
+        findings.push({
+          id: "valid-overlap-bitemporal",
+          title: "Valid-time overlap within visible slice detected",
+          severity: "high",
+          evidence: [
+            `Entity ${key}`,
+            `${current[validFromKey]} → ${current[validToKey]}`,
+            `${next[validFromKey]} → ${next[validToKey]}`,
+          ],
+          recommendation:
+            "Fix overlapping valid-time intervals within the same visible-time slice.",
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 function validateTargetTable(
   rawInput: string,
   semanticsOverride: Partial<HistoricalSemantics> = {},
 ): TargetValidationResult {
   const parsed = parseCSV(rawInput, { maxColumns: "all" });
   const rows = parsed.rows;
-  const columns = parsed.headerMappings.map((mapping) => mapping.normalized);
+  const columns = parsed.headerMappings.map((m) => m.normalized);
 
   const detectedColumns: DetectedColumns = {
     businessKey: detectColumn(columns, [
@@ -741,8 +798,6 @@ function validateTargetTable(
       "snapshot_date",
       "reference_date",
       "reporting_date",
-      "bk_reference_date",
-      "month_end",
       "as_of_date",
       "stichtag",
     ]),
@@ -761,63 +816,38 @@ function validateTargetTable(
     detectedSignals: detectedSemantics.detectedSignals,
   };
 
-  const sourceSystemColumn = detectColumn(columns, [
-    "source_system",
-    "source",
-    "system",
-    "source_name",
-    "system_name",
-  ]);
-
-  const effectiveBusinessKey =
-    detectedColumns.businessKey && sourceSystemColumn
-      ? "__validation_business_key"
-      : detectedColumns.businessKey;
-
-  const effectiveRows =
-    detectedColumns.businessKey && sourceSystemColumn
-      ? rows.map((row) => ({
-          ...row,
-          __validation_business_key: [
-            row[detectedColumns.businessKey!],
-            row[sourceSystemColumn],
-          ].join("||"),
-        }))
-      : rows;
-
   const findings: TargetFinding[] = [];
 
-  if (rows.length === 0) {
-    findings.push({
-      id: "no-rows",
-      title: "No rows detected",
-      severity: "high",
-      evidence: ["The pasted input could not be parsed into data rows."],
-      recommendation:
-        "Paste a tabular result including a header row and at least one data row.",
-    });
+  // =========================
+  // BASIC VALIDATION
+  // =========================
 
-    return buildResult(rows, columns, detectedColumns, semantics, findings);
+  if (rows.length === 0) {
+    return buildResult(rows, columns, detectedColumns, semantics, [
+      {
+        id: "no-rows",
+        title: "No rows detected",
+        severity: "high",
+        evidence: ["Input could not be parsed."],
+        recommendation: "Provide valid tabular data.",
+      },
+    ]);
   }
 
   if (!detectedColumns.businessKey) {
     findings.push({
       id: "missing-business-key",
-      title: "No business key column detected",
+      title: "No business key detected",
       severity: "high",
-      evidence: [
-        "No entity_id, business_key, policy_id, contract_id or similar key column was detected.",
-      ],
-      recommendation:
-        "Include or map the business key that defines the grain of the target table.",
+      evidence: ["No entity/business key found."],
+      recommendation: "Provide a stable business key.",
     });
   }
 
   const hasEventSemantics =
-    rows.some((row) => row.event_id !== undefined) ||
-    rows.some((row) => row.event_time !== undefined) ||
-    rows.some((row) => row.event_type !== undefined) ||
-    rows.some((row) => row.prioritization_status !== undefined);
+    rows.some((r) => r.event_id !== undefined) ||
+    rows.some((r) => r.event_time !== undefined) ||
+    rows.some((r) => r.event_type !== undefined);
 
   if (
     !hasEventSemantics &&
@@ -825,37 +855,30 @@ function validateTargetTable(
   ) {
     findings.push({
       id: "missing-valid-time",
-      title: "No complete valid-time interval detected",
+      title: "No valid-time interval detected",
       severity: "medium",
       evidence: [
         detectedColumns.validFrom
-          ? `Detected valid-from column: ${detectedColumns.validFrom}`
-          : "No valid-from column detected.",
+          ? `valid_from: ${detectedColumns.validFrom}`
+          : "missing valid_from",
         detectedColumns.validTo
-          ? `Detected valid-to column: ${detectedColumns.validTo}`
-          : "No valid-to column detected.",
+          ? `valid_to: ${detectedColumns.validTo}`
+          : "missing valid_to",
       ],
-      recommendation:
-        "For historized target tables, include valid_from and valid_to or equivalent business-valid interval columns.",
+      recommendation: "Add valid_from / valid_to for historization.",
     });
   }
 
+  // =========================
+  // VALID TIME CORE
+  // =========================
+
   if (
-    effectiveBusinessKey &&
+    detectedColumns.businessKey &&
     detectedColumns.validFrom &&
     detectedColumns.validTo
   ) {
-    if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
-      findings.push(
-        ...detectDuplicateIntervals(
-          effectiveRows,
-          effectiveBusinessKey,
-          detectedColumns.validFrom,
-          detectedColumns.validTo,
-        ),
-      );
-    }
-
+    // invalid intervals
     findings.push(
       ...detectInvalidIntervals(
         rows,
@@ -864,353 +887,89 @@ function validateTargetTable(
       ),
     );
 
-    if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
-      findings.push(
-        ...detectValidTimeOverlaps(
-          effectiveRows,
-          effectiveBusinessKey,
-          detectedColumns.validFrom,
-          detectedColumns.validTo,
-          semantics,
-        ),
-      );
-    }
+    // basic overlaps (always)
+    findings.push(
+      ...detectValidTimeOverlaps(
+        rows,
+        detectedColumns.businessKey,
+        detectedColumns.validFrom,
+        detectedColumns.validTo,
+        semantics,
+      ),
+    );
 
-    if (!detectedColumns.snapshotDate) {
+    // =========================
+    // BITEMPORAL DETECTION
+    // =========================
+
+    const hasVisibleColumns =
+      !!detectedColumns.visibleFrom &&
+      !!detectedColumns.visibleTo;
+
+    const hasVisibleVariance =
+      hasVisibleColumns &&
+      (new Set(rows.map((r) => r[detectedColumns.visibleFrom!])).size > 1 ||
+        new Set(rows.map((r) => r[detectedColumns.visibleTo!])).size > 1);
+
+    const useBitemporal =
+      hasVisibleColumns &&
+      detectedColumns.businessKey &&
+      detectedColumns.validFrom &&
+      detectedColumns.validTo &&
+      hasVisibleVariance;
+
+    if (useBitemporal) {
       findings.push(
-        ...detectValidTimeGaps(
-          effectiveRows,
-          effectiveBusinessKey,
+        ...detectValidTimeOverlapsWithinVisibleSlices(
+          rows,
+          detectedColumns.businessKey,
           detectedColumns.validFrom,
           detectedColumns.validTo,
+          detectedColumns.visibleFrom!,
+          detectedColumns.visibleTo!,
           semantics,
         ),
       );
     }
   }
 
-  if (detectedColumns.snapshotDate && effectiveBusinessKey) {
-    if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
-      findings.push(
-        ...detectSnapshotDuplicates(
-          effectiveRows,
-          effectiveBusinessKey,
-          detectedColumns.snapshotDate,
-        ),
-      );
-    }
+  // =========================
+  // SNAPSHOT
+  // =========================
 
+  if (detectedColumns.snapshotDate && detectedColumns.businessKey) {
     findings.push(
-      ...detectMissingSnapshotCoverage(
-        effectiveRows,
-        effectiveBusinessKey,
+      ...detectSnapshotDuplicates(
+        rows,
+        detectedColumns.businessKey,
         detectedColumns.snapshotDate,
       ),
     );
 
-    if (!(detectedColumns.visibleFrom && detectedColumns.visibleTo)) {
-      findings.push(
-        ...detectMonthlySnapshotGaps(
-          effectiveRows,
-          effectiveBusinessKey,
-          detectedColumns.snapshotDate,
-        ),
-      );
-    }
+    findings.push(
+      ...detectMissingSnapshotCoverage(
+        rows,
+        detectedColumns.businessKey,
+        detectedColumns.snapshotDate,
+      ),
+    );
+
+    findings.push(
+      ...detectMonthlySnapshotGaps(
+        rows,
+        detectedColumns.businessKey,
+        detectedColumns.snapshotDate,
+      ),
+    );
   }
+
+  // =========================
+  // DIMENSIONS
+  // =========================
 
   if (detectedColumns.dimensionColumns.length > 0) {
     findings.push(
       ...detectMissingDimensionValues(rows, detectedColumns.dimensionColumns),
-    );
-  }
-
-  findings.push(...detectRiskyAlignmentMethods(rows));
-  findings.push(...detectSnapshotReproducibilityRisk(rows, detectedColumns));
-  findings.push(...detectHistoricalConformanceRisk(rows));
-  findings.push(...detectStateEventAlignmentRisk(rows));
-  findings.push(...detectCoverageGapRisk(rows));
-  findings.push(...detectStateReductionRisk(rows));
-  findings.push(...detectEventPrioritizationRisk(rows));
-  findings.push(...detectRectangleDecompositionRisk(rows));
-  findings.push(...detectRelationshipHistoryRisk(rows));
-
-  function detectRelationshipHistoryRisk(rows: any[]): TargetFinding[] {
-    const statusColumn = "relationship_status";
-
-    if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
-
-    const riskyRows = rows.filter((row) => {
-      const value = String(row[statusColumn] ?? "")
-        .trim()
-        .toLowerCase();
-
-      return [
-        "current_relationship_used",
-        "wrong_relationship",
-        "missing_relationship_history",
-        "current_broker_used",
-        "historical_attribution_wrong",
-      ].includes(value);
-    });
-
-    if (riskyRows.length === 0) return [];
-
-    return [
-      {
-        id: "relationship-history-risk",
-        title: "Relationship history risk detected",
-        severity: "high",
-        evidence: [
-          `${riskyRows.length} row${riskyRows.length === 1 ? "" : "s"} use a current or incorrect relationship for historical attribution.`,
-        ],
-        recommendation:
-          "Use the relationship that was valid at the reporting date instead of the current relationship.",
-      },
-    ];
-  }
-
-  function detectRectangleDecompositionRisk(rows: any[]): TargetFinding[] {
-    const statusColumn = "decomposition_status";
-
-    if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
-
-    const riskyRows = rows.filter((row) => {
-      const value = String(row[statusColumn] ?? "")
-        .trim()
-        .toLowerCase();
-
-      return [
-        "not_decomposed",
-        "overlapping_projection",
-        "ambiguous_rectangle",
-        "not_split",
-        "raw_projection",
-      ].includes(value);
-    });
-
-    if (riskyRows.length === 0) return [];
-
-    return [
-      {
-        id: "rectangle-decomposition-risk",
-        title: "Rectangle decomposition risk detected",
-        severity: "high",
-        evidence: [
-          `${riskyRows.length} row${
-            riskyRows.length === 1 ? "" : "s"
-          } are marked as not decomposed or ambiguous projections.`,
-        ],
-        recommendation:
-          "Decompose independently historized attributes into stable valid × visible rectangles before publishing the projected reporting table.",
-      },
-    ];
-  }
-
-  function detectHistoricalConformanceRisk(rows: any[]): TargetFinding[] {
-    const statusColumns = [
-      "conformance_status",
-      "conformity_status",
-      "historical_conformance_status",
-      "mapping_status",
-    ];
-
-    const existingStatusColumn = statusColumns.find((column) =>
-      rows.some((row) => row[column] !== undefined),
-    );
-
-    if (!existingStatusColumn) return [];
-
-    const riskyValues = new Set([
-      "unconformed",
-      "conflict",
-      "conflicting_history",
-      "source_conflict",
-      "inconsistent",
-      "unresolved",
-    ]);
-
-    const riskyRows = rows.filter((row) => {
-      const value = String(row[existingStatusColumn] ?? "")
-        .trim()
-        .toLowerCase();
-
-      return riskyValues.has(value);
-    });
-
-    if (riskyRows.length === 0) return [];
-
-    const examplePeriods = riskyRows
-      .slice(0, 3)
-      .map(
-        (row) =>
-          row.snapshot_date ??
-          row.reference_date ??
-          row.reporting_date ??
-          row.valid_from ??
-          "unknown period",
-      )
-      .join(", ");
-
-    return [
-      {
-        id: "historical-conformance-risk",
-        title: "Historical conformance risk detected",
-        severity: "high",
-        evidence: [
-          `${riskyRows.length} row${
-            riskyRows.length === 1 ? "" : "s"
-          } have ${existingStatusColumn} marked as unresolved or unconformed.`,
-          `Example affected periods: ${examplePeriods}.`,
-        ],
-        recommendation:
-          "Resolve cross-system historical conflicts before publishing the reporting model. Define which source owns each attribute, whether values should be conformed, and how conflicting history should be represented.",
-      },
-    ];
-  }
-
-  function detectStateEventAlignmentRisk(rows: any[]): TargetFinding[] {
-    const methodColumns = [
-      "alignment_method",
-      "event_alignment_method",
-      "join_method",
-      "modeling_method",
-      "generation_method",
-    ];
-
-    const statusColumns = [
-      "alignment_status",
-      "event_alignment_status",
-      "match_status",
-      "state_match_status",
-    ];
-
-    const existingMethodColumn = methodColumns.find((column) =>
-      rows.some((row) => row[column] !== undefined),
-    );
-
-    const existingStatusColumn = statusColumns.find((column) =>
-      rows.some((row) => row[column] !== undefined),
-    );
-
-    const riskyMethodValues = new Set([
-      "current_state_join",
-      "latest_state_join",
-      "no_event_time_alignment",
-      "event_join_without_valid_time",
-      "wrong_state_interval",
-    ]);
-
-    const riskyStatusValues = new Set([
-      "no_matching_state",
-      "multiple_matching_states",
-      "wrong_state",
-      "outside_state_interval",
-      "ambiguous_state_match",
-    ]);
-
-    const riskyMethodRows = existingMethodColumn
-      ? rows.filter((row) => {
-          const value = String(row[existingMethodColumn] ?? "")
-            .trim()
-            .toLowerCase();
-
-          return riskyMethodValues.has(value);
-        })
-      : [];
-
-    const riskyStatusRows = existingStatusColumn
-      ? rows.filter((row) => {
-          const value = String(row[existingStatusColumn] ?? "")
-            .trim()
-            .toLowerCase();
-
-          return riskyStatusValues.has(value);
-        })
-      : [];
-
-    if (riskyMethodRows.length === 0 && riskyStatusRows.length === 0) return [];
-
-    const affectedRows = [...riskyMethodRows, ...riskyStatusRows];
-
-    const exampleEvents = affectedRows
-      .slice(0, 3)
-      .map(
-        (row) =>
-          row.event_id ??
-          row.claim_id ??
-          row.transaction_id ??
-          row.event_date ??
-          row.event_timestamp ??
-          "unknown event",
-      )
-      .join(", ");
-
-    const evidence = [];
-
-    if (riskyMethodRows.length > 0 && existingMethodColumn) {
-      evidence.push(
-        `${riskyMethodRows.length} row${
-          riskyMethodRows.length === 1 ? "" : "s"
-        } use ${existingMethodColumn} with a risky state-event alignment method.`,
-      );
-    }
-
-    if (riskyStatusRows.length > 0 && existingStatusColumn) {
-      evidence.push(
-        `${riskyStatusRows.length} row${
-          riskyStatusRows.length === 1 ? "" : "s"
-        } have ${existingStatusColumn} marked as no match, ambiguous match or wrong state.`,
-      );
-    }
-
-    evidence.push(`Example affected events: ${exampleEvents}.`);
-
-    return [
-      {
-        id: "state-event-alignment-risk",
-        title: "State-event alignment risk detected",
-        severity: "high",
-        evidence,
-        recommendation:
-          "Align each event timestamp to the state interval that was valid when the event occurred. Avoid current-state joins and validate that each event resolves to exactly one intended historical state.",
-      },
-    ];
-  }
-
-  if (
-    (detectedColumns.visibleFrom && !detectedColumns.visibleTo) ||
-    (!detectedColumns.visibleFrom && detectedColumns.visibleTo)
-  ) {
-    findings.push({
-      id: "incomplete-visible-time",
-      title: "Incomplete visible-time interval detected",
-      severity: "medium",
-      evidence: [
-        detectedColumns.visibleFrom
-          ? `Detected visible-from column: ${detectedColumns.visibleFrom}`
-          : "No visible-from column detected.",
-        detectedColumns.visibleTo
-          ? `Detected visible-to column: ${detectedColumns.visibleTo}`
-          : "No visible-to column detected.",
-      ],
-      recommendation:
-        "If the target table is bitemporal, include both visible_from and visible_to columns.",
-    });
-  }
-
-  if (
-    detectedColumns.visibleFrom &&
-    detectedColumns.visibleTo &&
-    detectedColumns.validFrom &&
-    detectedColumns.validTo
-  ) {
-    findings.push(
-      ...detectInvalidVisibleIntervals(
-        rows,
-        detectedColumns.visibleFrom,
-        detectedColumns.visibleTo,
-      ),
     );
   }
 
