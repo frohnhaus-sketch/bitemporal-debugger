@@ -105,6 +105,9 @@ export function TargetTableValidationPanel() {
   const [semanticsOverride, setSemanticsOverride] = useState<
     Partial<HistoricalSemantics>
   >({});
+  const [columnOverrides, setColumnOverrides] = useState<
+    Partial<DetectedColumns>
+  >({});
 
   function loadExampleValidation(
     example: (typeof TARGET_VALIDATION_EXAMPLES)[number],
@@ -146,8 +149,9 @@ export function TargetTableValidationPanel() {
 
   const result = useMemo(() => {
     if (!input.trim()) return null;
-    return validateTargetTable(input, semanticsOverride);
-  }, [input, semanticsOverride]);
+
+    return validateTargetTable(input, semanticsOverride, columnOverrides);
+  }, [input, semanticsOverride, columnOverrides]);
 
   useEffect(() => {
     if (!result) return;
@@ -170,6 +174,13 @@ export function TargetTableValidationPanel() {
       hasSnapshotDate: Boolean(result.detectedColumns.snapshotDate),
     });
   }, [result]);
+
+  const effectiveColumns = result
+    ? {
+        ...result.detectedColumns,
+        ...columnOverrides,
+      }
+    : null;
 
   useEffect(() => {
     if (!result) return;
@@ -659,28 +670,157 @@ export function TargetTableValidationPanel() {
                 fontSize: 14,
               }}
             >
-              Show parsed columns
+              Column Detection
             </summary>
 
             <div
               style={{
-                marginTop: 10,
-                padding: 12,
-                borderRadius: 10,
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                color: "#475569",
-                fontSize: 12,
-                lineHeight: 1.5,
-                wordBreak: "break-word",
+                marginTop: 12,
+                display: "grid",
+                gap: 12,
               }}
             >
-              {result.columns.join(", ")}
+              <ColumnSelector
+                label="Business Key"
+                value={
+                  columnOverrides.businessKey ??
+                  result.detectedColumns.businessKey
+                }
+                options={result.columns}
+                onChange={(value) =>
+                  setColumnOverrides((prev) => ({
+                    ...prev,
+                    businessKey: value || null,
+                  }))
+                }
+              />
+
+              <ColumnSelector
+                label="Valid From"
+                value={
+                  columnOverrides.validFrom ?? result.detectedColumns.validFrom
+                }
+                options={result.columns}
+                onChange={(value) =>
+                  setColumnOverrides((prev) => ({
+                    ...prev,
+                    validFrom: value || null,
+                  }))
+                }
+              />
+
+              <ColumnSelector
+                label="Valid To"
+                value={
+                  columnOverrides.validTo ?? result.detectedColumns.validTo
+                }
+                options={result.columns}
+                onChange={(value) =>
+                  setColumnOverrides((prev) => ({
+                    ...prev,
+                    validTo: value || null,
+                  }))
+                }
+              />
+
+              <ColumnSelector
+                label="Visible From"
+                value={
+                  columnOverrides.visibleFrom ??
+                  result.detectedColumns.visibleFrom
+                }
+                options={result.columns}
+                onChange={(value) =>
+                  setColumnOverrides((prev) => ({
+                    ...prev,
+                    visibleFrom: value || null,
+                  }))
+                }
+              />
+
+              <ColumnSelector
+                label="Visible To"
+                value={
+                  columnOverrides.visibleTo ?? result.detectedColumns.visibleTo
+                }
+                options={result.columns}
+                onChange={(value) =>
+                  setColumnOverrides((prev) => ({
+                    ...prev,
+                    visibleTo: value || null,
+                  }))
+                }
+              />
+
+              <ColumnSelector
+                label="Snapshot Date"
+                value={
+                  columnOverrides.snapshotDate ??
+                  result.detectedColumns.snapshotDate
+                }
+                options={result.columns}
+                onChange={(value) =>
+                  setColumnOverrides((prev) => ({
+                    ...prev,
+                    snapshotDate: value || null,
+                  }))
+                }
+              />
             </div>
           </details>
         </div>
       )}
     </section>
+  );
+}
+
+function ColumnSelector({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string | null;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#475569",
+        }}
+      >
+        {label}
+      </span>
+
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          padding: "8px 10px",
+          borderRadius: 8,
+          border: "1px solid #cbd5e1",
+        }}
+      >
+        <option value="">Not assigned</option>
+
+        {options.map((column) => (
+          <option key={column} value={column}>
+            {column}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -744,6 +884,7 @@ function detectValidTimeOverlapsWithinVisibleSlices(
 function validateTargetTable(
   rawInput: string,
   semanticsOverride: Partial<HistoricalSemantics> = {},
+  columnOverrides: Partial<DetectedColumns> = {},
 ): TargetValidationResult {
   const parsed = parseCSV(rawInput, { maxColumns: "all" });
   const rows = parsed.rows;
@@ -804,6 +945,11 @@ function validateTargetTable(
     dimensionColumns: detectDimensionColumns(columns),
   };
 
+  const effectiveColumns: DetectedColumns = {
+    ...detectedColumns,
+    ...columnOverrides,
+  };
+
   const detectedSemantics = detectHistoricalSemantics(
     rows,
     columns,
@@ -834,7 +980,7 @@ function validateTargetTable(
     ]);
   }
 
-  if (!detectedColumns.businessKey) {
+  if (!effectiveColumns.businessKey) {
     findings.push({
       id: "missing-business-key",
       title: "No business key detected",
@@ -851,18 +997,18 @@ function validateTargetTable(
 
   if (
     !hasEventSemantics &&
-    (!detectedColumns.validFrom || !detectedColumns.validTo)
+    (!effectiveColumns.validFrom || !effectiveColumns.validTo)
   ) {
     findings.push({
       id: "missing-valid-time",
       title: "No valid-time interval detected",
       severity: "medium",
       evidence: [
-        detectedColumns.validFrom
-          ? `valid_from: ${detectedColumns.validFrom}`
+        effectiveColumns.validFrom
+          ? `valid_from: ${effectiveColumns.validFrom}`
           : "missing valid_from",
-        detectedColumns.validTo
-          ? `valid_to: ${detectedColumns.validTo}`
+        effectiveColumns.validTo
+          ? `valid_to: ${effectiveColumns.validTo}`
           : "missing valid_to",
       ],
       recommendation: "Add valid_from / valid_to for historization.",
@@ -874,16 +1020,16 @@ function validateTargetTable(
   // =========================
 
   if (
-    detectedColumns.businessKey &&
-    detectedColumns.validFrom &&
-    detectedColumns.validTo
+    effectiveColumns.businessKey &&
+    effectiveColumns.validFrom &&
+    effectiveColumns.validTo
   ) {
     // invalid intervals
     findings.push(
       ...detectInvalidIntervals(
         rows,
-        detectedColumns.validFrom,
-        detectedColumns.validTo,
+        effectiveColumns.validFrom,
+        effectiveColumns.validTo,
       ),
     );
 
@@ -891,9 +1037,9 @@ function validateTargetTable(
     findings.push(
       ...detectValidTimeOverlaps(
         rows,
-        detectedColumns.businessKey,
-        detectedColumns.validFrom,
-        detectedColumns.validTo,
+        effectiveColumns.businessKey,
+        effectiveColumns.validFrom,
+        effectiveColumns.validTo,
         semantics,
       ),
     );
@@ -903,30 +1049,29 @@ function validateTargetTable(
     // =========================
 
     const hasVisibleColumns =
-      !!detectedColumns.visibleFrom &&
-      !!detectedColumns.visibleTo;
+      !!effectiveColumns.visibleFrom && !!effectiveColumns.visibleTo;
 
     const hasVisibleVariance =
       hasVisibleColumns &&
-      (new Set(rows.map((r) => r[detectedColumns.visibleFrom!])).size > 1 ||
-        new Set(rows.map((r) => r[detectedColumns.visibleTo!])).size > 1);
+      (new Set(rows.map((r) => r[effectiveColumns.visibleFrom!])).size > 1 ||
+        new Set(rows.map((r) => r[effectiveColumns.visibleTo!])).size > 1);
 
     const useBitemporal =
       hasVisibleColumns &&
-      detectedColumns.businessKey &&
-      detectedColumns.validFrom &&
-      detectedColumns.validTo &&
+      effectiveColumns.businessKey &&
+      effectiveColumns.validFrom &&
+      effectiveColumns.validTo &&
       hasVisibleVariance;
 
     if (useBitemporal) {
       findings.push(
         ...detectValidTimeOverlapsWithinVisibleSlices(
           rows,
-          detectedColumns.businessKey,
-          detectedColumns.validFrom,
-          detectedColumns.validTo,
-          detectedColumns.visibleFrom!,
-          detectedColumns.visibleTo!,
+          effectiveColumns.businessKey,
+          effectiveColumns.validFrom,
+          effectiveColumns.validTo,
+          effectiveColumns.visibleFrom!,
+          effectiveColumns.visibleTo!,
           semantics,
         ),
       );
@@ -937,28 +1082,28 @@ function validateTargetTable(
   // SNAPSHOT
   // =========================
 
-  if (detectedColumns.snapshotDate && detectedColumns.businessKey) {
+  if (effectiveColumns.snapshotDate && effectiveColumns.businessKey) {
     findings.push(
       ...detectSnapshotDuplicates(
         rows,
-        detectedColumns.businessKey,
-        detectedColumns.snapshotDate,
+        effectiveColumns.businessKey,
+        effectiveColumns.snapshotDate,
       ),
     );
 
     findings.push(
       ...detectMissingSnapshotCoverage(
         rows,
-        detectedColumns.businessKey,
-        detectedColumns.snapshotDate,
+        effectiveColumns.businessKey,
+        effectiveColumns.snapshotDate,
       ),
     );
 
     findings.push(
       ...detectMonthlySnapshotGaps(
         rows,
-        detectedColumns.businessKey,
-        detectedColumns.snapshotDate,
+        effectiveColumns.businessKey,
+        effectiveColumns.snapshotDate,
       ),
     );
   }
@@ -967,9 +1112,9 @@ function validateTargetTable(
   // DIMENSIONS
   // =========================
 
-  if (detectedColumns.dimensionColumns.length > 0) {
+  if (effectiveColumns.dimensionColumns.length > 0) {
     findings.push(
-      ...detectMissingDimensionValues(rows, detectedColumns.dimensionColumns),
+      ...detectMissingDimensionValues(rows, effectiveColumns.dimensionColumns),
     );
   }
 
