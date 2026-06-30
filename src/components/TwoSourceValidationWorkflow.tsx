@@ -13,7 +13,8 @@ import { TwoSourceInputPanel } from "@/components/TwoSourceInputPanel";
 import { detectDrift, detectGaps, detectOverlapMarkers } from "@/lib/analysis";
 import { track } from "@/lib/analytics";
 import { analyzeJoinability } from "@/lib/joinability";
-import { parseCSV, type HeaderMapping } from "@/lib/parser";
+import { parseCSV } from "@/lib/parser";
+import { type HeaderMapping } from "@/lib/types";
 import {
   analyzeSourceRelationship,
   detectHistoricalPatterns,

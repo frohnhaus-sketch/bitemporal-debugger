@@ -2,9 +2,17 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "Historical Backfill",
+  title: "Historical Backfill Explained – Reconstructing Missing History",
+
   description:
-    "Learn how historical backfills reconstruct missing history and why they can affect reproducibility, corrections and reporting trust.",
+    "Learn how historical backfills reconstruct missing data and how they impact reproducibility, corrections and reporting trust.",
+
+  keywords: [
+    "historical backfill",
+    "data repair",
+    "temporal correction",
+    "SCD2",
+  ],
 };
 
 export default function Page() {

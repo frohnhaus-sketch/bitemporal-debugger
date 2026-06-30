@@ -53,14 +53,35 @@ export default function RectangleDecompositionPage() {
             </div>
           </div>
 
-          <h1 style={h1Style}>Historical Conformance</h1>
-
           <h1 style={h1Style}>Rectangle Decomposition</h1>
 
           <p style={heroTextStyle}>
             Rectangle Decomposition creates stable reporting intervals from
             multiple independently historized attributes.
           </p>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={paragraphStyle}>
+              Rectangle decomposition breaks complex temporal logic into
+              independent valid-time rectangles for analysis.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Decomposition of overlapping intervals</li>
+              <li>Normalization of multi-temporal attributes</li>
+              <li>Query simplification through partitioning</li>
+              <li>Improved join determinism</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24, minWidth: 0 }}>
@@ -97,6 +118,15 @@ export default function RectangleDecompositionPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Decomposition transforms messy temporal data into deterministic,
+              queryable structures.
+            </p>
+          </section>
 
           <PatternTestCaseCard />
 
@@ -184,6 +214,27 @@ export default function RectangleDecompositionPage() {
           </WhiteCard>
         </section>
 
+        <section style={{ marginTop: 30 }}>
+          <h2>How this pattern relates to other temporal models</h2>
+
+          <p>
+            Rectangle decomposition is often used as a preprocessing step in
+            bitemporal and snapshot systems to simplify complex temporal
+            overlaps.
+          </p>
+
+          <ul>
+            <li>Bitemporal Modeling</li>
+            <li>Historical Overlap</li>
+            <li>State Reduction</li>
+            <li>Snapshot Reproducibility</li>
+          </ul>
+
+          <p>
+            It is especially useful in systems with heavy corrections or dense
+            historical updates.
+          </p>
+        </section>
         <RelatedPatterns current="rectangle_decomposition" />
 
         <TryItCard />
@@ -895,7 +946,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "anywhere",
   wordBreak: "normal",
 };
@@ -981,7 +1032,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -1108,7 +1159,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -1131,7 +1182,7 @@ const testCaseStepsStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
   paddingLeft: 26,
-  color: "#334155",
+  color: "#0f172a",
   fontSize: 16,
   lineHeight: 1.7,
   listStyleType: "decimal",

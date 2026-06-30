@@ -61,6 +61,34 @@ export default function EventPrioritizationPage() {
             Event Prioritization selects the business-relevant events from noisy
             historical event streams.
           </p>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={heroTextStyle}>
+              Event prioritization resolves conflicts when multiple events
+              represent competing historical outcomes.
+            </p>
+
+            <p style={paragraphStyle}>
+              It ensures deterministic selection of the correct business event
+              in temporal systems.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Event conflict resolution</li>
+              <li>Temporal ordering</li>
+              <li>Data consistency</li>
+              <li>Deterministic modeling</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -92,6 +120,15 @@ export default function EventPrioritizationPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Without prioritization, historical state becomes ambiguous. This
+              pattern ensures deterministic outcomes in temporal systems.
+            </p>
+          </section>
 
           <PatternTestCaseCard />
 
@@ -170,6 +207,24 @@ export default function EventPrioritizationPage() {
               history from reporting-relevant business history.
             </p>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>How this pattern fits into temporal data modeling</h2>
+
+          <p>
+            Event prioritization is required in event-driven systems where
+            multiple sources can generate conflicting updates.
+          </p>
+
+          <ul>
+            <li>Event sourcing</li>
+            <li>Temporal ordering</li>
+            <li>State resolution</li>
+            <li>Historical correctness</li>
+          </ul>
+
+          <p>It ensures stable and reproducible historical reconstruction.</p>
         </section>
 
         <RelatedPatterns current="event_prioritization" />
@@ -658,7 +713,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -736,7 +791,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -863,7 +918,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -886,7 +941,7 @@ const testCaseStepsStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
   paddingLeft: 26,
-  color: "#334155",
+  color: "#0f172a",
   fontSize: 16,
   lineHeight: 1.7,
   listStyleType: "decimal",

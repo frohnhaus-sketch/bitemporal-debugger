@@ -39,6 +39,29 @@ export default function SnapshotFactModelingPage() {
             Snapshot Fact Modeling creates reproducible fact rows for fixed
             reporting dates such as month-end, quarter-end or daily snapshots.
           </p>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={paragraphStyle}>
+              Snapshot fact modeling stores periodic snapshots of business
+              states for reporting and analytics.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Periodic state capture (daily, monthly)</li>
+              <li>Fixed reporting grains</li>
+              <li>Fast analytical queries</li>
+              <li>Loss of fine-grained temporal detail</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -69,6 +92,15 @@ export default function SnapshotFactModelingPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Snapshot models trade temporal accuracy for query performance and
+              simplicity.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -148,6 +180,26 @@ export default function SnapshotFactModelingPage() {
           </WhiteCard>
         </section>
 
+        <section style={{ marginTop: 30 }}>
+          <h2>How this pattern relates to other temporal models</h2>
+
+          <p>
+            Snapshot fact models are simpler alternatives to full bitemporal
+            systems.
+          </p>
+
+          <ul>
+            <li>Bitemporal Modeling</li>
+            <li>State Modeling</li>
+            <li>Snapshot Reproducibility</li>
+            <li>Historical Coverage Gap</li>
+          </ul>
+
+          <p>
+            They are widely used in BI systems where simplicity matters more
+            than precision.
+          </p>
+        </section>
         <RelatedPatterns current="snapshot_fact_modeling" />
 
         <TryItCard />
@@ -434,7 +486,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -522,7 +574,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -649,7 +701,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 

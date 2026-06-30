@@ -39,6 +39,29 @@ export default function StateModelingPage() {
             State Modeling represents the changing state of a business entity
             over valid-time intervals.
           </p>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={paragraphStyle}>
+              State modeling represents business entities as time-aware states
+              using validity intervals.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Time-based entity representation</li>
+              <li>Validity interval modeling</li>
+              <li>Historical state reconstruction</li>
+              <li>Foundation for temporal analytics</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -69,14 +92,23 @@ export default function StateModelingPage() {
 
           <DarkExampleCard />
 
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              State models allow systems to reconstruct "what was true when"
+              consistently.
+            </p>
+          </section>
+
           <WhiteCard
             eyebrow="Why it happens"
             title="Current values are not enough for historical reporting."
           >
             <p style={paragraphStyle}>
-              Operational systems often optimize for the latest state. Historical
-              reporting needs previous states as well, with clear start and end
-              boundaries.
+              Operational systems often optimize for the latest state.
+              Historical reporting needs previous states as well, with clear
+              start and end boundaries.
             </p>
 
             <p style={paragraphStyle}>
@@ -150,6 +182,24 @@ export default function StateModelingPage() {
           </WhiteCard>
         </section>
 
+        <section style={{ marginTop: 30 }}>
+          <h2>How this pattern relates to other temporal models</h2>
+
+          <p>
+            State modeling is the base layer for most temporal architectures.
+          </p>
+
+          <ul>
+            <li>Bitemporal Modeling</li>
+            <li>Relationship History</li>
+            <li>State Reduction</li>
+            <li>Snapshot Fact Modeling</li>
+          </ul>
+
+          <p>
+            It provides the foundation for all higher-level temporal reasoning.
+          </p>
+        </section>
         <RelatedPatterns current="state_modeling" />
 
         <TryItCard />
@@ -169,7 +219,11 @@ function DarkExampleCard() {
 
       <div style={stateGridStyle}>
         <StateCard status="Active" range="Jan – Jun" report="May report" />
-        <StateCard status="Cancelled" range="Jul – Dec" report="August report" />
+        <StateCard
+          status="Cancelled"
+          range="Jul – Dec"
+          report="August report"
+        />
       </div>
 
       <div style={exampleNoteStyle}>
@@ -434,7 +488,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -524,7 +578,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -651,7 +705,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 

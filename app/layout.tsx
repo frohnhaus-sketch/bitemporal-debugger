@@ -16,10 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: {
     default: "Historical Data Modeling Workbench",
-    template: "%s | Historical Data Modeling Workbench",
+    template:
+      "%s – Historical Data Modeling, SCD2, Bitemporal & Temporal Analytics",
   },
   description:
-    "Learn historical data modeling patterns, review SCD2 and bitemporal models, and validate historized reporting outputs.",
+    "Learn historical data modeling patterns including SCD2, bitemporal modeling, snapshot reporting, event modeling and temporal data architectures.",
 };
 
 export default function RootLayout({

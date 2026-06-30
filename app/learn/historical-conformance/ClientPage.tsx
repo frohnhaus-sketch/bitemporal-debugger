@@ -97,6 +97,32 @@ export default function HistoricalConformancePage() {
             Historical Conformance aligns multiple source histories into one
             consistent reporting view when systems disagree over time.
           </p>
+
+          <p style={paragraphStyle}>
+            Historical conformance ensures that multiple source systems align on
+            shared temporal semantics.
+          </p>
+
+          <p style={paragraphStyle}>
+            It detects inconsistencies in how systems interpret time, validity
+            and corrections.
+          </p>
+
+          <ul
+            style={{
+              marginTop: 14,
+              paddingLeft: 18,
+              display: "grid",
+              gap: 6,
+              color: "#0f172a",
+              fontWeight: 600,
+            }}
+          >
+            <li>Cross-system temporal alignment</li>
+            <li>Semantic consistency checks</li>
+            <li>Historical data validation</li>
+            <li>Source system reconciliation</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24, minWidth: 0 }}>
@@ -128,6 +154,19 @@ export default function HistoricalConformancePage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Enterprises often merge data from CRM, ERP and analytics systems
+              with different temporal rules.
+            </p>
+
+            <p>
+              Conformance validation prevents inconsistent historical reporting.
+            </p>
+          </section>
 
           <PatternTestCaseCard />
 
@@ -189,6 +228,26 @@ export default function HistoricalConformancePage() {
               model.
             </p>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>
+            Conformance is critical when integrating multiple historized
+            systems.
+          </p>
+
+          <ul>
+            <li>Bitemporal Modeling</li>
+            <li>Snapshot Reproducibility</li>
+            <li>State-State Alignment</li>
+            <li>Historical Correction</li>
+          </ul>
+
+          <p>It ensures consistency across distributed data architectures.</p>
         </section>
 
         <RelatedPatterns current="historical_conformance" />
@@ -758,7 +817,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -855,7 +914,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -982,7 +1041,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -1095,7 +1154,7 @@ const resultPeriodStyle: CSSProperties = {
 const resultMetaStyle: CSSProperties = {
   marginTop: 3,
   fontSize: 12,
-  color: "#64748b",
+  color: "#0f172a",
   fontWeight: 800,
 };
 
@@ -1138,14 +1197,14 @@ const testCaseTextStyle: CSSProperties = {
   marginBottom: 18,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const testCaseStepsStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
   paddingLeft: 26,
-  color: "#334155",
+  color: "#0f172a",
   fontSize: 16,
   lineHeight: 1.7,
   listStyleType: "decimal",

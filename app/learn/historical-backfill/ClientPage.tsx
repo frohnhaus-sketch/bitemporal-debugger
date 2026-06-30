@@ -39,6 +39,32 @@ export default function HistoricalBackfillPage() {
             Historical Backfill reconstructs past states, events or snapshots
             after historical data already exists.
           </p>
+
+          <p style={paragraphStyle}>
+            Historical backfill reconstructs missing historical data by
+            reprocessing or inferring past states.
+          </p>
+
+          <p style={paragraphStyle}>
+            It is used when historical coverage is incomplete or late-arriving
+            data needs integration.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Missing history reconstruction</li>
+            <li>Reprocessing pipelines</li>
+            <li>Temporal data repair</li>
+            <li>Historical completeness enforcement</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -69,6 +95,20 @@ export default function HistoricalBackfillPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Backfills are common in data warehouses after pipeline failures or
+              schema migrations.
+            </p>
+
+            <p>
+              They must be carefully designed to avoid rewriting historical
+              truth incorrectly.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -147,6 +187,28 @@ export default function HistoricalBackfillPage() {
               reportable.
             </p>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>
+            Backfills interact heavily with correction and snapshot systems.
+          </p>
+
+          <ul>
+            <li>Snapshot Reproducibility</li>
+            <li>Historical Correction</li>
+            <li>Historical Coverage Gap</li>
+            <li>State Modeling</li>
+          </ul>
+
+          <p>
+            It is often required after schema changes or data recovery
+            incidents.
+          </p>
         </section>
 
         <RelatedPatterns current="historical_backfill" />
@@ -435,7 +497,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -515,7 +577,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -642,7 +704,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 

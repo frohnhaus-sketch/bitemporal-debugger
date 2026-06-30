@@ -57,6 +57,31 @@ export default function HistoricalMatchAmbiguityPage() {
             Historical Match Ambiguity occurs when a temporal join produces
             multiple valid matches for the same business event or reporting row.
           </p>
+
+          <p style={paragraphStyle}>
+            Historical match ambiguity occurs when multiple historical records
+            satisfy the same temporal join condition.
+          </p>
+
+          <p style={paragraphStyle}>
+            This creates uncertainty in selecting the correct historical state.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Ambiguous temporal joins</li>
+            <li>Multiple valid matches</li>
+            <li>Unclear historical selection</li>
+            <li>Join resolution logic required</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -87,6 +112,17 @@ export default function HistoricalMatchAmbiguityPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Ambiguities appear when business rules do not define strict
+              temporal precedence.
+            </p>
+
+            <p>Deterministic tie-breakers are required for stable reporting.</p>
+          </section>
 
           <PatternTestCaseCard />
 
@@ -171,6 +207,25 @@ export default function HistoricalMatchAmbiguityPage() {
           </WhiteCard>
         </section>
 
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>
+            Ambiguity must be resolved before deterministic historical queries
+            can run.
+          </p>
+
+          <ul>
+            <li>Historical Winner Selection</li>
+            <li>State-State Alignment</li>
+            <li>Event Prioritization</li>
+            <li>Bitemporal Modeling</li>
+          </ul>
+
+          <p>It is a common problem in overlapping temporal datasets.</p>
+        </section>
         <RelatedPatterns current="historical_match_ambiguity" />
 
         <TryItCard />
@@ -670,7 +725,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -757,7 +812,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -910,7 +965,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -933,7 +988,7 @@ const testCaseStepsStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
   paddingLeft: 26,
-  color: "#334155",
+  color: "#0f172a",
   fontSize: 16,
   lineHeight: 1.7,
   listStyleType: "decimal",

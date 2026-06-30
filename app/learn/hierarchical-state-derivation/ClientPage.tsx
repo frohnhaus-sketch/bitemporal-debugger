@@ -97,6 +97,32 @@ export default function HierarchicalStateDerivationPage() {
             stored directly. It must be derived from the contract states over
             time.
           </p>
+
+          <p style={paragraphStyle}>
+            Hierarchical state derivation models how parent entities are
+            reconstructed from changing child-level history over time.
+          </p>
+
+          <p style={paragraphStyle}>
+            It ensures that derived business states remain consistent even when
+            underlying relationships evolve.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Hierarchical temporal aggregation</li>
+            <li>Parent-child state reconstruction</li>
+            <li>Time-aware rollups</li>
+            <li>Derived historical consistency</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -128,6 +154,20 @@ export default function HierarchicalStateDerivationPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Many enterprise systems need to roll up historical data across
+              changing hierarchies.
+            </p>
+
+            <p>
+              Without hierarchical derivation, reporting becomes inconsistent
+              across time periods.
+            </p>
+          </section>
 
           <NaiveVsCorrectCard />
 
@@ -277,6 +317,25 @@ export default function HierarchicalStateDerivationPage() {
           </WhiteCard>
         </section>
 
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>
+            This pattern is essential when hierarchical structures change over
+            time.
+          </p>
+
+          <ul>
+            <li>Relationship History</li>
+            <li>State Modeling</li>
+            <li>Event-to-State Projection</li>
+            <li>Historical Conformance</li>
+          </ul>
+
+          <p>It is commonly used in organizational and product hierarchies.</p>
+        </section>
         <RelatedPatterns current="hierarchical_state_derivation" />
 
         <TryItCard />
@@ -850,7 +909,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -953,7 +1012,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -1013,7 +1072,7 @@ const resultRowStyle: CSSProperties = {
 const resultLabelStyle: CSSProperties = {
   fontSize: 13,
   fontWeight: 900,
-  color: "#64748b",
+  color: "#0f172a",
 };
 
 const resultValueStyle: CSSProperties = {
@@ -1074,7 +1133,7 @@ const relatedConceptStyle: CSSProperties = {
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
   textDecoration: "none",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.6,
 };
 
@@ -1144,7 +1203,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -1187,7 +1246,7 @@ const decisionButtonStyle: CSSProperties = {
 
 const decisionHintStyle: CSSProperties = {
   margin: "12px 0 0",
-  color: "#64748b",
+  color: "#0f172a",
   fontSize: 13,
   lineHeight: 1.5,
 };

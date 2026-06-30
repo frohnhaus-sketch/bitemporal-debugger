@@ -106,14 +106,35 @@ export default function StateEventAlignmentPage() {
             </div>
           </div>
 
-          <h1 style={h1Style}>Historical Conformance</h1>
-
           <h1 style={h1Style}>State ↔ Event Alignment</h1>
 
           <p style={heroTextStyle}>
             State ↔ Event Alignment connects business events to the state that
             was valid when the event occurred.
           </p>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={paragraphStyle}>
+              State-event alignment connects point-in-time events with derived
+              historized state representations.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Event-to-state transformation</li>
+              <li>Temporal aggregation logic</li>
+              <li>Alignment of asynchronous data sources</li>
+              <li>Consistent historical reconstruction</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -144,6 +165,15 @@ export default function StateEventAlignmentPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Without alignment, event streams and historical tables diverge in
+              meaning.
+            </p>
+          </section>
 
           <ExampleDatasetCard />
 
@@ -216,6 +246,25 @@ export default function StateEventAlignmentPage() {
           </WhiteCard>
         </section>
 
+        <section style={{ marginTop: 30 }}>
+          <h2>How this pattern relates to other temporal models</h2>
+
+          <p>
+            This pattern is a bridge between event-driven architectures and
+            state-based historical models.
+          </p>
+
+          <ul>
+            <li>Event Modeling</li>
+            <li>Event-to-State Projection</li>
+            <li>State Modeling</li>
+            <li>Snapshot Reproducibility</li>
+          </ul>
+
+          <p>
+            It ensures events and derived states remain consistent over time.
+          </p>
+        </section>
         <RelatedPatterns current="state_event_alignment" />
 
         <TryItCard />
@@ -728,7 +777,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -825,7 +874,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -978,7 +1027,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -1091,7 +1140,7 @@ const resultPeriodStyle: CSSProperties = {
 const resultMetaStyle: CSSProperties = {
   marginTop: 3,
   fontSize: 12,
-  color: "#64748b",
+  color: "#0f172a",
   fontWeight: 800,
 };
 

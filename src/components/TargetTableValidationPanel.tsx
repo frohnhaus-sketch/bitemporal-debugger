@@ -1,58 +1,20 @@
 "use client";
 
+import { validateTargetTable } from "@/lib/targetTableValidator";
 import { track } from "@/lib/analytics";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { parseCSV } from "@/lib/parser";
-
-type TargetFinding = {
-  id: string;
-  title: string;
-  severity: "low" | "medium" | "high";
-  evidence: string[];
-  recommendation: string;
-  assumptions?: string[];
-};
-
-type DetectedColumns = {
-  businessKey: string | null;
-  validFrom: string | null;
-  validTo: string | null;
-  visibleFrom: string | null;
-  visibleTo: string | null;
-  snapshotDate: string | null;
-  dimensionColumns: string[];
-};
-
-type IntervalEndSemantics = "exclusive" | "inclusive";
-type SnapshotMeaning =
-  | "period_end"
-  | "period_start"
-  | "reporting_timestamp"
-  | "none";
-type OpenEndedValue = "9999-12-31" | "null" | "custom" | "none";
-type CorrectionMode = "valid_time" | "bitemporal" | "published_snapshot";
-
-type HistoricalSemantics = {
-  validIntervalEnd: IntervalEndSemantics;
-  visibleIntervalEnd: IntervalEndSemantics;
-  snapshotMeaning: SnapshotMeaning;
-  openEndedValue: OpenEndedValue;
-  correctionMode: CorrectionMode;
-  detectedSignals: string[];
-};
-
-type TargetValidationResult = {
-  rowCount: number;
-  columns: string[];
-  detectedColumns: DetectedColumns;
-  semantics: HistoricalSemantics;
-  findings: TargetFinding[];
-  qualitySummary: {
-    label: string;
-    description: string;
-    severity: "success" | "warning" | "danger";
-  };
-};
+import type {
+    TargetValidationResult,
+    HistoricalSemantics,
+    DetectedColumns,
+    IntervalEndSemantics,
+    OpenEndedValue,
+    CorrectionMode,
+    SemanticsConfidence,
+    SnapshotMeaning,
+} from "@/lib/types";
+import { sameDay } from "@/lib/utils/date";
+import { TargetFinding } from "@/lib/types";
 
 const TARGET_VALIDATION_EXAMPLES = [
   {
@@ -131,7 +93,7 @@ export function TargetTableValidationPanel() {
     setActiveExampleId(prefillName ?? "external_prefill");
 
     setTimeout(() => {
-      validationResultRef.current?.scrollIntoView({
+      resultRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
@@ -158,7 +120,7 @@ export function TargetTableValidationPanel() {
 
     track("target_validation_completed", {
       rowCount: result.rowCount,
-      columnCount: result.columns.length,
+      columnCount: result.columns.length, // ✅ FIX
       findingCount: result.findings.length,
       highRiskCount: result.findings.filter((f) => f.severity === "high")
         .length,
@@ -214,13 +176,13 @@ export function TargetTableValidationPanel() {
   const requiresValidTime =
     !result ||
     !(
-      result.columns.includes("event_id") ||
-      result.columns.includes("event_time") ||
-      result.columns.includes("event_type") ||
-      result.columns.includes("prioritization_status")
+      result.headerMappings.some((m) => m.normalized === "event_id") ||
+      result.headerMappings.some((m) => m.normalized === "event_time") ||
+      result.headerMappings.some((m) => m.normalized === "event_type") ||
+      result.headerMappings.some(
+        (m) => m.normalized === "prioritization_status",
+      )
     );
-
-  const validationResultRef = useRef<HTMLDivElement>(null);
 
   return (
     <section
@@ -380,7 +342,7 @@ export function TargetTableValidationPanel() {
       )}
 
       {result && (
-        <div ref={validationResultRef}>
+        <div ref={resultRef}>
           <div id="target-validation-result" ref={resultRef}>
             <div
               style={{
@@ -416,12 +378,12 @@ export function TargetTableValidationPanel() {
               />
               <ColumnCard
                 label="Valid from"
-                value={result.detectedColumns.validFrom}
+                value={result.detectedColumns.validFrom ?? null}
                 required={requiresValidTime}
               />
               <ColumnCard
                 label="Valid to"
-                value={result.detectedColumns.validTo}
+                value={result.detectedColumns.validTo ?? null}
                 required={requiresValidTime}
               />
               <ColumnCard
@@ -491,7 +453,7 @@ export function TargetTableValidationPanel() {
               }}
             >
               <SemanticSelect
-                label="Valid-time interval end"
+                label={`Valid-time interval end (${Math.round((result.semantics.confidence?.validIntervalEnd ?? 0) * 100)}%)`}
                 value={result.semantics.validIntervalEnd}
                 options={[
                   { value: "exclusive", label: "Exclusive [from, to)" },
@@ -506,7 +468,7 @@ export function TargetTableValidationPanel() {
               />
 
               <SemanticSelect
-                label="Visible-time interval end"
+                label={`Visible-time interval end (${Math.round((result.semantics.confidence?.visibleIntervalEnd ?? 0) * 100)}%)`}
                 value={result.semantics.visibleIntervalEnd}
                 options={[
                   { value: "exclusive", label: "Exclusive [from, to)" },
@@ -686,7 +648,7 @@ export function TargetTableValidationPanel() {
                   columnOverrides.businessKey ??
                   result.detectedColumns.businessKey
                 }
-                options={result.columns}
+                options={result.headerMappings.map((m) => m.original)}
                 onChange={(value) =>
                   setColumnOverrides((prev) => ({
                     ...prev,
@@ -698,13 +660,15 @@ export function TargetTableValidationPanel() {
               <ColumnSelector
                 label="Valid From"
                 value={
-                  columnOverrides.validFrom ?? result.detectedColumns.validFrom
+                  columnOverrides.validFrom ??
+                  result.detectedColumns.validFrom ??
+                  null
                 }
-                options={result.columns}
+                options={result.headerMappings.map((m) => m.original)}
                 onChange={(value) =>
                   setColumnOverrides((prev) => ({
                     ...prev,
-                    validFrom: value || null,
+                    validFrom: value ?? null,
                   }))
                 }
               />
@@ -712,13 +676,15 @@ export function TargetTableValidationPanel() {
               <ColumnSelector
                 label="Valid To"
                 value={
-                  columnOverrides.validTo ?? result.detectedColumns.validTo
+                  columnOverrides.validTo ??
+                  result.detectedColumns.validTo ??
+                  null
                 }
-                options={result.columns}
+                options={result.headerMappings.map((m) => m.original)}
                 onChange={(value) =>
                   setColumnOverrides((prev) => ({
                     ...prev,
-                    validTo: value || null,
+                    validTo: value ?? null,
                   }))
                 }
               />
@@ -729,7 +695,7 @@ export function TargetTableValidationPanel() {
                   columnOverrides.visibleFrom ??
                   result.detectedColumns.visibleFrom
                 }
-                options={result.columns}
+                options={result.headerMappings.map((m) => m.original)}
                 onChange={(value) =>
                   setColumnOverrides((prev) => ({
                     ...prev,
@@ -743,7 +709,7 @@ export function TargetTableValidationPanel() {
                 value={
                   columnOverrides.visibleTo ?? result.detectedColumns.visibleTo
                 }
-                options={result.columns}
+                options={result.headerMappings.map((m) => m.original)}
                 onChange={(value) =>
                   setColumnOverrides((prev) => ({
                     ...prev,
@@ -758,7 +724,7 @@ export function TargetTableValidationPanel() {
                   columnOverrides.snapshotDate ??
                   result.detectedColumns.snapshotDate
                 }
-                options={result.columns}
+                options={result.headerMappings.map((m) => m.original)}
                 onChange={(value) =>
                   setColumnOverrides((prev) => ({
                     ...prev,
@@ -824,672 +790,6 @@ function ColumnSelector({
   );
 }
 
-function detectValidTimeOverlapsWithinVisibleSlices(
-  rows: any[],
-  businessKey: string,
-  validFromKey: string,
-  validToKey: string,
-  visibleFromKey: string,
-  visibleToKey: string,
-  semantics: HistoricalSemantics,
-): TargetFinding[] {
-  const groups = new Map<string, any[]>();
-
-  for (const row of rows) {
-    const key = row[businessKey];
-    if (!key) continue;
-
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(row);
-  }
-
-  const findings: TargetFinding[] = [];
-
-  for (const [key, group] of groups.entries()) {
-    const sorted = group
-      .filter((r) => r[validFromKey] && r[validToKey])
-      .sort(
-        (a, b) =>
-          new Date(a[validFromKey]).getTime() -
-          new Date(b[validFromKey]).getTime(),
-      );
-
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const current = sorted[i];
-      const next = sorted[i + 1];
-
-      const currentTo = new Date(current[validToKey]).getTime();
-      const nextFrom = new Date(next[validFromKey]).getTime();
-
-      if (currentTo > nextFrom) {
-        findings.push({
-          id: "valid-overlap-bitemporal",
-          title: "Valid-time overlap within visible slice detected",
-          severity: "high",
-          evidence: [
-            `Entity ${key}`,
-            `${current[validFromKey]} → ${current[validToKey]}`,
-            `${next[validFromKey]} → ${next[validToKey]}`,
-          ],
-          recommendation:
-            "Fix overlapping valid-time intervals within the same visible-time slice.",
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
-function validateTargetTable(
-  rawInput: string,
-  semanticsOverride: Partial<HistoricalSemantics> = {},
-  columnOverrides: Partial<DetectedColumns> = {},
-): TargetValidationResult {
-  const parsed = parseCSV(rawInput, { maxColumns: "all" });
-  const rows = parsed.rows;
-  const columns = parsed.headerMappings.map((m) => m.normalized);
-
-  const detectedColumns: DetectedColumns = {
-    businessKey: detectColumn(columns, [
-      "business_key",
-      "entity_id",
-      "id",
-      "contract_id",
-      "policy_id",
-      "police_id",
-      "police_nummer",
-      "vnr",
-      "bk_contract",
-      "bk_policy",
-      "bk_police",
-      "fk__police",
-    ]),
-    validFrom: detectColumn(columns, [
-      "valid_from",
-      "bk_valid_from",
-      "effective_from",
-      "effective_start",
-      "start_date",
-      "gueltig_ab",
-    ]),
-    validTo: detectColumn(columns, [
-      "valid_to",
-      "bk_valid_to",
-      "effective_to",
-      "effective_end",
-      "end_date",
-      "gueltig_bis",
-    ]),
-    visibleFrom: detectColumn(columns, [
-      "visible_from",
-      "bk_visible_from",
-      "loaded_from",
-      "system_from",
-      "technical_from",
-    ]),
-    visibleTo: detectColumn(columns, [
-      "visible_to",
-      "bk_visible_to",
-      "loaded_to",
-      "system_to",
-      "technical_to",
-    ]),
-    snapshotDate: detectColumn(columns, [
-      "snapshot_date",
-      "reference_date",
-      "reporting_date",
-      "as_of_date",
-      "stichtag",
-    ]),
-    dimensionColumns: detectDimensionColumns(columns),
-  };
-
-  const effectiveColumns: DetectedColumns = {
-    ...detectedColumns,
-    ...columnOverrides,
-  };
-
-  const detectedSemantics = detectHistoricalSemantics(
-    rows,
-    columns,
-    detectedColumns,
-  );
-
-  const semantics: HistoricalSemantics = {
-    ...detectedSemantics,
-    ...semanticsOverride,
-    detectedSignals: detectedSemantics.detectedSignals,
-  };
-
-  const findings: TargetFinding[] = [];
-
-  // =========================
-  // BASIC VALIDATION
-  // =========================
-
-  if (rows.length === 0) {
-    return buildResult(rows, columns, detectedColumns, semantics, [
-      {
-        id: "no-rows",
-        title: "No rows detected",
-        severity: "high",
-        evidence: ["Input could not be parsed."],
-        recommendation: "Provide valid tabular data.",
-      },
-    ]);
-  }
-
-  if (!effectiveColumns.businessKey) {
-    findings.push({
-      id: "missing-business-key",
-      title: "No business key detected",
-      severity: "high",
-      evidence: ["No entity/business key found."],
-      recommendation: "Provide a stable business key.",
-    });
-  }
-
-  const hasEventSemantics =
-    rows.some((r) => r.event_id !== undefined) ||
-    rows.some((r) => r.event_time !== undefined) ||
-    rows.some((r) => r.event_type !== undefined);
-
-  if (
-    !hasEventSemantics &&
-    (!effectiveColumns.validFrom || !effectiveColumns.validTo)
-  ) {
-    findings.push({
-      id: "missing-valid-time",
-      title: "No valid-time interval detected",
-      severity: "medium",
-      evidence: [
-        effectiveColumns.validFrom
-          ? `valid_from: ${effectiveColumns.validFrom}`
-          : "missing valid_from",
-        effectiveColumns.validTo
-          ? `valid_to: ${effectiveColumns.validTo}`
-          : "missing valid_to",
-      ],
-      recommendation: "Add valid_from / valid_to for historization.",
-    });
-  }
-
-  // =========================
-  // VALID TIME CORE
-  // =========================
-
-  if (
-    effectiveColumns.businessKey &&
-    effectiveColumns.validFrom &&
-    effectiveColumns.validTo
-  ) {
-    // invalid intervals
-    findings.push(
-      ...detectInvalidIntervals(
-        rows,
-        effectiveColumns.validFrom,
-        effectiveColumns.validTo,
-      ),
-    );
-
-    // basic overlaps (always)
-    findings.push(
-      ...detectValidTimeOverlaps(
-        rows,
-        effectiveColumns.businessKey,
-        effectiveColumns.validFrom,
-        effectiveColumns.validTo,
-        semantics,
-      ),
-    );
-
-    // =========================
-    // BITEMPORAL DETECTION
-    // =========================
-
-    const hasVisibleColumns =
-      !!effectiveColumns.visibleFrom && !!effectiveColumns.visibleTo;
-
-    const hasVisibleVariance =
-      hasVisibleColumns &&
-      (new Set(rows.map((r) => r[effectiveColumns.visibleFrom!])).size > 1 ||
-        new Set(rows.map((r) => r[effectiveColumns.visibleTo!])).size > 1);
-
-    const useBitemporal =
-      hasVisibleColumns &&
-      effectiveColumns.businessKey &&
-      effectiveColumns.validFrom &&
-      effectiveColumns.validTo &&
-      hasVisibleVariance;
-
-    if (useBitemporal) {
-      findings.push(
-        ...detectValidTimeOverlapsWithinVisibleSlices(
-          rows,
-          effectiveColumns.businessKey,
-          effectiveColumns.validFrom,
-          effectiveColumns.validTo,
-          effectiveColumns.visibleFrom!,
-          effectiveColumns.visibleTo!,
-          semantics,
-        ),
-      );
-    }
-  }
-
-  // =========================
-  // SNAPSHOT
-  // =========================
-
-  if (effectiveColumns.snapshotDate && effectiveColumns.businessKey) {
-    findings.push(
-      ...detectSnapshotDuplicates(
-        rows,
-        effectiveColumns.businessKey,
-        effectiveColumns.snapshotDate,
-      ),
-    );
-
-    findings.push(
-      ...detectMissingSnapshotCoverage(
-        rows,
-        effectiveColumns.businessKey,
-        effectiveColumns.snapshotDate,
-      ),
-    );
-
-    findings.push(
-      ...detectMonthlySnapshotGaps(
-        rows,
-        effectiveColumns.businessKey,
-        effectiveColumns.snapshotDate,
-      ),
-    );
-  }
-
-  // =========================
-  // DIMENSIONS
-  // =========================
-
-  if (effectiveColumns.dimensionColumns.length > 0) {
-    findings.push(
-      ...detectMissingDimensionValues(rows, effectiveColumns.dimensionColumns),
-    );
-  }
-
-  return buildResult(rows, columns, detectedColumns, semantics, findings);
-}
-
-function buildResult(
-  rows: any[],
-  columns: string[],
-  detectedColumns: DetectedColumns,
-  semantics: HistoricalSemantics,
-  findings: TargetFinding[],
-): TargetValidationResult {
-  const uniqueFindings = uniqueFindingsById(findings);
-
-  const highCount = uniqueFindings.filter(
-    (finding) => finding.severity === "high",
-  ).length;
-
-  const mediumCount = uniqueFindings.filter(
-    (finding) => finding.severity === "medium",
-  ).length;
-
-  const qualitySummary =
-    highCount > 0
-      ? {
-          label: "Historical modeling risks detected",
-          description:
-            "Review these issues before treating the generated historical table as production-ready.",
-          severity: "danger" as const,
-        }
-      : mediumCount > 0
-        ? {
-            label: "Historical assumptions should be reviewed",
-            description:
-              "The table is parseable, but some modeling assumptions may affect reporting correctness.",
-            severity: "warning" as const,
-          }
-        : {
-            label: "Historical table structure looks consistent",
-            description:
-              "The pasted sample has a stable grain and consistent historical structure based on the available checks.",
-            severity: "success" as const,
-          };
-
-  return {
-    rowCount: rows.length,
-    columns,
-    detectedColumns,
-    semantics,
-    findings: uniqueFindings,
-    qualitySummary,
-  };
-}
-
-function detectHistoricalSemantics(
-  rows: any[],
-  columns: string[],
-  detectedColumns: DetectedColumns,
-): HistoricalSemantics {
-  const detectedSignals: string[] = [];
-
-  const hasValidTime = Boolean(
-    detectedColumns.validFrom && detectedColumns.validTo,
-  );
-
-  const hasVisibleTime = Boolean(
-    detectedColumns.visibleFrom && detectedColumns.visibleTo,
-  );
-
-  const hasSnapshotDate = Boolean(detectedColumns.snapshotDate);
-
-  const hasPublishedAt = columns.some((column) =>
-    [
-      "published_at",
-      "publication_time",
-      "published_time",
-      "report_published_at",
-    ].includes(column),
-  );
-
-  const hasSnapshotVersion = columns.some((column) =>
-    [
-      "snapshot_version",
-      "reporting_run_id",
-      "run_id",
-      "freeze_date",
-      "publication_version",
-    ].includes(column),
-  );
-
-  const has9999OpenEnd = rows.some((row) =>
-    Object.values(row).some((value) =>
-      String(value ?? "")
-        .trim()
-        .startsWith("9999-12-31"),
-    ),
-  );
-
-  const hasNullOpenEnd =
-    detectedColumns.validTo &&
-    rows.some((row) => isMissingValue(row[detectedColumns.validTo!]));
-
-  if (hasValidTime) detectedSignals.push("Valid-time interval detected.");
-  if (hasVisibleTime) detectedSignals.push("Visible-time interval detected.");
-  if (hasSnapshotDate) detectedSignals.push("Snapshot date detected.");
-  if (hasPublishedAt || hasSnapshotVersion) {
-    detectedSignals.push("Publication or freeze metadata detected.");
-  }
-  if (has9999OpenEnd) detectedSignals.push("9999-12-31 open end detected.");
-  if (hasNullOpenEnd) detectedSignals.push("NULL open end detected.");
-
-  const openEndedValue: OpenEndedValue = has9999OpenEnd
-    ? "9999-12-31"
-    : hasNullOpenEnd
-      ? "null"
-      : "none";
-
-  const snapshotMeaning: SnapshotMeaning = hasSnapshotDate
-    ? inferSnapshotMeaning(detectedColumns.snapshotDate!)
-    : "none";
-
-  const correctionMode: CorrectionMode =
-    hasSnapshotDate && (hasPublishedAt || hasSnapshotVersion)
-      ? "published_snapshot"
-      : hasVisibleTime
-        ? "bitemporal"
-        : "valid_time";
-
-  return {
-    validIntervalEnd: "exclusive",
-    visibleIntervalEnd: "exclusive",
-    snapshotMeaning,
-    openEndedValue,
-    correctionMode,
-    detectedSignals,
-  };
-}
-
-function inferSnapshotMeaning(snapshotColumn: string): SnapshotMeaning {
-  if (
-    [
-      "month_end",
-      "snapshot_date",
-      "reference_date",
-      "bk_reference_date",
-    ].includes(snapshotColumn)
-  ) {
-    return "period_end";
-  }
-
-  if (["reporting_date", "as_of_date", "stichtag"].includes(snapshotColumn)) {
-    return "reporting_timestamp";
-  }
-
-  return "period_end";
-}
-
-function detectDuplicateIntervals(
-  rows: any[],
-  keyColumn: string,
-  validFromColumn: string,
-  validToColumn: string,
-): TargetFinding[] {
-  const counts = new Map<string, number>();
-
-  rows.forEach((row) => {
-    const key = [row[keyColumn], row[validFromColumn], row[validToColumn]].join(
-      "||",
-    );
-
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  });
-
-  const duplicates = Array.from(counts.entries()).filter(
-    ([, count]) => count > 1,
-  );
-
-  if (duplicates.length === 0) return [];
-
-  return [
-    {
-      id: "duplicate-valid-intervals",
-      title: "Duplicate historical intervals detected",
-      severity: "medium",
-      evidence: [
-        `${duplicates.length} duplicate business-key / valid-time interval combination${
-          duplicates.length === 1 ? "" : "s"
-        } found.`,
-      ],
-      recommendation:
-        "Check whether duplicates should be removed, aggregated or differentiated by another grain column.",
-    },
-  ];
-}
-
-function detectSnapshotDuplicates(
-  rows: any[],
-  keyColumn: string,
-  snapshotColumn: string,
-): TargetFinding[] {
-  const counts = new Map<string, number>();
-
-  rows.forEach((row) => {
-    const key = [row[keyColumn], row[snapshotColumn]].join("||");
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  });
-
-  const duplicates = Array.from(counts.entries()).filter(
-    ([, count]) => count > 1,
-  );
-
-  if (duplicates.length === 0) return [];
-
-  return [
-    {
-      id: "duplicate-snapshot-grain",
-      title: "Duplicate snapshot grain detected",
-      severity: "high",
-      evidence: [
-        `${duplicates.length} duplicate business-key / snapshot-date combination${
-          duplicates.length === 1 ? "" : "s"
-        } found.`,
-      ],
-      assumptions: [
-        "snapshot_date is interpreted as part of the target table grain.",
-        "The expected grain is one row per business key and snapshot date unless another grain is explicitly modeled.",
-      ],
-      recommendation:
-        "A snapshot fact table should usually have one row per business key and snapshot date unless another grain is explicitly defined.",
-    },
-  ];
-}
-
-function detectMissingSnapshotCoverage(
-  rows: any[],
-  keyColumn: string,
-  snapshotColumn: string,
-): TargetFinding[] {
-  const snapshots = new Set(
-    rows.map((row) => String(row[snapshotColumn] ?? "")),
-  );
-  const byKey = groupRowsByKey(rows, keyColumn);
-  let missingCoverageCount = 0;
-
-  byKey.forEach((keyRows) => {
-    const keySnapshots = new Set(
-      keyRows.map((row) => String(row[snapshotColumn] ?? "")),
-    );
-
-    snapshots.forEach((snapshot) => {
-      if (!keySnapshots.has(snapshot)) missingCoverageCount += 1;
-    });
-  });
-
-  if (snapshots.size <= 1 || missingCoverageCount === 0) return [];
-
-  return [
-    {
-      id: "missing-snapshot-coverage",
-      title: "Potential missing snapshot coverage detected",
-      severity: "medium",
-      evidence: [
-        `${missingCoverageCount} business-key / snapshot-date combination${
-          missingCoverageCount === 1 ? "" : "s"
-        } missing from the pasted sample.`,
-      ],
-      recommendation:
-        "Check whether every required business key should appear in every reporting snapshot. If not, document the expected sparsity.",
-    },
-  ];
-}
-
-function detectMonthlySnapshotGaps(
-  rows: any[],
-  keyColumn: string,
-  snapshotColumn: string,
-): TargetFinding[] {
-  const byKey = groupRowsByKey(rows, keyColumn);
-  let missingCount = 0;
-  const examples: string[] = [];
-
-  byKey.forEach((keyRows, key) => {
-    const dates = Array.from(
-      new Set(
-        keyRows
-          .map((row) => parseDate(row[snapshotColumn]))
-          .filter((date): date is Date => date !== null)
-          .map((date) => formatDate(date)),
-      ),
-    )
-      .map((date) => new Date(`${date}T00:00:00`))
-      .sort((a, b) => a.getTime() - b.getTime());
-
-    for (let i = 1; i < dates.length; i++) {
-      const expectedNext = nextMonthEnd(dates[i - 1]);
-
-      if (!sameDay(expectedNext, dates[i])) {
-        missingCount += 1;
-
-        if (examples.length < 3) {
-          examples.push(
-            `${key}: expected ${formatDate(expectedNext)} before ${formatDate(dates[i])}`,
-          );
-        }
-      }
-    }
-  });
-
-  if (missingCount === 0) return [];
-
-  return [
-    {
-      id: "monthly-snapshot-gap",
-      title: "Monthly snapshot coverage gap detected",
-      severity: "high",
-      evidence: [
-        `${missingCount} missing monthly snapshot step${
-          missingCount === 1 ? "" : "s"
-        } detected within a business key timeline.`,
-        `Examples: ${examples.join("; ")}.`,
-      ],
-      recommendation:
-        "Check whether the missing snapshot month should be present. If the fact or dimension is required for every month-end snapshot, explicitly mark the gap, complete the history or use a controlled unknown member.",
-    },
-  ];
-}
-
-function nextMonthEnd(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth() + 2, 0);
-}
-
-function sameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function intervalsOverlap(
-  leftFrom: Date,
-  leftTo: Date,
-  rightFrom: Date,
-  rightTo: Date,
-  intervalEnd: IntervalEndSemantics,
-) {
-  if (intervalEnd === "exclusive") {
-    return (
-      leftFrom.getTime() < rightTo.getTime() &&
-      rightFrom.getTime() < leftTo.getTime()
-    );
-  }
-
-  return (
-    leftFrom.getTime() <= rightTo.getTime() &&
-    rightFrom.getTime() <= leftTo.getTime()
-  );
-}
-
-function hasIntervalGap(
-  previousTo: Date,
-  nextFrom: Date,
-  intervalEnd: IntervalEndSemantics,
-) {
-  if (intervalEnd === "exclusive") {
-    return previousTo.getTime() < nextFrom.getTime();
-  }
-
-  const nextAllowed = new Date(previousTo);
-  nextAllowed.setDate(nextAllowed.getDate() + 1);
-
-  return nextAllowed.getTime() < nextFrom.getTime();
-}
-
 function isSameOrNextDay(previousTo: Date, nextFrom: Date) {
   if (sameDay(previousTo, nextFrom)) return true;
 
@@ -1497,635 +797,6 @@ function isSameOrNextDay(previousTo: Date, nextFrom: Date) {
   nextAllowed.setDate(nextAllowed.getDate() + 1);
 
   return sameDay(nextAllowed, nextFrom);
-}
-
-function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function detectRiskyAlignmentMethods(rows: any[]): TargetFinding[] {
-  const methodColumns = [
-    "alignment_method",
-    "join_method",
-    "modeling_method",
-    "generation_method",
-  ];
-
-  const existingMethodColumn = methodColumns.find((column) =>
-    rows.some((row) => row[column] !== undefined),
-  );
-
-  if (!existingMethodColumn) return [];
-
-  const riskyValues = new Set([
-    "overlap_join_only",
-    "simple_overlap_join",
-    "current_value_join",
-    "no_interval_split",
-    "unsplit_join",
-    "latest_value_join",
-  ]);
-
-  const riskyRows = rows.filter((row) => {
-    const value = String(row[existingMethodColumn] ?? "")
-      .trim()
-      .toLowerCase();
-
-    return riskyValues.has(value);
-  });
-
-  if (riskyRows.length === 0) return [];
-
-  const examplePeriods = riskyRows
-    .slice(0, 3)
-    .map(
-      (row) =>
-        row.snapshot_date ??
-        row.reference_date ??
-        row.reporting_date ??
-        row.valid_from ??
-        "unknown period",
-    )
-    .join(", ");
-
-  return [
-    {
-      id: "risky-state-state-alignment-method",
-      title: "Potential state-state alignment risk detected",
-      severity: "high",
-      evidence: [
-        `${riskyRows.length} row${
-          riskyRows.length === 1 ? "" : "s"
-        } use ${existingMethodColumn} = overlap_join_only or a similar risky method.`,
-        `Example affected periods: ${examplePeriods}.`,
-      ],
-      recommendation:
-        "For State ↔ State Alignment, validate that the joined table is split at every relevant state boundary. An overlap join alone can produce coarse intervals and incorrect attribution when either side changes independently.",
-    },
-  ];
-}
-
-function detectSnapshotReproducibilityRisk(
-  rows: any[],
-  detectedColumns: DetectedColumns,
-): TargetFinding[] {
-  const methodColumns = [
-    "reproducibility_method",
-    "snapshot_method",
-    "reporting_method",
-    "generation_method",
-  ];
-
-  const existingMethodColumn = methodColumns.find((column) =>
-    rows.some((row) => row[column] !== undefined),
-  );
-
-  if (!existingMethodColumn) return [];
-
-  const riskyValues = new Set([
-    "current_rebuild_only",
-    "no_visible_time",
-    "current_truth_only",
-    "latest_state_rebuild",
-    "overwrite_snapshot",
-    "non_reproducible_rebuild",
-  ]);
-
-  const riskyRows = rows.filter((row) => {
-    const value = String(row[existingMethodColumn] ?? "")
-      .trim()
-      .toLowerCase();
-
-    return riskyValues.has(value);
-  });
-
-  if (riskyRows.length === 0) return [];
-
-  const hasSnapshotDate = Boolean(detectedColumns.snapshotDate);
-  const hasVisibleTime = Boolean(
-    detectedColumns.visibleFrom && detectedColumns.visibleTo,
-  );
-
-  if (!hasSnapshotDate) return [];
-
-  const evidence: string[] = [];
-
-  if (!hasVisibleTime) {
-    evidence.push(
-      "The table has snapshot_date but no complete visible_from / visible_to interval.",
-    );
-  }
-
-  const examplePeriods = riskyRows
-    .slice(0, 3)
-    .map(
-      (row) =>
-        row.snapshot_date ??
-        row.reference_date ??
-        row.reporting_date ??
-        row.valid_from ??
-        "unknown period",
-    )
-    .join(", ");
-
-  evidence.push(
-    `${riskyRows.length} row${
-      riskyRows.length === 1 ? "" : "s"
-    } use ${existingMethodColumn} with a non-reproducible rebuild method.`,
-  );
-
-  evidence.push(`Example affected periods: ${examplePeriods}.`);
-
-  return [
-    {
-      id: "snapshot-reproducibility-risk",
-      title: "Snapshot reproducibility risk detected",
-      severity: "high",
-      evidence,
-      assumptions: [
-        "snapshot_date indicates a published or reportable snapshot.",
-        "Without visible-time or publication metadata, old reports may not be reproducible after corrections.",
-      ],
-      recommendation:
-        "If published reports must be reproducible, include visible-time information or persist the exact snapshot state used at publication time. Otherwise, rebuilding old reports may silently use later corrections or future knowledge.",
-    },
-  ];
-}
-
-function detectCoverageGapRisk(rows: any[]): TargetFinding[] {
-  const statusColumns = [
-    "coverage_status",
-    "historical_coverage_status",
-    "gap_status",
-  ];
-
-  const existingStatusColumn = statusColumns.find((column) =>
-    rows.some((row) => row[column] !== undefined),
-  );
-
-  if (!existingStatusColumn) return [];
-
-  const riskyValues = new Set([
-    "coverage_gap",
-    "coverage_gap_unmarked",
-    "missing_period",
-    "silently_missing",
-    "missing_snapshot",
-    "gap_not_handled",
-  ]);
-
-  const riskyRows = rows.filter((row) => {
-    const value = String(row[existingStatusColumn] ?? "")
-      .trim()
-      .toLowerCase();
-
-    return riskyValues.has(value);
-  });
-
-  if (riskyRows.length === 0) return [];
-
-  return [
-    {
-      id: "historical-coverage-gap-risk",
-      title: "Historical coverage gap risk detected",
-      severity: "high",
-      evidence: [
-        `${riskyRows.length} row${
-          riskyRows.length === 1 ? "" : "s"
-        } have ${existingStatusColumn} marked as missing or unhandled coverage.`,
-      ],
-      recommendation:
-        "Explicitly handle missing historical coverage before publishing the model. Mark the gap, complete the history or use a controlled unknown member.",
-    },
-  ];
-}
-
-function detectStateReductionRisk(rows: any[]): TargetFinding[] {
-  const statusColumn = "reduction_status";
-
-  if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
-
-  const riskyRows = rows.filter((row) => {
-    const value = String(row[statusColumn] ?? "")
-      .trim()
-      .toLowerCase();
-
-    return [
-      "redundant_state",
-      "technical_state",
-      "not_reduced",
-      "noise_kept",
-      "over_fragmented",
-    ].includes(value);
-  });
-
-  if (riskyRows.length === 0) return [];
-
-  return [
-    {
-      id: "state-reduction-risk",
-      title: "State reduction risk detected",
-      severity: "medium",
-      evidence: [
-        `${riskyRows.length} row${riskyRows.length === 1 ? "" : "s"} keep redundant or unreduced state versions.`,
-      ],
-      recommendation:
-        "Review whether these operational state changes should be collapsed before publishing the reporting model.",
-    },
-  ];
-}
-
-function detectEventPrioritizationRisk(rows: any[]): TargetFinding[] {
-  const statusColumn = "prioritization_status";
-
-  if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
-
-  const riskyRows = rows.filter((row) => {
-    const value = String(row[statusColumn] ?? "")
-      .trim()
-      .toLowerCase();
-
-    return [
-      "operational_noise_kept",
-      "technical_event_kept",
-      "not_prioritized",
-      "duplicate_milestone",
-      "workflow_noise_kept",
-      "raw_event_kept",
-    ].includes(value);
-  });
-
-  if (riskyRows.length === 0) return [];
-
-  const exampleEvents = riskyRows
-    .slice(0, 3)
-    .map(
-      (row) =>
-        row.event_id ?? row.event_type ?? row.event_time ?? "unknown event",
-    )
-    .join(", ");
-
-  return [
-    {
-      id: "event-prioritization-risk",
-      title: "Event prioritization risk detected",
-      severity: "medium",
-      evidence: [
-        `${riskyRows.length} row${
-          riskyRows.length === 1 ? "" : "s"
-        } keep operational or unprioritized event noise.`,
-        `Example affected events: ${exampleEvents}.`,
-      ],
-      recommendation:
-        "Review whether these operational events should be excluded, collapsed or ranked before publishing the reporting model.",
-    },
-  ];
-}
-
-function detectDimensionColumns(columns: string[]) {
-  const excluded = new Set([
-    "business_key",
-    "entity_id",
-    "id",
-    "contract_id",
-    "policy_id",
-    "police_id",
-    "police_nummer",
-    "vnr",
-    "bk_contract",
-    "bk_policy",
-    "bk_police",
-    "fk__police",
-    "valid_from",
-    "bk_valid_from",
-    "effective_from",
-    "effective_start",
-    "start_date",
-    "gueltig_ab",
-    "valid_to",
-    "bk_valid_to",
-    "effective_to",
-    "effective_end",
-    "end_date",
-    "gueltig_bis",
-    "visible_from",
-    "bk_visible_from",
-    "loaded_from",
-    "system_from",
-    "technical_from",
-    "visible_to",
-    "bk_visible_to",
-    "loaded_to",
-    "system_to",
-    "technical_to",
-    "snapshot_date",
-    "reference_date",
-    "reporting_date",
-    "bk_reference_date",
-    "month_end",
-    "as_of_date",
-    "stichtag",
-    "completion_method",
-    "alignment_method",
-    "join_method",
-    "modeling_method",
-    "generation_method",
-    "reproducibility_method",
-    "snapshot_method",
-    "reporting_method",
-    "conformance_status",
-    "conformity_status",
-    "historical_conformance_status",
-    "mapping_status",
-    "alignment_status",
-    "event_alignment_status",
-    "match_status",
-    "state_match_status",
-    "event_alignment_method",
-    "prioritization_status",
-    "reporting_milestone",
-    "priority_rank",
-    "event_id",
-    "event_time",
-    "event_type",
-  ]);
-
-  return columns.filter((column) => {
-    if (excluded.has(column)) return false;
-
-    return (
-      column.endsWith("_key") ||
-      column.endsWith("_code") ||
-      column.endsWith("_number") ||
-      column.startsWith("customer") ||
-      column.startsWith("broker") ||
-      column.startsWith("product") ||
-      column.startsWith("agent") ||
-      column.startsWith("sales") ||
-      column.startsWith("territory") ||
-      column.startsWith("risk") ||
-      column.startsWith("coverage")
-    );
-  });
-}
-
-function detectMissingDimensionValues(
-  rows: any[],
-  dimensionColumns: string[],
-): TargetFinding[] {
-  const findings: TargetFinding[] = [];
-
-  dimensionColumns.forEach((column) => {
-    const missingRows = rows.filter((row) => isMissingValue(row[column]));
-
-    if (missingRows.length === 0) return;
-
-    const examplePeriods = missingRows
-      .slice(0, 3)
-      .map(
-        (row) =>
-          row.snapshot_date ??
-          row.reference_date ??
-          row.reporting_date ??
-          row.valid_from ??
-          "unknown period",
-      )
-      .join(", ");
-
-    findings.push({
-      id: `missing-dimension-values-${column}`,
-      title: `Missing dimension values detected in ${column}`,
-      severity: "high",
-      evidence: [
-        `${missingRows.length} row${
-          missingRows.length === 1 ? "" : "s"
-        } have no value for ${column}.`,
-        `Example affected periods: ${examplePeriods}.`,
-      ],
-      recommendation:
-        "Check whether these missing dimension values are expected. If the fact exists but the dimension is missing, apply Dimension Completion, an Unknown Member or document the expected sparsity.",
-    });
-  });
-
-  return findings;
-}
-
-function isMissingValue(value: unknown) {
-  if (value === null || value === undefined) return true;
-
-  const text = String(value).trim().toLowerCase();
-
-  return (
-    text === "" ||
-    text === "null" ||
-    text === "none" ||
-    text === "undefined" ||
-    text === "n/a" ||
-    text === "na" ||
-    text === "-"
-  );
-}
-
-function detectInvalidIntervals(
-  rows: any[],
-  validFromColumn: string,
-  validToColumn: string,
-): TargetFinding[] {
-  const invalidCount = rows.filter((row) => {
-    const from = parseDate(row[validFromColumn]);
-    const to = parseDate(row[validToColumn]);
-    return from && to && from.getTime() > to.getTime();
-  }).length;
-
-  if (invalidCount === 0) return [];
-
-  return [
-    {
-      id: "invalid-valid-time-intervals",
-      title: "Invalid valid-time intervals detected",
-      severity: "high",
-      evidence: [
-        `${invalidCount} row${invalidCount === 1 ? "" : "s"} have valid_from after valid_to.`,
-      ],
-      recommendation:
-        "Fix interval boundaries before using the table for joins, snapshots or point-in-time reporting.",
-    },
-  ];
-}
-
-function detectInvalidVisibleIntervals(
-  rows: any[],
-  visibleFromColumn: string,
-  visibleToColumn: string,
-): TargetFinding[] {
-  const invalidCount = rows.filter((row) => {
-    const from = parseDate(row[visibleFromColumn]);
-    const to = parseDate(row[visibleToColumn]);
-    return from && to && from.getTime() > to.getTime();
-  }).length;
-
-  if (invalidCount === 0) return [];
-
-  return [
-    {
-      id: "invalid-visible-time-intervals",
-      title: "Invalid visible-time intervals detected",
-      severity: "high",
-      evidence: [
-        `${invalidCount} row${invalidCount === 1 ? "" : "s"} have visible_from after visible_to.`,
-      ],
-      recommendation:
-        "Fix visible-time boundaries before relying on auditability or reproducible snapshot behavior.",
-    },
-  ];
-}
-
-function detectValidTimeOverlaps(
-  rows: any[],
-  keyColumn: string,
-  validFromColumn: string,
-  validToColumn: string,
-  semantics: HistoricalSemantics,
-): TargetFinding[] {
-  const byKey = groupRowsByKey(rows, keyColumn);
-  let overlapCount = 0;
-
-  byKey.forEach((keyRows) => {
-    const sorted = keyRows
-      .map((row) => ({
-        from: parseDate(row[validFromColumn]),
-        to: parseDate(row[validToColumn]),
-      }))
-      .filter((interval) => interval.from !== null && interval.to !== null)
-      .sort((a, b) => a.from!.getTime() - b.from!.getTime());
-
-    for (let i = 1; i < sorted.length; i++) {
-      if (
-        intervalsOverlap(
-          sorted[i - 1].from!,
-          sorted[i - 1].to!,
-          sorted[i].from!,
-          sorted[i].to!,
-          semantics.validIntervalEnd,
-        )
-      ) {
-        overlapCount += 1;
-      }
-    }
-  });
-
-  if (overlapCount === 0) return [];
-
-  return [
-    {
-      id: "valid-time-overlaps",
-      title: "Valid-time overlaps detected",
-      severity: "high",
-      evidence: [
-        `${overlapCount} overlapping interval pair${
-          overlapCount === 1 ? "" : "s"
-        } found.`,
-      ],
-      assumptions: [
-        semantics.validIntervalEnd === "exclusive"
-          ? "valid_to is treated as exclusive. Touching intervals such as [2024-01-01, 2024-02-01) and [2024-02-01, 2024-03-01) do not overlap."
-          : "valid_to is treated as inclusive. Touching intervals with the same boundary date are considered overlapping.",
-        "Overlaps are checked within each detected business key.",
-      ],
-      recommendation:
-        "Review whether overlapping intervals are expected. If not, apply winner selection, interval splitting or source correction logic.",
-    },
-  ];
-}
-
-function detectValidTimeGaps(
-  rows: any[],
-  keyColumn: string,
-  validFromColumn: string,
-  validToColumn: string,
-  semantics: HistoricalSemantics,
-): TargetFinding[] {
-  const byKey = groupRowsByKey(rows, keyColumn);
-  let gapCount = 0;
-
-  byKey.forEach((keyRows) => {
-    const sorted = keyRows
-      .map((row) => ({
-        from: parseDate(row[validFromColumn]),
-        to: parseDate(row[validToColumn]),
-      }))
-      .filter((interval) => interval.from !== null && interval.to !== null)
-      .sort((a, b) => a.from!.getTime() - b.from!.getTime());
-
-    for (let i = 1; i < sorted.length; i++) {
-      if (
-        hasIntervalGap(
-          sorted[i - 1].to!,
-          sorted[i].from!,
-          semantics.validIntervalEnd,
-        )
-      ) {
-        gapCount += 1;
-      }
-    }
-  });
-
-  if (gapCount === 0) return [];
-
-  return [
-    {
-      id: "valid-time-gaps",
-      title: "Valid-time gaps detected",
-      severity: "medium",
-      evidence: [
-        `${gapCount} gap${gapCount === 1 ? "" : "s"} between intervals found.`,
-      ],
-      assumptions: [
-        semantics.validIntervalEnd === "exclusive"
-          ? "valid_to is treated as exclusive. Intervals are continuous when valid_to equals the next valid_from."
-          : "valid_to is treated as inclusive. Intervals are continuous when the next valid_from is the next calendar day.",
-      ],
-      recommendation:
-        "Check whether gaps are expected. For continuous state histories, gaps may indicate missing source records or incomplete dimension coverage.",
-    },
-  ];
-}
-
-function groupRowsByKey(rows: any[], keyColumn: string) {
-  const groups = new Map<string, any[]>();
-
-  rows.forEach((row) => {
-    const key = String(row[keyColumn] ?? "");
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(row);
-  });
-
-  return groups;
-}
-
-function detectColumn(columns: string[], candidates: string[]) {
-  const exact = candidates.find((candidate) => columns.includes(candidate));
-  if (exact) return exact;
-
-  return (
-    columns.find((column) =>
-      candidates.some((candidate) => column.includes(candidate)),
-    ) ?? null
-  );
-}
-
-function parseDate(value: unknown) {
-  if (!value) return null;
-
-  const text = String(value).trim();
-
-  if (!text || text.toLowerCase() === "null") return null;
-  if (text.startsWith("9999-12-31")) return new Date("9999-12-31T00:00:00");
-
-  const date = new Date(text);
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date;
 }
 
 function uniqueFindingsById(findings: TargetFinding[]) {

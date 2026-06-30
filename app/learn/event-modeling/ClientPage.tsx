@@ -39,6 +39,34 @@ export default function EventModelingPage() {
             Event Modeling represents discrete business events that happened at
             a specific point in time.
           </p>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={heroTextStyle}>
+              Event modeling represents business changes as discrete events that
+              can be replayed to reconstruct historical state.
+            </p>
+
+            <p style={paragraphStyle}>
+              It enables event-driven historical reconstruction and temporal
+              analytics.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Event sourcing</li>
+              <li>State reconstruction</li>
+              <li>Temporal consistency</li>
+              <li>Historical replay</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24, minWidth: 0 }}>
@@ -68,6 +96,15 @@ export default function EventModelingPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Business systems generate events continuously. Event modeling
+              ensures these events can be used to reconstruct historical truth.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -140,10 +177,31 @@ export default function EventModelingPage() {
             </p>
 
             <p style={paragraphStyle}>
-              Many reporting models eventually need both state and events:
-              state to answer what was true, and events to explain what changed.
+              Many reporting models eventually need both state and events: state
+              to answer what was true, and events to explain what changed.
             </p>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>How this pattern fits into temporal data modeling</h2>
+
+          <p>
+            Event modeling is a foundation of event-driven architectures and
+            historical state reconstruction systems.
+          </p>
+
+          <ul>
+            <li>Event-to-state projection</li>
+            <li>Temporal modeling</li>
+            <li>Snapshot generation</li>
+            <li>State modeling</li>
+          </ul>
+
+          <p>
+            It is widely used in modern distributed systems and analytics
+            pipelines.
+          </p>
         </section>
 
         <RelatedPatterns current="event_modeling" />
@@ -456,7 +514,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: "clamp(15px, 4vw, 16px)",
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "anywhere",
   wordBreak: "normal",
 };
@@ -558,7 +616,7 @@ const codeBoxStyle: CSSProperties = {
   padding: 16,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   overflowX: "auto",
 };
 
@@ -687,7 +745,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 

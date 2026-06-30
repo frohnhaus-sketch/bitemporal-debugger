@@ -108,6 +108,32 @@ export default function HistoricalWinnerSelectionPage() {
               why.
             </p>
           </WhiteCard>
+
+          <p style={paragraphStyle}>
+            Historical winner selection determines which record should represent
+            an entity when multiple candidates exist.
+          </p>
+
+          <p style={paragraphStyle}>
+            It applies deterministic rules to resolve conflicts in temporal
+            datasets.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Priority-based selection</li>
+            <li>Source precedence rules</li>
+            <li>Deterministic tie-breaking</li>
+            <li>Temporal conflict resolution</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -130,6 +156,17 @@ export default function HistoricalWinnerSelectionPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Without winner selection rules, historical queries become
+              non-deterministic.
+            </p>
+
+            <p>It is essential for reproducible reporting systems.</p>
+          </section>
 
           <WhiteCard
             eyebrow="Common winner rules"
@@ -162,7 +199,7 @@ export default function HistoricalWinnerSelectionPage() {
               ]}
             />
 
-            <p style={{ ...paragraphStyle, marginTop: 18 }}>
+            <p style={{ ...paragraphStyle, marginTop: 14, color: "#0f172a"}}>
               If two or more records can match the same fact, simply removing
               overlaps may destroy important business evidence. A better model
               keeps the candidates and applies a clear winner rule.
@@ -192,6 +229,25 @@ export default function HistoricalWinnerSelectionPage() {
           >
             <CheckChipRow checks={VALIDATION_CHECKS} />
           </WhiteCard>
+
+          <section style={{ marginTop: 30 }}>
+            <h2>
+              How this pattern connects to other historical modeling concepts
+            </h2>
+
+            <p>
+              Winner selection is required in ambiguous or overlapping datasets.
+            </p>
+
+            <ul>
+              <li>Historical Match Ambiguity</li>
+              <li>State-State Alignment</li>
+              <li>Event Prioritization</li>
+              <li>Bitemporal Modeling</li>
+            </ul>
+
+            <p>It enforces deterministic outcomes in historical queries.</p>
+          </section>
 
           <WhiteCard
             eyebrow="Related concepts"
@@ -301,7 +357,7 @@ function DarkExampleCard() {
                   style={{
                     ...modeButtonStyle,
                     background: active ? "#2563eb" : "#0f172a",
-                    borderColor: active ? "#60a5fa" : "#334155",
+                    borderColor: active ? "#60a5fa" : "#0f172a",
                     color: active ? "#ffffff" : "#cbd5e1",
                   }}
                 >
@@ -541,7 +597,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -557,7 +613,7 @@ const axisCardStyle: CSSProperties = {
   borderRadius: 18,
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.6,
 };
 
@@ -670,7 +726,7 @@ const stateBoxStyle: CSSProperties = {
   padding: 14,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const scenarioEyebrowStyle: CSSProperties = {
@@ -690,7 +746,7 @@ const valueRowStyle: CSSProperties = {
   padding: "12px 14px",
   borderRadius: 14,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   marginTop: 10,
 };
 
@@ -728,7 +784,7 @@ const modeButtonGridStyle: CSSProperties = {
 };
 
 const modeButtonStyle: CSSProperties = {
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   borderRadius: 14,
   padding: "11px 12px",
   fontWeight: 900,
@@ -768,7 +824,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -799,7 +855,7 @@ const relatedConceptStyle: CSSProperties = {
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
   textDecoration: "none",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.6,
 };
 
@@ -835,7 +891,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 

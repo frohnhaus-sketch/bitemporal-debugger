@@ -2,9 +2,17 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "Historical Correction",
+  title: "Historical Correction Explained – Retroactive Data Fixes in Time",
+
   description:
-    "Learn how retroactive corrections affect historized data models, snapshot reporting, auditability and bitemporal architectures.",
+    "Learn how historical corrections affect bitemporal models, snapshot reporting and reproducibility of past analytical results.",
+
+  keywords: [
+    "historical correction",
+    "retroactive change",
+    "bitemporal modeling",
+    "snapshot drift",
+  ],
 };
 
 export default function Page() {

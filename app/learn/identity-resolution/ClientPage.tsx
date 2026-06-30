@@ -39,6 +39,32 @@ export default function IdentityResolutionPage() {
             Identity Resolution connects different identifiers that represent
             the same business entity across systems and over time.
           </p>
+
+          <p style={paragraphStyle}>
+            Identity resolution connects multiple identifiers that refer to the
+            same real-world entity across systems and time.
+          </p>
+
+          <p style={paragraphStyle}>
+            It is critical for building unified historical views of business
+            entities.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Cross-system identity matching</li>
+            <li>Entity deduplication</li>
+            <li>Historical identity mapping</li>
+            <li>Canonical entity construction</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -67,6 +93,19 @@ export default function IdentityResolutionPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Enterprises often deal with multiple IDs for the same customer or
+              product.
+            </p>
+
+            <p>
+              Identity resolution unifies these into a single historical view.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -145,6 +184,26 @@ export default function IdentityResolutionPage() {
               systems and over time.
             </p>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>
+            Identity resolution is foundational for all temporal joins and
+            historical models.
+          </p>
+
+          <ul>
+            <li>Relationship History</li>
+            <li>State Modeling</li>
+            <li>Bitemporal Modeling</li>
+            <li>Historical Conformance</li>
+          </ul>
+
+          <p>It enables consistent tracking of entities across systems.</p>
         </section>
 
         <RelatedPatterns current="identity_resolution" />
@@ -427,7 +486,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -511,7 +570,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -638,7 +697,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 

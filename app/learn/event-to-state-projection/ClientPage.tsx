@@ -39,6 +39,34 @@ export default function EventToStateProjectionPage() {
             Event-to-State Projection derives valid state intervals from ordered
             business events.
           </p>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={heroTextStyle}>
+              Event-to-state projection transforms event streams into historized
+              state intervals for analytical querying.
+            </p>
+
+            <p style={paragraphStyle}>
+              It bridges event-driven systems and traditional temporal data
+              models.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Event streaming</li>
+              <li>State reconstruction</li>
+              <li>Temporal intervals</li>
+              <li>Historical analytics</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -54,8 +82,8 @@ export default function EventToStateProjectionPage() {
 
             <p style={paragraphStyle}>
               For reporting, users usually need to know the state of the
-              contract at each reporting date. Event-to-State Projection converts
-              event sequences into valid-time intervals.
+              contract at each reporting date. Event-to-State Projection
+              converts event sequences into valid-time intervals.
             </p>
 
             <ChipRow
@@ -69,6 +97,15 @@ export default function EventToStateProjectionPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Event streams must be transformed into state representations to
+              enable efficient historical querying.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -145,6 +182,24 @@ export default function EventToStateProjectionPage() {
               raw events in inconsistent ways.
             </p>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>How this pattern fits into temporal data modeling</h2>
+
+          <p>
+            This pattern is central to converting event-based systems into
+            queryable historical models.
+          </p>
+
+          <ul>
+            <li>Event modeling</li>
+            <li>State modeling</li>
+            <li>Snapshot generation</li>
+            <li>Temporal consistency</li>
+          </ul>
+
+          <p>It is widely used in analytics pipelines and data platforms.</p>
         </section>
 
         <RelatedPatterns current="event_to_state_projection" />
@@ -450,7 +505,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -573,7 +628,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -700,7 +755,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 

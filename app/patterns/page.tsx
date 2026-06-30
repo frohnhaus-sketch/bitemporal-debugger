@@ -3,7 +3,7 @@ import PatternsClient from "./PatternsClient";
 
 export const metadata: Metadata = {
   title:
-    "Historical Data Modeling Patterns",
+    "Explore Historical Data Modeling Patterns – SCD2, Bitemporal, Snapshots & Temporal Models",
   description:
     "Browse historical data modeling patterns including SCD2, bitemporal modeling, temporal joins, snapshot reporting, dimension completion, historical conformance and validation patterns.",
 };

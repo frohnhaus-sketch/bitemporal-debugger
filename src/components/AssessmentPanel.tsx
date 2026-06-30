@@ -832,7 +832,7 @@ const indicatorRowStyle: CSSProperties = {
   display: "flex",
   gap: 8,
   alignItems: "center",
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const indicatorCheckStyle: CSSProperties = {
@@ -848,6 +848,6 @@ const validationNoteStyle: CSSProperties = {
 };
 
 const validationNoteTextStyle: CSSProperties = {
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.5,
 };

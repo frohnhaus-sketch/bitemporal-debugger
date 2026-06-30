@@ -1,3 +1,12 @@
+export type ParseOptions = {
+  maxColumns?: number | "all";
+};
+
+export type ParseResult = {
+  rows: any[];
+  headerMappings: HeaderMapping[];
+};
+
 export type TemporalIssue = {
   id: string;
   type: TemporalIssueType;
@@ -11,6 +20,34 @@ export type TemporalIssue = {
   title: string;
   explanation: string;
   originalIssue?: SelectedDebugIssue;
+};
+
+export type SnapshotMeaning =
+  | "period_end"
+  | "period_start"
+  | "reporting_timestamp"
+  | "none";
+
+export type IntervalEndSemantics = "exclusive" | "inclusive";
+
+export type OpenEndedValue = "9999-12-31" | "null" | "custom" | "none";
+
+export type CorrectionMode =
+  | "valid_time"
+  | "bitemporal"
+  | "published_snapshot";
+
+export type SemanticsConfidence = {
+  validIntervalEnd: number;
+  visibleIntervalEnd: number;
+  snapshotMeaning: number;
+  openEndedValue: number;
+  correctionMode: number;
+};
+
+export type HeaderMapping = {
+  original: string;
+  normalized: string;
 };
 
 export type BitemporalRow = {
@@ -107,3 +144,62 @@ export type TemporalIssueType =
   | "DIMENSION_COMPLETION_RISK";
 
 export type TemporalIssueSeverity = "low" | "medium" | "high";
+
+export type TargetFinding = {
+  id: string;
+  title: string;
+  severity: "low" | "medium" | "high";
+  evidence: string[];
+  recommendation: string;
+  assumptions?: string[];
+};
+
+export type DetectedColumns = {
+  businessKey: string | null;
+  validFrom: string | null;
+  validTo: string | null;
+  visibleFrom: string | null;
+  visibleTo: string | null;
+  snapshotDate: string | null;
+  dimensionColumns: string[];
+};
+
+export type HistoricalSemantics = {
+  validIntervalEnd: IntervalEndSemantics;
+  visibleIntervalEnd: IntervalEndSemantics;
+  snapshotMeaning: SnapshotMeaning;
+  openEndedValue: OpenEndedValue;
+  correctionMode: CorrectionMode;
+
+  confidence: {
+    validIntervalEnd: number;
+    visibleIntervalEnd: number;
+    snapshotMeaning: number;
+    openEndedValue: number;
+    correctionMode: number;
+  };
+
+  detectedSignals: string[];
+  explanations: string[];
+};
+
+
+export type TargetValidationResult = {
+  rowCount: number;
+  rows: any[];
+  columns: string[];
+  headerMappings: HeaderMapping[];
+  detectedColumns: DetectedColumns;
+  semantics: HistoricalSemantics;
+  findings: TargetFinding[];
+  qualitySummary: {
+    counts: {
+      high: number;
+      medium: number;
+      low: number;
+    };
+    label: string;
+    description: string;
+    severity: "danger" | "warning" | "success";
+  };
+};

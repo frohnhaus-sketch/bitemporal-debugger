@@ -1,17 +1,26 @@
-# Historical Modeling Glossary
+# Historical Data Modeling Glossary
 
 ## Purpose
 
-This glossary defines the terminology used throughout the Historical Data Engineering Toolkit.
+This glossary defines the terminology used throughout the Historical Data Modeling Workbench.
+
+The goal is to establish a consistent vocabulary across:
+
+* Advisor recommendations
+* Model Reviews
+* Target Validation
+* Two Source Validation
+* Pattern Catalog
+* Learn Pages
 
 Each term is classified as one of:
 
-* Core Pattern
-* Implementation Pattern
-* Validation Pattern
-* Historical Concept
-
-This prevents multiple names from being used for the same underlying problem.
+* Foundational Concept
+* Modeling Pattern
+* Reporting Pattern
+* Engineering Pattern
+* Validation Finding
+* Implementation Technique
 
 ---
 
@@ -19,7 +28,7 @@ This prevents multiple names from being used for the same underlying problem.
 
 ## Classification
 
-Historical Concept
+Foundational Concept
 
 ## Definition
 
@@ -29,9 +38,10 @@ Examples:
 
 * Customer
 * Contract
+* Policy
 * Product
 
-Related Core Pattern:
+Related Pattern:
 
 * State Modeling
 
@@ -41,7 +51,7 @@ Related Core Pattern:
 
 ## Classification
 
-Historical Concept
+Foundational Concept
 
 ## Definition
 
@@ -51,11 +61,52 @@ Examples:
 
 * Payment Received
 * Claim Filed
+* Status Change
 * Contract Mutation
 
-Related Core Pattern:
+Related Pattern:
 
 * Event Modeling
+
+---
+
+# Valid Time
+
+## Classification
+
+Foundational Concept
+
+## Definition
+
+The period during which a business fact is true in reality.
+
+Example:
+
+```text
+Customer lived in Zurich
+from 2024-01-01
+to 2024-06-30
+```
+
+Related Pattern:
+
+* State Modeling
+
+---
+
+# Visible Time
+
+## Classification
+
+Foundational Concept
+
+## Definition
+
+The period during which information is known or visible to a system.
+
+Related Pattern:
+
+* Bitemporal Modeling
 
 ---
 
@@ -63,13 +114,13 @@ Related Core Pattern:
 
 ## Classification
 
-Implementation Pattern
+Implementation Technique
 
 ## Definition
 
 Only the latest version of a record is retained.
 
-Related Core Pattern:
+Related Pattern:
 
 * State Modeling
 
@@ -79,16 +130,16 @@ Related Core Pattern:
 
 ## Classification
 
-Implementation Pattern
+Implementation Technique
 
 ## Definition
 
 Historical versions of a record are retained using validity intervals.
 
-Related Core Patterns:
+Related Patterns:
 
 * State Modeling
-* State Alignment
+* State-to-State Alignment
 
 ---
 
@@ -96,15 +147,32 @@ Related Core Patterns:
 
 ## Classification
 
-Implementation Pattern
+Implementation Technique
 
 ## Definition
 
-Stores both business-effective time and system-visible time.
+Stores both valid time and visible time.
 
-Related Core Pattern:
+Related Pattern:
 
 * Bitemporal Modeling
+
+---
+
+# Temporal Join
+
+## Classification
+
+Implementation Technique
+
+## Definition
+
+A join that considers historical validity periods when matching records.
+
+Related Patterns:
+
+* State-to-State Alignment
+* State-to-Event Alignment
 
 ---
 
@@ -112,15 +180,15 @@ Related Core Pattern:
 
 ## Classification
 
-Implementation Pattern
+Implementation Technique
 
 ## Definition
 
-A fact table designed to support reproducible reporting at a specific reporting date.
+A fact table designed to support reporting at predefined reporting dates.
 
-Related Core Pattern:
+Related Pattern:
 
-* Snapshot Reproducibility
+* Snapshot Fact Modeling
 
 ---
 
@@ -128,15 +196,235 @@ Related Core Pattern:
 
 ## Classification
 
-Implementation Pattern
+Implementation Technique
 
 ## Definition
 
 A query that reconstructs historical state at a specific point in time.
 
-Related Core Pattern:
+Related Patterns:
 
+* Snapshot Fact Modeling
 * Snapshot Reproducibility
+
+---
+
+# Dimension Completion
+
+## Classification
+
+Modeling Pattern
+
+## Definition
+
+Dimension history does not fully cover the required reporting timeline.
+
+Common Symptoms:
+
+* Facts without dimensions
+* Missing historical attributes
+* Early-arriving facts
+* Late-arriving dimensions
+
+---
+
+# Relationship History
+
+## Classification
+
+Modeling Pattern
+
+## Definition
+
+Relationships between entities change over time.
+
+Examples:
+
+* Customer ↔ Segment
+* Employee ↔ Manager
+* Policy ↔ Broker
+
+---
+
+# Identity Resolution
+
+## Classification
+
+Modeling Pattern
+
+## Definition
+
+Multiple identifiers represent the same business entity.
+
+Examples:
+
+* Customer Merge
+* Account Migration
+* Contract Migration
+
+---
+
+# Historical Conformance
+
+## Classification
+
+Modeling Pattern
+
+## Definition
+
+Multiple systems describe the same business reality using different historical timelines.
+
+Examples:
+
+* CRM + ERP
+* Billing + Policy
+* Internal + Partner System
+
+---
+
+# Historical Correction
+
+## Classification
+
+Engineering Pattern
+
+## Definition
+
+Previously recorded history is corrected retroactively.
+
+Examples:
+
+* Data quality fixes
+* Regulatory corrections
+* Source restatements
+
+Related Pattern:
+
+* Bitemporal Modeling
+
+---
+
+# Historical Backfill
+
+## Classification
+
+Engineering Pattern
+
+## Definition
+
+Historical records become available after the original processing period.
+
+Examples:
+
+* Late-arriving data
+* Migration loads
+* Historical reconstruction
+
+---
+
+# Event Prioritization
+
+## Classification
+
+Engineering Pattern
+
+## Definition
+
+Multiple events compete to represent the same business outcome.
+
+Goal:
+
+Select the reporting-relevant event.
+
+---
+
+# State Reduction
+
+## Classification
+
+Engineering Pattern
+
+## Definition
+
+Large technical histories are condensed into reporting-relevant business states.
+
+Goal:
+
+Reduce reporting complexity.
+
+---
+
+# Event-to-State Projection
+
+## Classification
+
+Engineering Pattern
+
+## Definition
+
+Events are transformed into historical state intervals.
+
+Examples:
+
+* Workflow Events → Workflow State
+* Order Events → Order State
+
+---
+
+# Rectangle Decomposition
+
+## Classification
+
+Engineering Pattern
+
+## Definition
+
+Multiple temporal attributes are projected onto a common timeline.
+
+Alternative Names:
+
+* Temporal Projection
+* Temporal Pivot
+
+Goal:
+
+Create complete reporting intervals.
+
+---
+
+# Snapshot Reproducibility
+
+## Classification
+
+Reporting Pattern
+
+## Definition
+
+A historical report should return the same result regardless of when it is rerun.
+
+Core Question:
+
+```text
+Can I reproduce last month's report today?
+```
+
+---
+
+# As-Known Reporting
+
+## Classification
+
+Reporting Pattern
+
+## Definition
+
+Reporting based on information that was known at a specific point in time.
+
+Core Question:
+
+```text
+What did we know when the report was produced?
+```
 
 ---
 
@@ -144,13 +432,19 @@ Related Core Pattern:
 
 ## Classification
 
-Validation Pattern
+Validation Finding
 
 ## Definition
 
 A required historical period is not covered.
 
-Related Core Pattern:
+Common Causes:
+
+* Missing dimension history
+* Missing source records
+* Incomplete backfills
+
+Related Pattern:
 
 * Dimension Completion
 
@@ -160,15 +454,15 @@ Related Core Pattern:
 
 ## Classification
 
-Validation Pattern
+Validation Finding
 
 ## Definition
 
 A historical join produces zero valid matches.
 
-Related Core Patterns:
+Related Patterns:
 
-* State Alignment
+* State-to-State Alignment
 * Dimension Completion
 
 ---
@@ -177,15 +471,15 @@ Related Core Patterns:
 
 ## Classification
 
-Validation Pattern
+Validation Finding
 
 ## Definition
 
-A historical join produces more than one valid match.
+A historical join produces multiple valid matches.
 
-Related Core Pattern:
+Related Pattern:
 
-* State Alignment
+* State-to-State Alignment
 
 ---
 
@@ -193,47 +487,32 @@ Related Core Pattern:
 
 ## Classification
 
-Validation Pattern
+Validation Finding
 
 ## Definition
 
-Multiple states are active simultaneously when they should be mutually exclusive.
+Multiple historical states are active simultaneously when they should be mutually exclusive.
 
-Related Core Pattern:
+Related Pattern:
 
 * State Modeling
 
 ---
 
-# Late Arriving Dimension
+# Visibility Lag
 
 ## Classification
 
-Historical Concept
+Validation Finding
 
 ## Definition
 
-A dimension record becomes available after related facts already exist.
+Information becomes visible significantly later than it becomes valid.
 
-Related Core Pattern:
+Related Patterns:
 
-* Dimension Completion
-
----
-
-# Inferred Member
-
-## Classification
-
-Implementation Pattern
-
-## Definition
-
-A placeholder dimension record created before the real dimension data becomes available.
-
-Related Core Pattern:
-
-* Dimension Completion
+* Bitemporal Modeling
+* Snapshot Reproducibility
 
 ---
 
@@ -241,160 +520,27 @@ Related Core Pattern:
 
 ## Classification
 
-Validation Pattern
+Validation Finding
 
 ## Definition
 
 A historical report changes when rerun.
 
-Related Core Pattern:
+Common Causes:
+
+* Historical corrections
+* Late-arriving data
+* Missing visible-time tracking
+
+Related Pattern:
 
 * Snapshot Reproducibility
-
----
-
-# Historical Backfill
-
-## Classification
-
-Implementation Pattern
-
-## Definition
-
-Historical records are reconstructed after the fact.
-
-Related Core Patterns:
-
-* Snapshot Reproducibility
-* Dimension Completion
-
----
-
-# Historical Correction
-
-## Classification
-
-Core Pattern
-
-## Definition
-
-Previously recorded history is corrected retroactively.
-
-Related Core Pattern:
-
-* Bitemporal Modeling
-
----
-
-# Historical Conformance
-
-## Classification
-
-Core Pattern
-
-## Definition
-
-Multiple systems describe the same entity using different historical timelines.
-
-Related Core Pattern:
-
-* Historical Conformance
-
----
-
-# Identity Resolution
-
-## Classification
-
-Core Pattern
-
-## Definition
-
-Multiple identifiers represent the same business entity.
-
-Examples:
-
-* Customer Merge
-* Account Merge
-* Contract Migration
-
-Related Core Pattern:
-
-* Identity Resolution
-
----
-
-# Winner Selection
-
-## Classification
-
-Core Pattern
-
-## Definition
-
-Multiple candidates exist and one must be selected.
-
-Related Core Pattern:
-
-* Winner Selection
-
----
-
-# Event Prioritization
-
-## Classification
-
-Core Pattern
-
-## Definition
-
-Multiple events compete to represent a business outcome.
-
-Related Core Pattern:
-
-* Event Prioritization
-
----
-
-# State Reduction
-
-## Classification
-
-Core Pattern
-
-## Definition
-
-Technical histories are reduced to reporting-relevant states.
-
-Related Core Pattern:
-
-* State Reduction
-
----
-
-# Rectangle Decomposition
-
-## Classification
-
-Implementation Pattern
-
-## Definition
-
-Multiple temporal attributes are projected onto a common timeline.
-
-Alternative Name:
-
-* Temporal Pivot
-
-Related Core Pattern:
-
-* Temporal Pivot
 
 ---
 
 # Canonical Naming Rule
 
-Whenever multiple terms describe the same underlying problem, the Core Pattern name should be preferred.
+The Workbench prefers pattern names over implementation-specific terminology whenever possible.
 
 Examples:
 
@@ -403,17 +549,21 @@ Late Arriving Dimension
 ↓
 Dimension Completion
 
+Early Arriving Fact
+↓
+Dimension Completion
+
 Missing Historical Match
 ↓
-State Alignment
+State-to-State Alignment
 
 Snapshot Drift
 ↓
 Snapshot Reproducibility
 
-Rectangle Decomposition
-↓
 Temporal Pivot
+↓
+Rectangle Decomposition
 ```
 
-The Core Pattern is the canonical term used by the Advisor, Model Review and Validation workflows.
+The canonical names are used throughout the Advisor, Model Review, Learn Pages, Pattern Catalog, and Validation workflows.

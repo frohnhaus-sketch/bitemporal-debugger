@@ -50,6 +50,32 @@ export default function HistoricalCoverageGapPage() {
             A Historical Coverage Gap occurs when a required historical period
             has no valid record.
           </p>
+
+          <p style={paragraphStyle}>
+            Historical coverage gaps occur when valid-time ranges are missing or
+            incomplete in historized datasets.
+          </p>
+
+          <p style={paragraphStyle}>
+            These gaps lead to incorrect temporal joins and broken historical
+            analysis.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Missing valid-time intervals</li>
+            <li>Incomplete historical coverage</li>
+            <li>Temporal join failures</li>
+            <li>Data continuity issues</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -80,6 +106,17 @@ export default function HistoricalCoverageGapPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Gaps often appear when source systems do not emit full history
+              snapshots.
+            </p>
+
+            <p>They must be repaired before accurate reporting is possible.</p>
+          </section>
 
           <PatternTestCaseCard />
 
@@ -164,6 +201,22 @@ export default function HistoricalCoverageGapPage() {
           </WhiteCard>
         </section>
 
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>Coverage gaps directly affect all temporal query systems.</p>
+
+          <ul>
+            <li>Dimension Completion</li>
+            <li>State-State Alignment</li>
+            <li>Snapshot Reproducibility</li>
+            <li>Historical Backfill</li>
+          </ul>
+
+          <p>Fixing gaps is required for reliable historical joins.</p>
+        </section>
         <RelatedPatterns current="historical_coverage_gap" />
 
         <TryItCard />
@@ -662,7 +715,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -740,7 +793,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -907,7 +960,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -933,7 +986,7 @@ const testCaseStepsStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
   paddingLeft: 26,
-  color: "#334155",
+  color: "#0f172a",
   fontSize: 16,
   lineHeight: 1.7,
   listStyleType: "decimal",

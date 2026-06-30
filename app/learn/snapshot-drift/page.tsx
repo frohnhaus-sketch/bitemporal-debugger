@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "Snapshot Drift",
+  title: "Snapshot Drift Explained – Why Historical Reports Change Over Time",
+
   description:
-    "Understand snapshot drift: when historical reports change because old reporting periods are rebuilt with newer data, corrections or different logic.",
+    "Learn snapshot drift and how rebuilt historical reports can differ due to corrections, logic changes or data updates.",
+
+  keywords: ["snapshot drift", "historical reporting", "data consistency"],
 };
 
 export default function Page() {

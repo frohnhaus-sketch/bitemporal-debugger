@@ -1,16 +1,8 @@
-export type HeaderMapping = {
-  original: string;
-  normalized: string;
-};
-
-export type ParseResult = {
-  rows: any[];
-  headerMappings: HeaderMapping[];
-};
-
-export type ParseOptions = {
-  maxColumns?: number | "all";
-};
+import type {
+  HeaderMapping,
+  ParseResult,
+  ParseOptions,
+} from "@/lib/types";
 
 const COLUMN_ALIASES: Record<string, string> = {
   id: "entity_id",
@@ -69,30 +61,6 @@ const COLUMN_ALIASES: Record<string, string> = {
 
 const REQUIRED_COLUMNS = ["entity_id", "valid_from", "valid_to"];
 
-function looksLikeDate(value: string | undefined) {
-  if (!value) return false;
-  return /^\d{4}-\d{2}-\d{2}/.test(value.trim());
-}
-
-function looksLikeHeaderCell(value: string | undefined) {
-  if (!value) return false;
-
-  const key = value.trim().toLowerCase();
-
-  return (
-    key in COLUMN_ALIASES ||
-    key.includes("valid") ||
-    key.includes("visible") ||
-    key.includes("system") ||
-    key.includes("transaction") ||
-    key.includes("entity") ||
-    key.endsWith("_id") ||
-    key === "id" ||
-    key === "value" ||
-    key === "status"
-  );
-}
-
 function inferHeaderlessMapping(firstValues: string[]): HeaderMapping[] {
   const columnCount = firstValues.length;
 
@@ -116,16 +84,6 @@ function inferHeaderlessMapping(firstValues: string[]): HeaderMapping[] {
     original: `column_${index + 1}`,
     normalized: inferred[index] ?? "",
   }));
-}
-
-function hasUsableHeaders(values: string[]) {
-  const normalized = values.map((value) => normalizeHeader(value).normalized);
-
-  const hasRequiredColumns = REQUIRED_COLUMNS.every((required) =>
-    normalized.includes(required),
-  );
-
-  return hasRequiredColumns;
 }
 
 export function normalizeHeader(header: string): HeaderMapping {
@@ -154,7 +112,7 @@ export function normalizeHeader(header: string): HeaderMapping {
   return { original, normalized };
 }
 
-function normalizeValue(value: string | undefined) {
+function normalizeValue(value: string | null) {
   const trimmed = (value ?? "").trim();
 
   if (

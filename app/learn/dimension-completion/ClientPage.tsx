@@ -127,8 +127,6 @@ export default function DimensionCompletionPage() {
             </div>
           </div>
 
-          <h1 style={h1Style}>Historical Conformance</h1>
-
           <h1 style={h1Style}>Dimension Completion</h1>
 
           <p style={heroTextStyle}>
@@ -136,6 +134,32 @@ export default function DimensionCompletionPage() {
             assignment only starts in April. What should the February snapshot
             report show?
           </p>
+
+          <p style={paragraphStyle}>
+            Dimension completion resolves missing historical dimension coverage
+            in time-based models.
+          </p>
+
+          <p style={paragraphStyle}>
+            It ensures that fact tables always resolve to valid dimension states
+            across time.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Missing historical dimension handling</li>
+            <li>Temporal join completion</li>
+            <li>Coverage gap resolution</li>
+            <li>Consistent historical joins</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -169,6 +193,19 @@ export default function DimensionCompletionPage() {
 
           <DarkExampleCard />
 
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              In real systems, dimension tables often lag behind fact ingestion.
+            </p>
+
+            <p>
+              Dimension completion fills temporal gaps so analytics remain
+              consistent.
+            </p>
+          </section>
+
           <PatternTestCaseCard />
 
           <WhiteCard
@@ -177,7 +214,7 @@ export default function DimensionCompletionPage() {
           >
             <ResultTable rows={SNAPSHOT_ROWS} />
 
-            <p style={{ ...paragraphStyle, marginTop: 18 }}>
+            <p style={{ ...paragraphStyle, marginTop: 14, color: "#0f172a"}}>
               The contract is clearly valid in February. The customer assignment
               is not. This is the exact moment where Dimension Completion
               becomes a modeling decision instead of a simple join problem.
@@ -329,6 +366,26 @@ export default function DimensionCompletionPage() {
               </a>
             </div>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>
+            Dimension completion is essential for correct temporal joins and
+            historical fact reconstruction.
+          </p>
+
+          <ul>
+            <li>Historical Coverage Gap</li>
+            <li>State-to-State Alignment</li>
+            <li>Temporal Joins</li>
+            <li>Snapshot Reproducibility</li>
+          </ul>
+
+          <p>It ensures completeness in historized dimensional models.</p>
         </section>
 
         <RelatedPatterns current="dimension_completion" />
@@ -974,7 +1031,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -1027,7 +1084,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -1154,7 +1211,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -1175,7 +1232,7 @@ const relatedConceptStyle: CSSProperties = {
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
   textDecoration: "none",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.6,
 };
 
@@ -1202,7 +1259,7 @@ const resultRowStyle: CSSProperties = {
 const resultLabelStyle: CSSProperties = {
   fontSize: 13,
   fontWeight: 900,
-  color: "#64748b",
+  color: "#0f172a",
 };
 
 const resultValueStyle: CSSProperties = {
@@ -1423,14 +1480,14 @@ const testCaseTextStyle: CSSProperties = {
   marginBottom: 18,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const testCaseStepsStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
   paddingLeft: 26,
-  color: "#334155",
+  color: "#0f172a",
   fontSize: 16,
   lineHeight: 1.7,
   listStyleType: "decimal",

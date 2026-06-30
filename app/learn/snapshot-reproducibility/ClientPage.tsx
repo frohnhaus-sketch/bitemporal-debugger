@@ -115,6 +115,32 @@ export default function SnapshotReproducibilityPage() {
             last month’s report today, should it produce the same result or the
             corrected result?
           </p>
+
+          <p style={paragraphStyle}>
+            Snapshot reproducibility ensures that historical reports can be
+            rebuilt exactly as they were originally seen.
+          </p>
+
+          <p style={paragraphStyle}>
+            It prevents reporting drift caused by late data, corrections or
+            logic changes.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Deterministic historical snapshots</li>
+            <li>Rebuildable reporting outputs</li>
+            <li>Time-consistent analytics</li>
+            <li>Protection against data drift</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24, minWidth: 0 }}>
@@ -140,6 +166,20 @@ export default function SnapshotReproducibilityPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Modern BI systems often fail to reproduce old dashboards due to
+              silent data changes.
+            </p>
+
+            <p>
+              Snapshot reproducibility guarantees that a past report can be
+              recalculated byte-for-byte identical.
+            </p>
+          </section>
 
           <PatternTestCaseCard />
 
@@ -202,6 +242,29 @@ export default function SnapshotReproducibilityPage() {
               is rebuilt.
             </p>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>
+            Snapshot reproducibility depends on stable historical state models
+            and temporal correctness.
+          </p>
+
+          <ul>
+            <li>State Modeling</li>
+            <li>Historical Correction</li>
+            <li>Bitemporal Modeling</li>
+            <li>Historical Backfill</li>
+          </ul>
+
+          <p>
+            It is often implemented on top of bitemporal or event-sourced
+            systems.
+          </p>
         </section>
 
         <RelatedPatterns current="snapshot_reproducibility" />
@@ -788,7 +851,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -885,7 +948,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -1012,7 +1075,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -1125,7 +1188,7 @@ const resultPeriodStyle: CSSProperties = {
 const resultMetaStyle: CSSProperties = {
   marginTop: 3,
   fontSize: 12,
-  color: "#64748b",
+  color: "#0f172a",
   fontWeight: 800,
 };
 
@@ -1168,14 +1231,14 @@ const testCaseTextStyle: CSSProperties = {
   marginBottom: 18,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const testCaseStepsStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
   paddingLeft: 26,
-  color: "#334155",
+  color: "#0f172a",
   fontSize: 16,
   lineHeight: 1.7,
   listStyleType: "decimal",

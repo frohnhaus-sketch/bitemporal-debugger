@@ -1,7 +1,7 @@
 "use client";
 
 import { initializeScrollDepthTracking } from "@/lib/trackScrollDepth";
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { track } from "@/lib/analytics";
 
 export default function AsKnownReportingPage() {
@@ -103,6 +103,16 @@ export default function AsKnownReportingPage() {
             As-Known Reporting answers historical questions using only the
             information that was known at the reporting time.
           </p>
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Systems often need to reconstruct what was known at the time of
+              reporting. As-known reporting ensures that historical outputs
+              remain explainable and stable.
+            </p>
+          </section>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -133,6 +143,27 @@ export default function AsKnownReportingPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 30 }}>
+            <h2>How this pattern fits into temporal data modeling</h2>
+
+            <p>
+              As-known reporting is a core technique in historical data modeling
+              for reconstructing past system knowledge.
+            </p>
+
+            <ul>
+              <li>Bitemporal modeling</li>
+              <li>Snapshot reproducibility</li>
+              <li>Historical correction</li>
+              <li>State modeling</li>
+            </ul>
+
+            <p>
+              It is commonly used in audit systems and temporal analytics
+              pipelines.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -212,6 +243,34 @@ export default function AsKnownReportingPage() {
           </WhiteCard>
         </section>
 
+        <div style={{ marginTop: 16 }}>
+          <p style={heroTextStyle}>
+            As-known reporting reconstructs what was visible or believed at a
+            specific point in time using historical visibility data.
+          </p>
+
+          <p style={paragraphStyle}>
+            It ensures reproducible historical reporting by separating system
+            knowledge from business truth.
+          </p>
+
+          <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+            <li>Visible-time reconstruction</li>
+            <li>Historical reporting consistency</li>
+            <li>Snapshot reproducibility</li>
+            <li>Audit-safe analytics</li>
+          </ul>
+        </div>
+
         <RelatedPatterns current="as_known_reporting" />
 
         <section
@@ -256,7 +315,7 @@ export default function AsKnownReportingPage() {
               marginBottom: 20,
               fontSize: 16,
               lineHeight: 1.7,
-              color: "#334155",
+              color: "#0f172a",
               maxWidth: 720,
             }}
           >
@@ -657,7 +716,7 @@ const paragraphStyle: React.CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const solutionGridStyle: React.CSSProperties = {
@@ -665,4 +724,13 @@ const solutionGridStyle: React.CSSProperties = {
   gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
   gap: 14,
   marginTop: 18,
+};
+
+const heroTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 0,
+  maxWidth: 760,
+  fontSize: 20,
+  lineHeight: 1.6,
+  color: "#dbeafe",
 };

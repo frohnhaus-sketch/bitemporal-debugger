@@ -130,6 +130,29 @@ export default function StateStateAlignmentPage() {
             State ↔ State Alignment joins two historized state sources across
             overlapping valid-time intervals.
           </p>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={paragraphStyle}>
+              State-to-state alignment compares two historized state timelines
+              for consistency and gaps.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Cross-system temporal comparison</li>
+              <li>Gap and overlap detection</li>
+              <li>Consistency validation across models</li>
+              <li>Temporal reconciliation</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -155,6 +178,15 @@ export default function StateStateAlignmentPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Without alignment, different state systems diverge over time and
+              become inconsistent.
+            </p>
+          </section>
 
           <PatternTestCaseCard />
 
@@ -258,6 +290,26 @@ AND intervals_overlap(
           </WhiteCard>
         </section>
 
+        <section style={{ marginTop: 30 }}>
+          <h2>How this pattern relates to other temporal models</h2>
+
+          <p>
+            This pattern is essential in multi-source data integration
+            scenarios.
+          </p>
+
+          <ul>
+            <li>State Modeling</li>
+            <li>Identity Resolution</li>
+            <li>Historical Conformance</li>
+            <li>Snapshot Reproducibility</li>
+          </ul>
+
+          <p>
+            It ensures that independent systems describe the same historical
+            reality.
+          </p>
+        </section>
         <RelatedPatterns current="state_state_alignment" />
 
         <TryItCard />
@@ -912,7 +964,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -1002,7 +1054,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -1031,7 +1083,7 @@ const codeBoxStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   overflowX: "auto",
 };
 
@@ -1171,7 +1223,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -1327,7 +1379,7 @@ const resultPeriodStyle: CSSProperties = {
 const resultMetaStyle: CSSProperties = {
   marginTop: 3,
   fontSize: 12,
-  color: "#64748b",
+  color: "#0f172a",
   fontWeight: 800,
 };
 
@@ -1370,14 +1422,14 @@ const testCaseTextStyle: CSSProperties = {
   marginBottom: 18,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const testCaseStepsStyle: CSSProperties = {
   marginTop: 0,
   marginBottom: 18,
   paddingLeft: 26,
-  color: "#334155",
+  color: "#0f172a",
   fontSize: 16,
   lineHeight: 1.7,
   listStyleType: "decimal",

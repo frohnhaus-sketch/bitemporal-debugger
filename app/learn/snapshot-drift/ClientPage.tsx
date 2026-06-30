@@ -74,10 +74,42 @@ export default function SnapshotDriftPage() {
               originally published snapshot from the later corrected rebuild.
             </p>
           </WhiteCard>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={paragraphStyle}>
+              Snapshot drift occurs when historical reports change because
+              underlying data or logic has been updated.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Non-reproducible historical outputs</li>
+              <li>Backfilled corrections affecting old reports</li>
+              <li>Metric definition changes</li>
+              <li>Rebuilt historical snapshots</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Without temporal separation, even correct systems can produce
+              shifting historical truth.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -121,8 +153,8 @@ export default function SnapshotDriftPage() {
             title="Snapshot date, knowledge date and publication date are different concepts."
           >
             <p style={paragraphStyle}>
-              A snapshot date answers which business period is being reported.
-              A knowledge date answers what the platform knew when the query was
+              A snapshot date answers which business period is being reported. A
+              knowledge date answers what the platform knew when the query was
               evaluated. A publication date answers what was officially released
               to users.
             </p>
@@ -157,6 +189,26 @@ export default function SnapshotDriftPage() {
             </div>
           </WhiteCard>
 
+          <section style={{ marginTop: 30 }}>
+            <h2>How this pattern relates to other temporal models</h2>
+
+            <p>
+              Snapshot drift is a symptom of missing bitemporal or versioned
+              modeling.
+            </p>
+
+            <ul>
+              <li>Snapshot Reproducibility</li>
+              <li>Bitemporal Modeling</li>
+              <li>Historical Backfill</li>
+              <li>Historical Correction</li>
+            </ul>
+
+            <p>
+              It highlights the need for stable historical reconstruction
+              layers.
+            </p>
+          </section>
           <WhiteCard
             eyebrow="Related patterns"
             title="Snapshot drift is solved by reproducibility and publication-time modeling."
@@ -259,7 +311,7 @@ function DarkExampleCard() {
                   style={{
                     ...modeButtonStyle,
                     background: active ? "#2563eb" : "#0f172a",
-                    borderColor: active ? "#60a5fa" : "#334155",
+                    borderColor: active ? "#60a5fa" : "#0f172a",
                     color: active ? "#ffffff" : "#cbd5e1",
                   }}
                 >
@@ -295,9 +347,9 @@ function DarkExampleCard() {
       <div style={exampleNoteStyle}>
         <div style={exampleNoteLabelStyle}>Key idea</div>
         <p style={exampleNoteTextStyle}>
-          Snapshot drift is not just a number changing. It is a missing
-          modeling decision: should this report show the originally published
-          output, the as-known view or the corrected rebuild?
+          Snapshot drift is not just a number changing. It is a missing modeling
+          decision: should this report show the originally published output, the
+          as-known view or the corrected rebuild?
         </p>
       </div>
     </section>
@@ -548,7 +600,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -601,7 +653,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -694,7 +746,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -815,7 +867,7 @@ const relatedConceptStyle: CSSProperties = {
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
   textDecoration: "none",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.6,
 };
 

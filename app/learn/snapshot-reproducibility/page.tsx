@@ -2,9 +2,16 @@ import type { Metadata } from "next";
 import ClientPage from "./ClientPage";
 
 export const metadata: Metadata = {
-  title: "Snapshot Reproducibility",
+  title: "Snapshot Reproducibility – Ensuring Stable Historical Reports",
+
   description:
-    "Learn why historical reports can change when rerun and how snapshot reproducibility protects reporting, auditability and bitemporal models.",
+    "Learn how to ensure reproducible historical snapshots even when source data or logic changes over time.",
+
+  keywords: [
+    "snapshot reproducibility",
+    "auditability",
+    "historical reporting",
+  ],
 };
 
 export default function Page() {

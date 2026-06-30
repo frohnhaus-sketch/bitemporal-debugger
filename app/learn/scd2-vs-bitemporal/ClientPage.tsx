@@ -134,6 +134,29 @@ export default function Scd2VsBitemporalPage() {
               platform.
             </p>
           </WhiteCard>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={paragraphStyle}>
+              SCD Type 2 tracks historical versions, while bitemporal modeling
+              separates business truth from system knowledge.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>SCD2: version history only</li>
+              <li>Bitemporal: valid-time + visible-time</li>
+              <li>Better auditability with bitemporal models</li>
+              <li>Correct handling of late corrections</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -157,6 +180,15 @@ export default function Scd2VsBitemporalPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              SCD2 is often insufficient when systems must reconstruct past
+              knowledge states accurately.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Comparison"
@@ -195,7 +227,7 @@ export default function Scd2VsBitemporalPage() {
               ]}
             />
 
-            <p style={{ ...paragraphStyle, marginTop: 18 }}>
+            <p style={{ ...paragraphStyle, marginTop: 14, color: "#0f172a"}}>
               SCD2 is often sufficient when past reports are allowed to use the
               latest corrected version of history, or when the source system
               does not provide meaningful information about when a correction
@@ -218,7 +250,7 @@ export default function Scd2VsBitemporalPage() {
               ]}
             />
 
-            <p style={{ ...paragraphStyle, marginTop: 18 }}>
+            <p style={{ ...paragraphStyle, marginTop: 14, color: "#0f172a"}}>
               Bitemporal modeling is useful when users need to reproduce a
               historical report as it was known at the time, not just as it
               would be calculated using today's corrected history.
@@ -249,6 +281,26 @@ export default function Scd2VsBitemporalPage() {
             <CheckChipRow checks={VALIDATION_CHECKS} />
           </WhiteCard>
 
+          <section style={{ marginTop: 30 }}>
+            <h2>How this pattern relates to other temporal models</h2>
+
+            <p>
+              This comparison is foundational for understanding modern temporal
+              architectures.
+            </p>
+
+            <ul>
+              <li>Bitemporal Modeling</li>
+              <li>Snapshot Fact Modeling</li>
+              <li>Snapshot Reproducibility</li>
+              <li>Historical Correction</li>
+            </ul>
+
+            <p>
+              Most real systems evolve from SCD2 into bitemporal or hybrid
+              models.
+            </p>
+          </section>
           <WhiteCard
             eyebrow="Related concepts"
             title="SCD2 and bitemporal modeling connect to several historical modeling patterns."
@@ -377,7 +429,7 @@ function DarkExampleCard() {
                   style={{
                     ...modeButtonStyle,
                     background: active ? "#2563eb" : "#0f172a",
-                    borderColor: active ? "#60a5fa" : "#334155",
+                    borderColor: active ? "#60a5fa" : "#0f172a",
                     color: active ? "#ffffff" : "#cbd5e1",
                   }}
                 >
@@ -598,7 +650,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -691,7 +743,7 @@ const valueRowStyle: CSSProperties = {
   padding: "12px 14px",
   borderRadius: 14,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   marginTop: 10,
 };
 
@@ -726,7 +778,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -768,7 +820,7 @@ const comparisonCellStyle: CSSProperties = {
   borderRadius: 14,
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.55,
 };
 
@@ -786,7 +838,7 @@ const relatedConceptStyle: CSSProperties = {
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
   textDecoration: "none",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.6,
 };
 
@@ -822,7 +874,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
@@ -886,7 +938,7 @@ const timelineLineStyle: CSSProperties = {
   top: 32,
   height: 4,
   borderRadius: 999,
-  background: "#334155",
+  background: "#0f172a",
 };
 
 const timelineDotStyle: CSSProperties = {
@@ -921,7 +973,7 @@ const stateBoxStyle: CSSProperties = {
   padding: 14,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const modeButtonGridStyle: CSSProperties = {
@@ -932,7 +984,7 @@ const modeButtonGridStyle: CSSProperties = {
 };
 
 const modeButtonStyle: CSSProperties = {
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   borderRadius: 14,
   padding: "11px 12px",
   fontWeight: 900,

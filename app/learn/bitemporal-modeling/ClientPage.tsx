@@ -35,10 +35,35 @@ export default function BitemporalModelingPage() {
 
           <h1 style={h1Style}>Bitemporal Modeling</h1>
 
+          {/* HERO (single clear intent statement) */}
           <p style={heroTextStyle}>
-            Bitemporal Modeling separates when something was valid in the
-            business from when it was known by the system.
+            Bitemporal modeling separates business-valid time from
+            system-visible time to enable fully reproducible historical
+            reporting.
           </p>
+
+          {/* SUPPORTING CONTEXT (NOT repetitive) */}
+          <p style={{ ...paragraphStyle, marginTop: 14, color: "#0f172a"}}>
+            It ensures that corrections, backfills and late-arriving data do not
+            rewrite historical truth.
+          </p>
+
+          {/* KEY CONCEPTS (structured, not prose) */}
+          <ul
+            style={{
+              marginTop: 14,
+              paddingLeft: 18,
+              display: "grid",
+              gap: 6,
+              color: "#0f172a",
+              fontWeight: 600,
+            }}
+          >
+            <li>Dual-time dimension modeling (valid + visible time)</li>
+            <li>Reproducible as-known reporting</li>
+            <li>Correction-safe historical storage</li>
+            <li>Audit-compliant temporal reconstruction</li>
+          </ul>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -69,6 +94,20 @@ export default function BitemporalModelingPage() {
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>How this works in real-world data systems</h2>
+
+            <p>
+              Systems like data warehouses and lakehouses must preserve both
+              truth and knowledge over time.
+            </p>
+
+            <p>
+              Bitemporal structures allow rebuilding any historical report
+              exactly as it was known at the time.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Why it happens"
@@ -146,6 +185,29 @@ export default function BitemporalModelingPage() {
               records, deliver history late or restate historical facts.
             </p>
           </WhiteCard>
+        </section>
+
+        <section style={{ marginTop: 30 }}>
+          <h2>
+            How this pattern connects to other historical modeling concepts
+          </h2>
+
+          <p>
+            Bitemporal modeling is the foundation for most advanced temporal
+            architectures.
+          </p>
+
+          <ul>
+            <li>Snapshot Reproducibility</li>
+            <li>Historical Correction</li>
+            <li>State Modeling</li>
+            <li>Event-to-State Projection</li>
+          </ul>
+
+          <p>
+            It is rarely used alone and typically combined with snapshot and
+            event-based systems.
+          </p>
         </section>
 
         <RelatedPatterns current="bitemporal_modeling" />
@@ -448,7 +510,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
 };
 
 const chipRowStyle: CSSProperties = {
@@ -535,7 +597,7 @@ const codeBoxStyle: CSSProperties = {
   padding: 16,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   overflowX: "auto",
 };
 
@@ -664,7 +726,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 

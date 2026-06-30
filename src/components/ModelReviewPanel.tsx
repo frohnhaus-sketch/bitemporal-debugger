@@ -551,7 +551,7 @@ export function ModelReviewPanel() {
                   style={{
                     marginTop: 12,
                     fontSize: 13,
-                    color: "#334155",
+                    color: "#0f172a",
                   }}
                 >
                   <strong>Detected operations:</strong>
@@ -790,7 +790,7 @@ export function ModelReviewPanel() {
                 style={{
                   cursor: "pointer",
                   fontWeight: 700,
-                  color: "#334155",
+                  color: "#0f172a",
                 }}
               >
                 Preview Report

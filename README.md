@@ -78,7 +78,7 @@ Detect:
 * Visibility lag
 * Temporal misalignment
 
-## Historical Modeling Pattern Catalog
+## Learn Historical Modeling Patterns
 
 Explore common historical modeling concepts including:
 

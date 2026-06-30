@@ -256,7 +256,7 @@ export function IssueWhyPanel({
             marginBottom: 10,
           }}
         >
-          <div style={{ fontWeight: 800, color: "#334155", marginBottom: 4 }}>
+          <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>
             Affected interval
           </div>
           {selectedTemporalIssue.type === "SNAPSHOT_DRIFT" ? (
@@ -300,7 +300,7 @@ export function IssueWhyPanel({
           border: "1px solid #e2e8f0",
           fontSize: 13,
           lineHeight: 1.5,
-          color: "#334155",
+          color: "#0f172a",
           marginBottom: 10,
         }}
       >
@@ -322,7 +322,7 @@ export function IssueWhyPanel({
           border: "1px solid #e2e8f0",
           fontSize: 13,
           lineHeight: 1.5,
-          color: "#334155",
+          color: "#0f172a",
         }}
       >
         <div

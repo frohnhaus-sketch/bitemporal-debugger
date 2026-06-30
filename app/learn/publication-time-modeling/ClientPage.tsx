@@ -108,9 +108,9 @@ export default function TritemporalModelingPage() {
             title="Publication-Time modeling separates valid time, visibility time and publication time."
           >
             <p style={paragraphStyle}>
-              Use Publication-Time modeling when it is not enough to know what was
-              true and what was known. You also need to know what was officially
-              published, disclosed or used in a reporting output.
+              Use Publication-Time modeling when it is not enough to know what
+              was true and what was known. You also need to know what was
+              officially published, disclosed or used in a reporting output.
             </p>
 
             <p style={paragraphStyle}>
@@ -119,6 +119,29 @@ export default function TritemporalModelingPage() {
               even after corrected history arrives later.
             </p>
           </WhiteCard>
+
+          <div style={{ marginTop: 16 }}>
+            <p style={paragraphStyle}>
+              Publication-time modeling (tritemporal modeling) adds a third
+              axis: when data was officially published or released.
+            </p>
+
+            <ul
+  style={{
+    marginTop: 14,
+    paddingLeft: 18,
+    display: "grid",
+    gap: 6,
+    color: "#0f172a",
+    fontWeight: 600,
+  }}
+>
+              <li>Valid-time: when something is true in the business</li>
+              <li>Visible-time: when the system knew it</li>
+              <li>Publication-time: when it was officially released</li>
+              <li>Full audit-grade reproducibility across all timelines</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -134,13 +157,22 @@ export default function TritemporalModelingPage() {
             </p>
 
             <p style={paragraphStyle}>
-              Publication-Time modeling adds a third axis: publication time. This
-              captures when a result was officially published, frozen, disclosed
-              or used by a downstream reporting process.
+              Publication-Time modeling adds a third axis: publication time.
+              This captures when a result was officially published, frozen,
+              disclosed or used by a downstream reporting process.
             </p>
           </WhiteCard>
 
           <DarkExampleCard />
+
+          <section style={{ marginTop: 20 }}>
+            <h2>Core concepts in practice</h2>
+
+            <p>
+              Adding publication time ensures that even released reports can be
+              reconstructed exactly as they were originally published.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Three time axes"
@@ -173,7 +205,7 @@ export default function TritemporalModelingPage() {
               ]}
             />
 
-            <p style={{ ...paragraphStyle, marginTop: 18 }}>
+            <p style={{ ...paragraphStyle, marginTop: 14, color: "#0f172a"}}>
               If a corrected record arrives after a report has already been
               published, the corrected business truth and the published output
               may intentionally differ. Publication-Time modeling makes that
@@ -207,6 +239,28 @@ export default function TritemporalModelingPage() {
           >
             <CheckChipRow checks={VALIDATION_CHECKS} />
           </WhiteCard>
+
+          <section style={{ marginTop: 30 }}>
+            <h2>How this pattern relates to other temporal models</h2>
+
+            <p>
+              Publication-time modeling extends bitemporal systems into full
+              tritemporal architectures and is used in regulated reporting
+              systems.
+            </p>
+
+            <ul>
+              <li>Bitemporal Modeling</li>
+              <li>Snapshot Reproducibility</li>
+              <li>Historical Conformance</li>
+              <li>State Modeling</li>
+            </ul>
+
+            <p>
+              It is most relevant in financial reporting, compliance systems and
+              audit-critical pipelines.
+            </p>
+          </section>
 
           <WhiteCard
             eyebrow="Related concepts"
@@ -348,7 +402,7 @@ function DarkExampleCard() {
                   style={{
                     ...modeButtonStyle,
                     background: active ? "#2563eb" : "#0f172a",
-                    borderColor: active ? "#60a5fa" : "#334155",
+                    borderColor: active ? "#60a5fa" : "#0f172a",
                     color: active ? "#ffffff" : "#cbd5e1",
                   }}
                 >
@@ -385,8 +439,8 @@ function DarkExampleCard() {
         <div style={exampleNoteLabelStyle}>Key idea</div>
 
         <p style={exampleNoteTextStyle}>
-          Publication-Time modeling prevents one timeline from pretending to answer
-          every historical question. Truth, knowledge and publication are
+          Publication-Time modeling prevents one timeline from pretending to
+          answer every historical question. Truth, knowledge and publication are
           related, but they are not the same thing.
         </p>
       </div>
@@ -578,7 +632,7 @@ const paragraphStyle: CSSProperties = {
   marginBottom: 12,
   fontSize: 16,
   lineHeight: 1.8,
-  color: "#334155",
+  color: "#0f172a",
   overflowWrap: "break-word",
 };
 
@@ -594,7 +648,7 @@ const axisCardStyle: CSSProperties = {
   borderRadius: 18,
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.6,
 };
 
@@ -720,7 +774,7 @@ const timelineLineStyle: CSSProperties = {
   top: 32,
   height: 4,
   borderRadius: 999,
-  background: "#334155",
+  background: "#0f172a",
 };
 
 const timelineDotStyle: CSSProperties = {
@@ -755,7 +809,7 @@ const stateBoxStyle: CSSProperties = {
   padding: 14,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const scenarioEyebrowStyle: CSSProperties = {
@@ -775,7 +829,7 @@ const valueRowStyle: CSSProperties = {
   padding: "12px 14px",
   borderRadius: 14,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   marginTop: 10,
 };
 
@@ -813,7 +867,7 @@ const modeButtonGridStyle: CSSProperties = {
 };
 
 const modeButtonStyle: CSSProperties = {
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
   borderRadius: 14,
   padding: "11px 12px",
   fontWeight: 900,
@@ -852,7 +906,7 @@ const exampleNoteStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#020617",
-  border: "1px solid #334155",
+  border: "1px solid #0f172a",
 };
 
 const exampleNoteLabelStyle: CSSProperties = {
@@ -883,7 +937,7 @@ const relatedConceptStyle: CSSProperties = {
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
   textDecoration: "none",
-  color: "#334155",
+  color: "#0f172a",
   lineHeight: 1.6,
 };
 
@@ -919,7 +973,7 @@ const tryItTextStyle: CSSProperties = {
   marginBottom: 20,
   fontSize: 16,
   lineHeight: 1.7,
-  color: "#334155",
+  color: "#0f172a",
   maxWidth: 720,
 };
 
