@@ -27,92 +27,35 @@ export default function AsKnownReportingPage() {
     >
       <div style={{ maxWidth: 980, marginLeft: "auto", marginRight: "auto" }}>
         <header style={{ marginBottom: 40 }}>
-          <a
-            href="/patterns"
-            style={{
-              display: "inline-flex",
-              color: "#bfdbfe",
-              textDecoration: "none",
-              fontWeight: 800,
-              fontSize: 14,
-              marginBottom: 22,
-            }}
-          >
+          <a href="/patterns" style={backLinkStyle}>
             ← Back to Pattern Catalog
           </a>
 
-          <div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <div
-                style={{
-                  display: "inline-flex",
-                  padding: "8px 12px",
-                  borderRadius: 999,
-                  background: "#dbeafe",
-                  color: "#075985",
-                  fontSize: 12,
-                  fontWeight: 900,
-                  letterSpacing: 0.6,
-                  textTransform: "uppercase",
-                }}
-              >
-                Composite Pattern
-              </div>
-
-              <div
-                style={{
-                  display: "inline-flex",
-                  padding: "8px 12px",
-                  borderRadius: 999,
-                  background: "#fef3c7",
-                  color: "#92400e",
-                  fontSize: 12,
-                  fontWeight: 900,
-                  letterSpacing: 0.6,
-                  textTransform: "uppercase",
-                }}
-              >
-                Example
-              </div>
-            </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div style={badgeStyle}>Composite Pattern</div>
+            <div style={badgeStyleSecondary}>Example</div>
           </div>
 
-          <h1
-            style={{
-              marginTop: 22,
-              marginBottom: 16,
-              fontSize: "clamp(34px, 8vw, 56px)",
-              lineHeight: 1,
-              color: "#ffffff",
-              letterSpacing: "-0.05em",
-            }}
-          >
-            As-Known Reporting
-          </h1>
+          <h1 style={h1Style}>As-Known Reporting</h1>
 
-          <p
-            style={{
-              marginTop: 0,
-              marginBottom: 0,
-              maxWidth: 760,
-              fontSize: 20,
-              lineHeight: 1.6,
-              color: "#dbeafe",
-            }}
-          >
-            As-Known Reporting answers historical questions using only the
-            information that was known at the reporting time.
+          <p style={heroTextStyle}>
+            As-Known Reporting answers historical questions using only
+            information that was actually known at the time of reporting.
           </p>
 
-          <section style={{ marginTop: 20 }}>
-            <h2>Core concepts in practice</h2>
-
-            <p>
-              Systems often need to reconstruct what was known at the time of
-              reporting. As-known reporting ensures that historical outputs
-              remain explainable and stable.
+          {/* OPTIONAL: 1 SMALL SEO BOOST BLOCK */}
+          <div style={{ marginTop: 14 }}>
+            <p style={paragraphStyle}>
+              It prevents historical reports from being rewritten by later
+              corrections or backfills.
             </p>
-          </section>
+
+            <ul style={listStyle}>
+              <li>Visible-time based reconstruction</li>
+              <li>Audit-safe historical outputs</li>
+              <li>Reproducible reporting behavior</li>
+            </ul>
+          </div>
         </header>
 
         <section style={{ display: "grid", gap: 24 }}>
@@ -145,23 +88,11 @@ export default function AsKnownReportingPage() {
           <DarkExampleCard />
 
           <section style={{ marginTop: 30 }}>
-            <h2>How this pattern fits into temporal data modeling</h2>
+            <h2>Core concepts in practice</h2>
 
             <p>
-              As-known reporting is a core technique in historical data modeling
-              for reconstructing past system knowledge.
-            </p>
-
-            <ul>
-              <li>Bitemporal modeling</li>
-              <li>Snapshot reproducibility</li>
-              <li>Historical correction</li>
-              <li>State modeling</li>
-            </ul>
-
-            <p>
-              It is commonly used in audit systems and temporal analytics
-              pipelines.
+              As-known reporting ensures historical outputs are based only on
+              what was known at the time of reporting.
             </p>
           </section>
 
@@ -255,15 +186,15 @@ export default function AsKnownReportingPage() {
           </p>
 
           <ul
-  style={{
-    marginTop: 14,
-    paddingLeft: 18,
-    display: "grid",
-    gap: 6,
-    color: "#0f172a",
-    fontWeight: 600,
-  }}
->
+            style={{
+              marginTop: 14,
+              paddingLeft: 18,
+              display: "grid",
+              gap: 6,
+              color: "#0f172a",
+              fontWeight: 600,
+            }}
+          >
             <li>Visible-time reconstruction</li>
             <li>Historical reporting consistency</li>
             <li>Snapshot reproducibility</li>
@@ -733,4 +664,55 @@ const heroTextStyle: CSSProperties = {
   fontSize: 20,
   lineHeight: 1.6,
   color: "#dbeafe",
+};
+
+const backLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  color: "#bfdbfe",
+  textDecoration: "none",
+  fontWeight: 800,
+  fontSize: 14,
+  marginBottom: 22,
+};
+
+const badgeStyle: CSSProperties = {
+  display: "inline-flex",
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "#dbeafe",
+  color: "#075985",
+  fontSize: 12,
+  fontWeight: 900,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+};
+
+const h1Style: CSSProperties = {
+  marginTop: 22,
+  marginBottom: 16,
+  fontSize: "clamp(34px, 8vw, 56px)",
+  lineHeight: 1,
+  color: "#ffffff",
+  letterSpacing: "-0.05em",
+};
+
+const listStyle: React.CSSProperties = {
+  marginTop: 12,
+  paddingLeft: 18,
+  fontSize: 15,
+  lineHeight: 1.7,
+  color: "#0f172a",
+};
+
+const badgeStyleSecondary: React.CSSProperties = {
+  display: "inline-flex",
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "#fef3c7",
+  color: "#92400e",
+  fontSize: 12,
+  fontWeight: 900,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+  border: "1px solid #fde68a",
 };

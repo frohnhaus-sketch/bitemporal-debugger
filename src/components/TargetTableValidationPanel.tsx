@@ -2,84 +2,75 @@
 
 import { validateTargetTable } from "@/lib/targetTableValidator";
 import { track } from "@/lib/analytics";
-import { useEffect, useMemo, useState, useRef } from "react";
-import type {
-    TargetValidationResult,
-    HistoricalSemantics,
-    DetectedColumns,
-    IntervalEndSemantics,
-    OpenEndedValue,
-    CorrectionMode,
-    SemanticsConfidence,
-    SnapshotMeaning,
-} from "@/lib/types";
-import { sameDay } from "@/lib/utils/date";
-import { TargetFinding } from "@/lib/types";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-const TARGET_VALIDATION_EXAMPLES = [
-  {
-    id: "snapshot_output",
-    title: "Snapshot Output",
-    button: "Load Snapshot Output Demo",
-    description:
-      "Monthly snapshot output with duplicate grain, missing month coverage and reproducibility risk.",
-    input: `contract_id,customer_id,snapshot_date,status,premium_amount,customer_segment,valid_from,valid_to,snapshot_method,coverage_status
+import { TargetTableInvestigation } from "@/components/investigation/TargetTableInvestigation";
+
+const SAMPLE_INVESTIGATION = {
+  id: "customer_revenue_mismatch",
+  title: "Customer Revenue Mismatch",
+  description:
+    "A monthly revenue table looks correct, but historical reporting can no longer reproduce February numbers.",
+  input: `contract_id,customer_id,snapshot_date,status,premium_amount,customer_segment,valid_from,valid_to,snapshot_method,coverage_status
 C-1001,U-10,2024-01-31,active,120.00,Bronze,2024-01-01,2024-02-01,current_rebuild_only,ok
 C-1001,U-10,2024-02-29,active,120.00,Bronze,2024-02-01,2024-03-01,current_rebuild_only,ok
 C-1001,U-10,2024-04-30,active,135.00,Gold,2024-04-01,2024-05-01,current_rebuild_only,ok
 C-1002,U-20,2024-01-31,active,90.00,Silver,2024-01-01,2024-02-01,current_rebuild_only,ok
 C-1002,U-20,2024-01-31,active,90.00,Silver,2024-01-01,2024-02-01,current_rebuild_only,ok
 C-1002,U-20,2024-02-29,cancelled,90.00,Silver,2024-02-01,2024-03-01,current_rebuild_only,ok`,
-  },
-  {
-    id: "dimension_completion_output",
-    title: "Dimension Completion Output",
-    button: "Load Dimension Completion Demo",
-    description:
-      "Fact snapshots with missing customer dimension values and historical coverage gaps.",
-    input: `contract_id,customer_id,snapshot_date,status,premium_amount,customer_segment,region,valid_from,valid_to,completion_method,coverage_status
-C-2001,U-30,2024-01-31,active,150.00,,North,2024-01-01,2024-02-01,not_completed,coverage_gap
-C-2001,U-30,2024-02-29,active,150.00,,North,2024-02-01,2024-03-01,not_completed,coverage_gap
-C-2001,U-30,2024-03-31,active,150.00,Gold,North,2024-03-01,2024-04-01,completed,ok
-C-2002,U-40,2024-01-31,active,80.00,Silver,,2024-01-01,2024-02-01,not_completed,coverage_gap
-C-2002,U-40,2024-02-29,active,80.00,Silver,West,2024-02-01,2024-03-01,completed,ok`,
-  },
-  {
-    id: "event_prioritization_output",
-    title: "Event Prioritization Output",
-    button: "Load Event Prioritization Demo",
-    description:
-      "Event output with operational noise, duplicate milestones and prioritization issues.",
-    input: `event_id,contract_id,event_time,event_type,reporting_milestone,priority_rank,prioritization_status
-E-001,C-3001,2024-01-03T10:00:00,created,contract_created,1,ok
-E-002,C-3001,2024-01-03T10:05:00,technical_update,contract_created,2,technical_event_kept
-E-003,C-3001,2024-02-10T09:00:00,status_changed,contract_active,1,ok
-E-004,C-3001,2024-02-10T09:01:00,workflow_sync,contract_active,2,workflow_noise_kept
-E-005,C-3002,2024-03-01T11:00:00,cancelled,contract_cancelled,1,duplicate_milestone
-E-006,C-3002,2024-03-01T11:02:00,cancelled,contract_cancelled,1,duplicate_milestone`,
-  },
-];
+};
+
+type EntryMode = "sample" | "upload";
 
 export function TargetTableValidationPanel() {
   const [input, setInput] = useState("");
-  const [activeExampleId, setActiveExampleId] = useState<string | null>(null);
+  const [entryMode, setEntryMode] = useState<EntryMode>("sample");
+  const [loadedSample, setLoadedSample] = useState(false);
   const resultRef = useRef<HTMLDivElement | null>(null);
-  const [semanticsOverride, setSemanticsOverride] = useState<
-    Partial<HistoricalSemantics>
-  >({});
-  const [columnOverrides, setColumnOverrides] = useState<
-    Partial<DetectedColumns>
-  >({});
 
-  function loadExampleValidation(
-    example: (typeof TARGET_VALIDATION_EXAMPLES)[number],
-  ) {
-    setInput(example.input);
-    setActiveExampleId(example.id);
+  const result = useMemo(() => {
+    if (!input.trim()) return null;
+
+    return validateTargetTable(input, {}, {});
+  }, [input]);
+
+  function runSampleInvestigation() {
+    setEntryMode("sample");
+    setLoadedSample(true);
+    setInput(SAMPLE_INVESTIGATION.input);
+
+    sessionStorage.setItem("target_validation_scroll_to_result", "true");
 
     track("validation_example_loaded", {
-      example: example.id,
-      inputLength: example.input.length,
+      example: SAMPLE_INVESTIGATION.id,
+      inputLength: SAMPLE_INVESTIGATION.input.length,
+    });
+  }
+
+  function handleOwnTableSelected() {
+    setEntryMode("upload");
+    setLoadedSample(false);
+
+    track("target_validation_own_table_selected", {
+      source: "target_table_validation",
+    });
+  }
+
+  async function handleFileUpload(file: File | null) {
+    if (!file) return;
+
+    const text = await file.text();
+
+    setEntryMode("upload");
+    setLoadedSample(false);
+    setInput(text);
+
+    sessionStorage.setItem("target_validation_scroll_to_result", "true");
+
+    track("target_validation_file_uploaded", {
+      fileName: file.name,
+      fileSize: file.size,
+      inputLength: text.length,
     });
   }
 
@@ -89,15 +80,11 @@ export function TargetTableValidationPanel() {
 
     if (!prefill) return;
 
+    setEntryMode("upload");
+    setLoadedSample(false);
     setInput(prefill);
-    setActiveExampleId(prefillName ?? "external_prefill");
 
-    setTimeout(() => {
-      resultRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 500);
+    sessionStorage.setItem("target_validation_scroll_to_result", "true");
 
     track("target_validation_prefilled", {
       source: "learn_page",
@@ -109,18 +96,12 @@ export function TargetTableValidationPanel() {
     localStorage.removeItem("target_validation_prefill_name");
   }, []);
 
-  const result = useMemo(() => {
-    if (!input.trim()) return null;
-
-    return validateTargetTable(input, semanticsOverride, columnOverrides);
-  }, [input, semanticsOverride, columnOverrides]);
-
   useEffect(() => {
     if (!result) return;
 
     track("target_validation_completed", {
       rowCount: result.rowCount,
-      columnCount: result.columns.length, // ✅ FIX
+      columnCount: result.columns.length,
       findingCount: result.findings.length,
       highRiskCount: result.findings.filter((f) => f.severity === "high")
         .length,
@@ -136,13 +117,6 @@ export function TargetTableValidationPanel() {
       hasSnapshotDate: Boolean(result.detectedColumns.snapshotDate),
     });
   }, [result]);
-
-  const effectiveColumns = result
-    ? {
-        ...result.detectedColumns,
-        ...columnOverrides,
-      }
-    : null;
 
   useEffect(() => {
     if (!result) return;
@@ -163,27 +137,6 @@ export function TargetTableValidationPanel() {
     }, 250);
   }, [result]);
 
-  useEffect(() => {
-    const keys = Object.keys(semanticsOverride);
-
-    if (keys.length === 0) return;
-
-    track("target_validation_semantics_overridden", {
-      overriddenFields: keys.join(","),
-    });
-  }, [semanticsOverride]);
-
-  const requiresValidTime =
-    !result ||
-    !(
-      result.headerMappings.some((m) => m.normalized === "event_id") ||
-      result.headerMappings.some((m) => m.normalized === "event_time") ||
-      result.headerMappings.some((m) => m.normalized === "event_type") ||
-      result.headerMappings.some(
-        (m) => m.normalized === "prioritization_status",
-      )
-    );
-
   return (
     <section
       id="target-table-validation"
@@ -191,138 +144,362 @@ export function TargetTableValidationPanel() {
         scrollMarginTop: 10,
         background: "#ffffff",
         color: "#0f172a",
-        padding: 24,
-        borderRadius: 16,
+        padding: "clamp(22px, 4vw, 34px)",
+        borderRadius: 20,
         marginBottom: 24,
-        boxShadow: "0 4px 16px rgba(15, 23, 42, 0.08)",
+        boxShadow: "0 10px 30px rgba(15, 23, 42, 0.08)",
+        border: "1px solid #e2e8f0",
+      }}
+    >
+      <div style={{ maxWidth: 980, margin: "0 auto" }}>
+        <Hero />
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: 14,
+            marginTop: 24,
+          }}
+        >
+          <ChoiceCard
+            eyebrow="Recommended"
+            title="Run sample investigation"
+            description="Start with a realistic revenue mismatch and see what the debugger finds."
+            buttonLabel="Run sample investigation"
+            active={entryMode === "sample"}
+            primary
+            onClick={runSampleInvestigation}
+          />
+
+          <ChoiceCard
+            eyebrow="Your data"
+            title="Upload your own table"
+            description="Paste or upload a CSV output from a notebook, dbt model or pipeline."
+            buttonLabel="Use my own table"
+            active={entryMode === "upload"}
+            onClick={handleOwnTableSelected}
+          />
+        </div>
+
+        <div style={{ marginTop: 22 }}>
+          {entryMode === "sample" && !loadedSample && (
+            <EmptyState
+              title="Start with the sample investigation"
+              description="The debugger will load a small historical target table and explain the most important risks."
+              actionLabel="Run sample investigation"
+              onAction={runSampleInvestigation}
+            />
+          )}
+
+          {entryMode === "sample" && loadedSample && (
+            <LoadedSampleNotice
+              title={SAMPLE_INVESTIGATION.title}
+              description={SAMPLE_INVESTIGATION.description}
+            />
+          )}
+
+          {entryMode === "upload" && (
+            <UploadArea
+              input={input}
+              onInputChange={setInput}
+              onFileUpload={handleFileUpload}
+            />
+          )}
+        </div>
+
+        {result && (
+          <div ref={resultRef} style={{ marginTop: 26 }}>
+            <TargetTableInvestigation result={result} />
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Hero() {
+  return (
+    <header>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 900,
+          color: "#2563eb",
+          textTransform: "uppercase",
+          letterSpacing: 0.8,
+          marginBottom: 10,
+        }}
+      >
+        Bitemporal Debugger
+      </div>
+
+      <h2
+        style={{
+          margin: 0,
+          maxWidth: 760,
+          fontSize: "clamp(30px, 5vw, 48px)",
+          lineHeight: 1.03,
+          letterSpacing: "-0.04em",
+        }}
+      >
+        Find why historical tables break business results.
+      </h2>
+
+      <p
+        style={{
+          maxWidth: 680,
+          color: "#475569",
+          fontSize: 17,
+          lineHeight: 1.6,
+          margin: "14px 0 0",
+        }}
+      >
+        Validate target tables from notebooks, dbt models or pipelines for
+        unstable grains, missing coverage and reproducibility risks.
+      </p>
+    </header>
+  );
+}
+
+function ChoiceCard({
+  eyebrow,
+  title,
+  description,
+  buttonLabel,
+  active,
+  primary = false,
+  onClick,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  buttonLabel: string;
+  active: boolean;
+  primary?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      style={{
+        padding: 18,
+        borderRadius: 18,
+        border: active ? "1px solid #2563eb" : "1px solid #e2e8f0",
+        background: active ? "#eff6ff" : "#ffffff",
       }}
     >
       <div
         style={{
-          fontSize: 12,
-          fontWeight: 800,
-          color: "#2563eb",
+          fontSize: 11,
+          fontWeight: 900,
+          color: primary ? "#2563eb" : "#64748b",
           textTransform: "uppercase",
           letterSpacing: 0.7,
           marginBottom: 8,
         }}
       >
-        Target Table Validation
+        {eyebrow}
       </div>
 
-      <h2 style={{ margin: "0 0 8px", fontSize: 26 }}>
-        Validate the generated historical table
-      </h2>
+      <h3 style={{ margin: "0 0 8px", fontSize: 19 }}>{title}</h3>
 
-      <p style={{ color: "#475569", marginTop: 0, marginBottom: 18 }}>
-        Paste the output table produced by your notebook or pipeline. This
-        checks whether the generated historical table has a stable grain,
-        valid-time consistency and snapshot coverage.
-      </p>
-
-      <div
+      <p
         style={{
-          marginBottom: 18,
-          padding: 16,
-          borderRadius: 14,
-          background: "#eff6ff",
-          border: "1px solid #bfdbfe",
+          margin: "0 0 16px",
+          color: "#475569",
+          lineHeight: 1.5,
+          fontSize: 14,
         }}
       >
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 800,
-            color: "#1d4ed8",
-            textTransform: "uppercase",
-            letterSpacing: 0.7,
-            marginBottom: 6,
-          }}
-        >
-          Try an example output
-        </div>
+        {description}
+      </p>
 
-        <div
-          style={{
-            fontSize: 16,
-            fontWeight: 900,
-            color: "#0f172a",
-            marginBottom: 6,
-          }}
-        >
-          Validate generated tables from notebooks or pipelines
-        </div>
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          width: "100%",
+          border: "none",
+          borderRadius: 12,
+          padding: "12px 14px",
+          background: primary ? "#2563eb" : "#0f172a",
+          color: "#ffffff",
+          fontWeight: 900,
+          cursor: "pointer",
+        }}
+      >
+        {buttonLabel}
+      </button>
+    </div>
+  );
+}
 
-        <p
-          style={{
-            margin: "0 0 14px",
-            color: "#475569",
-            fontSize: 14,
-            lineHeight: 1.5,
-          }}
-        >
-          Load sample target-table outputs to see checks for snapshot grain,
-          dimension completion, missing coverage, event prioritization and
-          reproducibility risks.
-        </p>
+function EmptyState({
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <div
+      style={{
+        padding: 22,
+        borderRadius: 18,
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+      }}
+    >
+      <h3 style={{ margin: "0 0 8px", fontSize: 20 }}>{title}</h3>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 10,
-          }}
-        >
-          {TARGET_VALIDATION_EXAMPLES.map((example) => (
-            <button
-              key={example.id}
-              type="button"
-              onClick={() => loadExampleValidation(example)}
-              style={{
-                textAlign: "left",
-                padding: 14,
-                borderRadius: 12,
-                background:
-                  activeExampleId === example.id ? "#2563eb" : "#ffffff",
-                color: activeExampleId === example.id ? "#ffffff" : "#0f172a",
-                border:
-                  activeExampleId === example.id
-                    ? "1px solid #1d4ed8"
-                    : "1px solid #bfdbfe",
-                cursor: "pointer",
-                fontWeight: 800,
-              }}
-            >
-              <div style={{ fontSize: 14, marginBottom: 6 }}>
-                {example.button}
-              </div>
+      <p
+        style={{
+          margin: "0 0 16px",
+          color: "#475569",
+          lineHeight: 1.55,
+        }}
+      >
+        {description}
+      </p>
 
-              <div
-                style={{
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                  fontWeight: 600,
-                  color: activeExampleId === example.id ? "#dbeafe" : "#475569",
-                }}
-              >
-                {example.description}
-              </div>
-            </button>
-          ))}
-        </div>
+      <button
+        type="button"
+        onClick={onAction}
+        style={{
+          border: "none",
+          borderRadius: 12,
+          padding: "12px 16px",
+          background: "#2563eb",
+          color: "#ffffff",
+          fontWeight: 900,
+          cursor: "pointer",
+        }}
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
+function LoadedSampleNotice({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div
+      style={{
+        padding: 18,
+        borderRadius: 18,
+        background: "#eff6ff",
+        border: "1px solid #bfdbfe",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 900,
+          color: "#2563eb",
+          textTransform: "uppercase",
+          letterSpacing: 0.7,
+          marginBottom: 6,
+        }}
+      >
+        Sample investigation loaded
       </div>
+
+      <h3 style={{ margin: "0 0 6px", fontSize: 20 }}>{title}</h3>
+
+      <p
+        style={{
+          margin: 0,
+          color: "#475569",
+          lineHeight: 1.55,
+          fontSize: 14,
+        }}
+      >
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function UploadArea({
+  input,
+  onInputChange,
+  onFileUpload,
+}: {
+  input: string;
+  onInputChange: (value: string) => void;
+  onFileUpload: (file: File | null) => void;
+}) {
+  return (
+    <div
+      style={{
+        padding: 18,
+        borderRadius: 18,
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+      }}
+    >
+      <label
+        style={{
+          display: "block",
+          fontSize: 13,
+          fontWeight: 900,
+          marginBottom: 10,
+          color: "#0f172a",
+        }}
+      >
+        Upload CSV
+      </label>
+
+      <input
+        type="file"
+        accept=".csv,text/csv,text/plain"
+        onChange={(event) => {
+          void onFileUpload(event.target.files?.[0] ?? null);
+        }}
+        style={{
+          width: "100%",
+          padding: 12,
+          borderRadius: 12,
+          background: "#ffffff",
+          border: "1px solid #cbd5e1",
+          boxSizing: "border-box",
+          marginBottom: 14,
+        }}
+      />
+
+      <label
+        style={{
+          display: "block",
+          fontSize: 13,
+          fontWeight: 900,
+          marginBottom: 10,
+          color: "#0f172a",
+        }}
+      >
+        Or paste table data
+      </label>
 
       <textarea
         value={input}
-        onChange={(event) => setInput(event.target.value)}
-        placeholder="Paste target table data here — or use an example from a Learn Page / demo button above..."
+        onChange={(event) => onInputChange(event.target.value)}
+        placeholder="Paste CSV data here..."
         spellCheck={false}
         autoCorrect="off"
         autoCapitalize="off"
         autoComplete="off"
         style={{
           width: "100%",
-          minHeight: 190,
+          minHeight: 210,
           padding: 14,
           borderRadius: 12,
           border: "1px solid #cbd5e1",
@@ -331,840 +508,9 @@ export function TargetTableValidationPanel() {
           lineHeight: 1.5,
           boxSizing: "border-box",
           resize: "vertical",
+          background: "#ffffff",
         }}
       />
-
-      {!result && (
-        <InfoBox>
-          Paste a target table or load an example above. If you opened this from
-          a Learn Page, the example should appear here automatically.
-        </InfoBox>
-      )}
-
-      {result && (
-        <div ref={resultRef}>
-          <div id="target-validation-result" ref={resultRef}>
-            <div
-              style={{
-                marginTop: 16,
-                marginBottom: 12,
-                padding: 12,
-                borderRadius: 10,
-                background: "#ecfeff",
-                border: "1px solid #a5f3fc",
-                color: "#155e75",
-                fontWeight: 700,
-              }}
-            >
-              Example loaded automatically from the learn page.
-            </div>
-            <SummaryCard result={result} />
-          </div>
-
-          <div style={{ marginTop: 18 }}>
-            <SectionTitle>Detected historical structure</SectionTitle>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-                gap: 10,
-              }}
-            >
-              <ColumnCard
-                label="Business key"
-                value={result.detectedColumns.businessKey}
-                required
-              />
-              <ColumnCard
-                label="Valid from"
-                value={result.detectedColumns.validFrom ?? null}
-                required={requiresValidTime}
-              />
-              <ColumnCard
-                label="Valid to"
-                value={result.detectedColumns.validTo ?? null}
-                required={requiresValidTime}
-              />
-              <ColumnCard
-                label="Visible from"
-                value={result.detectedColumns.visibleFrom}
-              />
-              <ColumnCard
-                label="Visible to"
-                value={result.detectedColumns.visibleTo}
-              />
-              <ColumnCard
-                label="Snapshot date"
-                value={result.detectedColumns.snapshotDate}
-              />
-              <ColumnCard
-                label="Dimension columns"
-                value={
-                  result.detectedColumns.dimensionColumns.length > 0
-                    ? result.detectedColumns.dimensionColumns.join(", ")
-                    : null
-                }
-              />
-            </div>
-          </div>
-
-          <div style={{ marginTop: 18 }}>
-            <SectionTitle>Historical semantics</SectionTitle>
-
-            <div
-              style={{
-                padding: 14,
-                borderRadius: 14,
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                marginBottom: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 900,
-                  color: "#0f172a",
-                  marginBottom: 4,
-                }}
-              >
-                Review the assumptions used for validation
-              </div>
-
-              <div
-                style={{
-                  fontSize: 13,
-                  color: "#64748b",
-                  lineHeight: 1.5,
-                }}
-              >
-                These settings describe how the target table should be
-                interpreted. The validator auto-detects them where possible, but
-                you can override them.
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                gap: 10,
-              }}
-            >
-              <SemanticSelect
-                label={`Valid-time interval end (${Math.round((result.semantics.confidence?.validIntervalEnd ?? 0) * 100)}%)`}
-                value={result.semantics.validIntervalEnd}
-                options={[
-                  { value: "exclusive", label: "Exclusive [from, to)" },
-                  { value: "inclusive", label: "Inclusive [from, to]" },
-                ]}
-                onChange={(value) =>
-                  setSemanticsOverride((current) => ({
-                    ...current,
-                    validIntervalEnd: value as IntervalEndSemantics,
-                  }))
-                }
-              />
-
-              <SemanticSelect
-                label={`Visible-time interval end (${Math.round((result.semantics.confidence?.visibleIntervalEnd ?? 0) * 100)}%)`}
-                value={result.semantics.visibleIntervalEnd}
-                options={[
-                  { value: "exclusive", label: "Exclusive [from, to)" },
-                  { value: "inclusive", label: "Inclusive [from, to]" },
-                ]}
-                onChange={(value) =>
-                  setSemanticsOverride((current) => ({
-                    ...current,
-                    visibleIntervalEnd: value as IntervalEndSemantics,
-                  }))
-                }
-              />
-
-              <SemanticSelect
-                label="Snapshot date means"
-                value={result.semantics.snapshotMeaning}
-                options={[
-                  { value: "period_end", label: "Period end" },
-                  { value: "period_start", label: "Period start" },
-                  {
-                    value: "reporting_timestamp",
-                    label: "Reporting timestamp",
-                  },
-                  { value: "none", label: "No snapshot" },
-                ]}
-                onChange={(value) =>
-                  setSemanticsOverride((current) => ({
-                    ...current,
-                    snapshotMeaning: value as SnapshotMeaning,
-                  }))
-                }
-              />
-
-              <SemanticSelect
-                label="Open-ended value"
-                value={result.semantics.openEndedValue}
-                options={[
-                  { value: "9999-12-31", label: "9999-12-31" },
-                  { value: "null", label: "NULL" },
-                  { value: "custom", label: "Custom" },
-                  { value: "none", label: "Not detected" },
-                ]}
-                onChange={(value) =>
-                  setSemanticsOverride((current) => ({
-                    ...current,
-                    openEndedValue: value as OpenEndedValue,
-                  }))
-                }
-              />
-
-              <SemanticSelect
-                label="Correction mode"
-                value={result.semantics.correctionMode}
-                options={[
-                  { value: "valid_time", label: "Valid-time only" },
-                  { value: "bitemporal", label: "As-known / bitemporal" },
-                  { value: "published_snapshot", label: "Published snapshot" },
-                ]}
-                onChange={(value) =>
-                  setSemanticsOverride((current) => ({
-                    ...current,
-                    correctionMode: value as CorrectionMode,
-                  }))
-                }
-              />
-            </div>
-
-            {Object.keys(semanticsOverride).length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSemanticsOverride({})}
-                style={{
-                  marginTop: 10,
-                  padding: "8px 12px",
-                  borderRadius: 10,
-                  border: "1px solid #cbd5e1",
-                  background: "#ffffff",
-                  color: "#334155",
-                  fontSize: 13,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                Reset to auto-detected semantics
-              </button>
-            )}
-
-            <div
-              style={{
-                marginTop: 10,
-                padding: 12,
-                borderRadius: 10,
-                background: "#eff6ff",
-                border: "1px solid #bfdbfe",
-                color: "#1e40af",
-                fontSize: 13,
-                lineHeight: 1.5,
-                fontWeight: 700,
-              }}
-            >
-              Validation uses the selected historical semantics. Changing
-              interval semantics may change gap and overlap findings.
-            </div>
-
-            {result.semantics.detectedSignals.length > 0 && (
-              <div
-                style={{
-                  marginTop: 10,
-                  padding: 12,
-                  borderRadius: 10,
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  color: "#475569",
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                }}
-              >
-                <strong>Auto-detected signals:</strong>
-                {result.semantics.detectedSignals.map((signal) => (
-                  <div key={signal}>• {signal}</div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {result.findings.length > 0 ? (
-            <div style={{ marginTop: 18 }}>
-              <SectionTitle>Validation findings</SectionTitle>
-
-              <div style={{ display: "grid", gap: 12 }}>
-                {sortFindings(result.findings).map((finding) => (
-                  <FindingCard key={finding.id} finding={finding} />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                marginTop: 18,
-                padding: 16,
-                borderRadius: 12,
-                background: "#ecfdf5",
-                border: "1px solid #86efac",
-                color: "#166534",
-                fontSize: 14,
-                fontWeight: 700,
-                lineHeight: 1.5,
-              }}
-            >
-              ✓ No major grain, interval or snapshot issues detected in the
-              pasted target table sample.
-            </div>
-          )}
-
-          <details style={{ marginTop: 16 }}>
-            <summary
-              style={{
-                cursor: "pointer",
-                color: "#334155",
-                fontWeight: 800,
-                fontSize: 14,
-              }}
-            >
-              Column Detection
-            </summary>
-
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gap: 12,
-              }}
-            >
-              <ColumnSelector
-                label="Business Key"
-                value={
-                  columnOverrides.businessKey ??
-                  result.detectedColumns.businessKey
-                }
-                options={result.headerMappings.map((m) => m.original)}
-                onChange={(value) =>
-                  setColumnOverrides((prev) => ({
-                    ...prev,
-                    businessKey: value || null,
-                  }))
-                }
-              />
-
-              <ColumnSelector
-                label="Valid From"
-                value={
-                  columnOverrides.validFrom ??
-                  result.detectedColumns.validFrom ??
-                  null
-                }
-                options={result.headerMappings.map((m) => m.original)}
-                onChange={(value) =>
-                  setColumnOverrides((prev) => ({
-                    ...prev,
-                    validFrom: value ?? null,
-                  }))
-                }
-              />
-
-              <ColumnSelector
-                label="Valid To"
-                value={
-                  columnOverrides.validTo ??
-                  result.detectedColumns.validTo ??
-                  null
-                }
-                options={result.headerMappings.map((m) => m.original)}
-                onChange={(value) =>
-                  setColumnOverrides((prev) => ({
-                    ...prev,
-                    validTo: value ?? null,
-                  }))
-                }
-              />
-
-              <ColumnSelector
-                label="Visible From"
-                value={
-                  columnOverrides.visibleFrom ??
-                  result.detectedColumns.visibleFrom
-                }
-                options={result.headerMappings.map((m) => m.original)}
-                onChange={(value) =>
-                  setColumnOverrides((prev) => ({
-                    ...prev,
-                    visibleFrom: value || null,
-                  }))
-                }
-              />
-
-              <ColumnSelector
-                label="Visible To"
-                value={
-                  columnOverrides.visibleTo ?? result.detectedColumns.visibleTo
-                }
-                options={result.headerMappings.map((m) => m.original)}
-                onChange={(value) =>
-                  setColumnOverrides((prev) => ({
-                    ...prev,
-                    visibleTo: value || null,
-                  }))
-                }
-              />
-
-              <ColumnSelector
-                label="Snapshot Date"
-                value={
-                  columnOverrides.snapshotDate ??
-                  result.detectedColumns.snapshotDate
-                }
-                options={result.headerMappings.map((m) => m.original)}
-                onChange={(value) =>
-                  setColumnOverrides((prev) => ({
-                    ...prev,
-                    snapshotDate: value || null,
-                  }))
-                }
-              />
-            </div>
-          </details>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ColumnSelector({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string | null;
-  options: string[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-      }}
-    >
-      <span
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          color: "#475569",
-        }}
-      >
-        {label}
-      </span>
-
-      <select
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          padding: "8px 10px",
-          borderRadius: 8,
-          border: "1px solid #cbd5e1",
-        }}
-      >
-        <option value="">Not assigned</option>
-
-        {options.map((column) => (
-          <option key={column} value={column}>
-            {column}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function isSameOrNextDay(previousTo: Date, nextFrom: Date) {
-  if (sameDay(previousTo, nextFrom)) return true;
-
-  const nextAllowed = new Date(previousTo);
-  nextAllowed.setDate(nextAllowed.getDate() + 1);
-
-  return sameDay(nextAllowed, nextFrom);
-}
-
-function uniqueFindingsById(findings: TargetFinding[]) {
-  return Array.from(
-    new Map(findings.map((finding) => [finding.id, finding])).values(),
-  );
-}
-
-function sortFindings(findings: TargetFinding[]) {
-  const severityRank = {
-    high: 1,
-    medium: 2,
-    low: 3,
-  };
-
-  return [...findings].sort(
-    (a, b) => severityRank[a.severity] - severityRank[b.severity],
-  );
-}
-
-function SummaryCard({ result }: { result: TargetValidationResult }) {
-  const accent =
-    result.qualitySummary.severity === "danger"
-      ? {
-          background: "#fff7ed",
-          border: "#fed7aa",
-          color: "#9a3412",
-        }
-      : result.qualitySummary.severity === "warning"
-        ? {
-            background: "#fffbeb",
-            border: "#fde68a",
-            color: "#92400e",
-          }
-        : {
-            background: "#ecfdf5",
-            border: "#86efac",
-            color: "#166534",
-          };
-
-  return (
-    <div
-      style={{
-        marginTop: 18,
-        padding: 18,
-        borderRadius: 14,
-        background: accent.background,
-        border: `1px solid ${accent.border}`,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: 0.7,
-          color: accent.color,
-          marginBottom: 6,
-        }}
-      >
-        Target Validation Summary
-      </div>
-
-      <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a" }}>
-        {result.qualitySummary.label}
-      </div>
-
-      <div
-        style={{
-          marginTop: 8,
-          color: "#475569",
-          fontSize: 14,
-          lineHeight: 1.5,
-        }}
-      >
-        {result.qualitySummary.description}
-      </div>
-
-      <div style={{ marginTop: 10, color: "#475569", fontSize: 13 }}>
-        {result.rowCount} rows · {result.columns.length} columns ·{" "}
-        {result.findings.length} finding
-        {result.findings.length === 1 ? "" : "s"}
-      </div>
-    </div>
-  );
-}
-
-function InfoBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        marginTop: 14,
-        padding: 14,
-        borderRadius: 12,
-        background: "#f8fafc",
-        border: "1px solid #e2e8f0",
-        color: "#64748b",
-        fontSize: 14,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        marginTop: 18,
-        marginBottom: 8,
-        fontSize: 12,
-        fontWeight: 800,
-        color: "#475569",
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function ColumnCard({
-  label,
-  value,
-  required = false,
-}: {
-  label: string;
-  value: string | null;
-  required?: boolean;
-}) {
-  const missingRequired = required && !value;
-
-  return (
-    <div
-      style={{
-        padding: 12,
-        borderRadius: 12,
-        background: value ? "#ecfdf5" : missingRequired ? "#fff7ed" : "#f8fafc",
-        border: value
-          ? "1px solid #86efac"
-          : missingRequired
-            ? "1px solid #fed7aa"
-            : "1px solid #e2e8f0",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 800,
-          textTransform: "uppercase",
-          color: value ? "#166534" : missingRequired ? "#9a3412" : "#64748b",
-          letterSpacing: 0.5,
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: value ? "#0f172a" : "#94a3b8",
-          wordBreak: "break-word",
-        }}
-      >
-        {value ?? (required ? "Required but not detected" : "Not detected")}
-      </div>
-    </div>
-  );
-}
-
-function formatSnapshotMeaning(value: SnapshotMeaning) {
-  switch (value) {
-    case "period_end":
-      return "Period end";
-    case "period_start":
-      return "Period start";
-    case "reporting_timestamp":
-      return "Reporting timestamp";
-    case "none":
-      return "No snapshot";
-  }
-}
-
-function formatOpenEndedValue(value: OpenEndedValue) {
-  switch (value) {
-    case "9999-12-31":
-      return "9999-12-31";
-    case "null":
-      return "NULL";
-    case "custom":
-      return "Custom";
-    case "none":
-      return "Not detected";
-  }
-}
-
-function formatCorrectionMode(value: CorrectionMode) {
-  switch (value) {
-    case "valid_time":
-      return "Valid-time only";
-    case "bitemporal":
-      return "As-known / bitemporal";
-    case "published_snapshot":
-      return "Published snapshot";
-  }
-}
-
-function SemanticSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label
-      style={{
-        display: "block",
-        padding: 12,
-        borderRadius: 12,
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 800,
-          textTransform: "uppercase",
-          color: "#64748b",
-          letterSpacing: 0.5,
-          marginBottom: 6,
-        }}
-      >
-        {label}
-      </div>
-
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        style={{
-          width: "100%",
-          padding: "8px 10px",
-          borderRadius: 8,
-          border: "1px solid #cbd5e1",
-          background: "#f8fafc",
-          color: "#0f172a",
-          fontSize: 13,
-          fontWeight: 700,
-        }}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function FindingCard({ finding }: { finding: TargetFinding }) {
-  const accent =
-    finding.severity === "high"
-      ? {
-          color: "#b91c1c",
-          background: "#fef2f2",
-          border: "#fecaca",
-        }
-      : finding.severity === "medium"
-        ? {
-            color: "#92400e",
-            background: "#fffbeb",
-            border: "#fde68a",
-          }
-        : {
-            color: "#475569",
-            background: "#f8fafc",
-            border: "#e2e8f0",
-          };
-
-  return (
-    <div
-      style={{
-        padding: 14,
-        borderRadius: 12,
-        background: accent.background,
-        border: `1px solid ${accent.border}`,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 800,
-          color: accent.color,
-          textTransform: "uppercase",
-          marginBottom: 6,
-        }}
-      >
-        {finding.severity} issue
-      </div>
-
-      <div style={{ fontWeight: 900, marginBottom: 6 }}>{finding.title}</div>
-
-      {finding.assumptions && finding.assumptions.length > 0 && (
-        <div
-          style={{
-            display: "inline-block",
-            marginBottom: 8,
-            padding: "3px 8px",
-            borderRadius: 999,
-            background: "#ffffff",
-            border: "1px solid rgba(148, 163, 184, 0.45)",
-            color: "#475569",
-            fontSize: 11,
-            fontWeight: 800,
-            textTransform: "uppercase",
-            letterSpacing: 0.4,
-          }}
-        >
-          Semantics-sensitive finding
-        </div>
-      )}
-
-      <div
-        style={{
-          color: "#475569",
-          fontSize: 14,
-          lineHeight: 1.5,
-          marginBottom: 8,
-        }}
-      >
-        {finding.evidence.map((item) => (
-          <div key={item}>• {item}</div>
-        ))}
-      </div>
-
-      {finding.assumptions && finding.assumptions.length > 0 && (
-        <div
-          style={{
-            marginBottom: 8,
-            padding: 10,
-            borderRadius: 10,
-            background: "#ffffff",
-            border: "1px solid rgba(148, 163, 184, 0.35)",
-            color: "#475569",
-            fontSize: 13,
-            lineHeight: 1.5,
-          }}
-        >
-          <strong>Assumptions:</strong>
-          {finding.assumptions.map((assumption) => (
-            <div key={assumption}>• {assumption}</div>
-          ))}
-        </div>
-      )}
-
-      <div style={{ color: "#0f172a", fontSize: 14, lineHeight: 1.5 }}>
-        <strong>Recommendation:</strong> {finding.recommendation}
-      </div>
     </div>
   );
 }

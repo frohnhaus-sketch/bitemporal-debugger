@@ -1,5 +1,5 @@
-import { DemoRuntime } from "@/demo/DemoRuntime";
+import { InvestigationRuntime } from "@/demo/investigation/InvestigationRuntime";
 
 export default function DemoPage() {
-  return <DemoRuntime />;
+  return <InvestigationRuntime />;
 }

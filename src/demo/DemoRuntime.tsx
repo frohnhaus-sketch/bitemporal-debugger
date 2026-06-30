@@ -17,8 +17,6 @@ export function DemoRuntime() {
 
   useFlowController();
 
-  const freeze = focus === "scene" && currentIndex === 2;
-
   // transition to reveal
   useEffect(() => {
     if (flowState === "reveal") {
@@ -36,10 +34,15 @@ export function DemoRuntime() {
   if (flowState === "landing") {
     return (
       <div style={{ padding: 40, color: "#fff" }}>
-        <h1>Understand historical data problems in 60 seconds</h1>
+        <h1>Your data looks correct. Your numbers are wrong.</h1>
+
+        <p style={{ maxWidth: 620, opacity: 0.7, lineHeight: 1.6 }}>
+          Investigate why a clean historical data model produces the wrong
+          customer revenue.
+        </p>
 
         <button onClick={() => setFlowState("loading_demo")}>
-          ▶ Start Demo
+          ▶ Start Investigation
         </button>
       </div>
     );
@@ -107,34 +110,12 @@ export function DemoRuntime() {
         transform: isTransitioning ? "scale(0.98)" : "scale(1)",
       }}
     >
-      <div
-        style={{
-          filter: freeze ? "blur(2px)" : "none",
-          transform: freeze ? "scale(0.99)" : "scale(1)",
-          transition: "all 300ms ease",
-        }}
-      >
+      <div>
         <SceneRenderer />
         <TimelineView />
         <QuestionPanel />
         <MessageOverlay />
       </div>
-
-      {/* dim layer */}
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          background:
-            focus === "scene"
-              ? "rgba(0,0,0,0.4)"
-              : focus === "timeline"
-                ? "rgba(0,0,0,0.6)"
-                : "rgba(0,0,0,0.8)",
-          pointerEvents: "none",
-          transition: "all 400ms ease",
-        }}
-      />
     </div>
   );
 }

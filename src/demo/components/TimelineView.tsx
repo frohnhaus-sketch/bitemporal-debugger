@@ -1,11 +1,10 @@
 "use client";
 
 import { useDemoStore } from "@/state/demoStore";
-import { customerChangeScenario } from "../scenarios/customerChangeScenario";
+import { revenueMismatchScenario } from "../scenarios/revenueMismatchScenario";
 
 export function TimelineView() {
-  const { currentIndex, setCurrentIndex } = useDemoStore();
-  const { flowState } = useDemoStore();
+  const { currentIndex, setCurrentIndex, flowState } = useDemoStore();
 
   const locked =
     flowState === "loading_demo" ||
@@ -15,26 +14,29 @@ export function TimelineView() {
   return (
     <div style={{ marginTop: 16 }}>
       <div style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
-        Timeline
+        Investigation timeline
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
-        {customerChangeScenario.map((item, index) => {
+        {revenueMismatchScenario.map((scene, index) => {
           const active = index === currentIndex;
 
           return (
-            <div
-              key={item.id}
+            <button
+              key={scene.id}
               onClick={() => {
                 if (locked) return;
                 setCurrentIndex(index);
               }}
+              title={scene.title}
               style={{
-                width: 8,
+                width: active ? 28 : 8,
                 height: 8,
-                borderRadius: "50%",
-                cursor: "pointer",
+                borderRadius: 999,
+                cursor: locked ? "default" : "pointer",
                 background: active ? "#fff" : "rgba(255,255,255,0.3)",
+                border: "none",
+                padding: 0,
                 transition: "all 200ms ease",
                 opacity: locked ? 0.4 : 1,
                 pointerEvents: locked ? "none" : "auto",

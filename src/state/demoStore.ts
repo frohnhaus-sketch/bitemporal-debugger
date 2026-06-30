@@ -5,6 +5,7 @@ import { create } from "zustand";
 export type FlowState =
   | "landing"
   | "loading_demo"
+  | "investigation"
   | "demo_static"
   | "auto_highlight"
   | "interactive"

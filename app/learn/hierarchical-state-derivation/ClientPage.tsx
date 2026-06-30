@@ -171,7 +171,7 @@ export default function HierarchicalStateDerivationPage() {
 
           <NaiveVsCorrectCard />
 
-          <InteractiveDecisionCard />
+          <InteractiveConclusionCard />
 
           <WhiteCard
             eyebrow="Key idea"
@@ -515,7 +515,7 @@ function TimelineRow({
   );
 }
 
-function InteractiveDecisionCard() {
+function InteractiveConclusionCard() {
   const [selectedAnswer, setSelectedAnswer] = useState<
     "active" | "annulled" | null
   >(null);
