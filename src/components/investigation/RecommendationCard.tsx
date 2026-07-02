@@ -8,7 +8,12 @@ export function RecommendationCard({
   return (
     <section
       style={{
-        padding: 24,
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        boxSizing: "border-box",
+        padding: "clamp(18px, 5vw, 24px)",
         borderRadius: 18,
         background: "#eff6ff",
         border: "1px solid #bfdbfe",
@@ -16,9 +21,11 @@ export function RecommendationCard({
     >
       <h2
         style={{
-          marginTop: 0,
-          marginBottom: 12,
-          fontSize: 22,
+          margin: "0 0 12px",
+          fontSize: "clamp(20px, 6vw, 24px)",
+          lineHeight: 1.2,
+          color: "#0f172a",
+          overflowWrap: "break-word",
         }}
       >
         Recommendation
@@ -27,7 +34,10 @@ export function RecommendationCard({
       <p
         style={{
           margin: 0,
-          lineHeight: 1.8,
+          color: "#475569",
+          fontSize: "clamp(15px, 4vw, 16px)",
+          lineHeight: 1.65,
+          overflowWrap: "break-word",
         }}
       >
         {presentation.recommendation}

@@ -11,31 +11,28 @@ export function ConclusionCard({
   const appearance = {
     clean: {
       icon: "🟢",
-      badge: "PASSED",
+      badge: "Passed",
       bg: "#f0fdf4",
       border: "#86efac",
       accent: "#166534",
     },
-
     review: {
       icon: "🔵",
-      badge: "REVIEW",
+      badge: "Review",
       bg: "#eff6ff",
       border: "#93c5fd",
       accent: "#1d4ed8",
     },
-
     partially_reproducible: {
       icon: "🟠",
-      badge: "WARNING",
+      badge: "Warning",
       bg: "#fffbeb",
       border: "#fde68a",
       accent: "#92400e",
     },
-
     not_reproducible: {
       icon: "🔴",
-      badge: "HIGH RISK",
+      badge: "High risk",
       bg: "#fef2f2",
       border: "#fca5a5",
       accent: "#991b1b",
@@ -45,16 +42,22 @@ export function ConclusionCard({
   return (
     <section
       style={{
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        boxSizing: "border-box",
         background: appearance.bg,
         border: `1px solid ${appearance.border}`,
         borderRadius: 18,
-        padding: 36,
+        padding: "clamp(18px, 5vw, 32px)",
       }}
     >
       <div
         style={{
           display: "inline-flex",
           alignItems: "center",
+          maxWidth: "100%",
           gap: 8,
           padding: "5px 10px",
           borderRadius: 999,
@@ -72,10 +75,13 @@ export function ConclusionCard({
 
       <h2
         style={{
-          margin: "18px 0 10px",
-          fontSize: 38,
-          lineHeight: 1.15,
+          margin: "16px 0 10px",
+          fontSize: "clamp(25px, 8vw, 38px)",
+          lineHeight: 1.12,
+          letterSpacing: "-0.045em",
           color: "#0f172a",
+          overflowWrap: "break-word",
+          wordBreak: "normal",
         }}
       >
         {appearance.icon} {presentation.title}
@@ -86,8 +92,9 @@ export function ConclusionCard({
           margin: 0,
           maxWidth: 760,
           color: "#475569",
-          fontSize: 17,
-          lineHeight: 1.65,
+          fontSize: "clamp(15px, 4vw, 17px)",
+          lineHeight: 1.6,
+          overflowWrap: "break-word",
         }}
       >
         {presentation.subtitle}
