@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { TargetValidationResult } from "@/lib/types";
 import { Reveal } from "./Reveal";
 
@@ -58,8 +59,12 @@ const cardStyle = {
   border: "1px solid #e2e8f0",
 };
 
-const titleStyle = {
-  fontSize: 14,
-  fontWeight: 900,
-  color: "#0f172a",
+const titleStyle: CSSProperties = {
+  margin: "14px 0 0",
+  fontSize: "clamp(28px, 9vw, 44px)",
+  lineHeight: 1.08,
+  letterSpacing: "-0.045em",
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
+  maxWidth: "100%",
 };
