@@ -217,9 +217,16 @@ export function SampleInvestigation({
     });
 
     window.setTimeout(() => {
-      document
-        .getElementById("guided-sample-investigation")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const element = document.getElementById("guided-sample-investigation");
+
+      if (!element) return;
+
+      const top = element.getBoundingClientRect().top + window.scrollY - 2;
+
+      window.scrollTo({
+        top,
+        behavior: "smooth",
+      });
     }, 50);
   }
 

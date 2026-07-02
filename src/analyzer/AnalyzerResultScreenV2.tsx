@@ -88,7 +88,7 @@ export function AnalyzerResultScreenV2({
             onClick={() => window.location.reload()}
             style={sampleCtaButtonStyle}
           >
-            Upload my own CSV
+            Upload your own CSV
           </button>
         </div>
       )}

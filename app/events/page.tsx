@@ -15,10 +15,13 @@ type EventRow = {
   event: string;
   data?: Record<string, unknown> | null;
   created_at: string;
+  page?: string | null;
+  search?: string | null;
+  session_id?: string | null;
+  client_timestamp?: string | null;
   referer?: string | null;
   referrer?: string | null;
   user_agent?: string | null;
-  ip_hash?: string | null;
 };
 
 function getDataValue(event: EventRow, key: string) {
@@ -32,7 +35,9 @@ function getDataValue(event: EventRow, key: string) {
 }
 
 function getEventReferrer(event: EventRow) {
-  return getDataValue(event, "referrer") ?? event.referrer ?? event.referer ?? null;
+  return (
+    getDataValue(event, "referrer") ?? event.referrer ?? event.referer ?? null
+  );
 }
 
 function getTrafficSource(referer?: string | null) {
@@ -327,7 +332,9 @@ export default async function EventsPage() {
   const pageViews = entryEvents.length;
 
   const uniqueVisitors = new Set(
-    humanEvents.map((event) => event.ip_hash).filter(Boolean),
+    humanEvents
+      .map((event) => event.session_id ?? event.session_id)
+      .filter(Boolean),
   ).size;
 
   const interactions = humanEvents.filter(
@@ -337,21 +344,34 @@ export default async function EventsPage() {
       ),
   ).length;
 
-  const guidedStarted =
-    (counts["guided_sample_investigation_started"] ?? 0) +
-    (counts["guided_investigation_started"] ?? 0);
+  const landingCtaClicked = counts["landing_cta_clicked"] ?? 0;
 
-  const scenarioSelected = counts["sample_scenario_selected"] ?? 0;
+  const guidedStarted = counts["guided_investigation_started"] ?? 0;
   const guidedCompleted = counts["guided_investigation_completed"] ?? 0;
-  const sampleReportGenerated = counts["sample_investigation_completed"] ?? 0;
+
+  const sampleReportsGenerated = humanEvents.filter(
+    (event) =>
+      event.event === "target_validation_completed" &&
+      getDataValue(event, "source") === "sample",
+  ).length;
+
+  const reportsViewed = counts["investigation_report_viewed"] ?? 0;
 
   const ownTableSelected = counts["target_validation_own_table_selected"] ?? 0;
 
-  const ownCsvUploaded =
+  const ownTableInputProvided =
     (counts["target_validation_file_uploaded"] ?? 0) +
     (counts["target_validation_own_table_pasted"] ?? 0);
 
+  const ownTableStarted = counts["target_validation_own_table_started"] ?? 0;
+
   const targetReportsGenerated = counts["target_validation_completed"] ?? 0;
+
+  const ownReportsGenerated = humanEvents.filter(
+    (event) =>
+      event.event === "target_validation_completed" &&
+      getDataValue(event, "source") === "own_table",
+  ).length;
 
   const pdfSaved =
     (counts["investigation_report_pdf_download_clicked"] ?? 0) +
@@ -359,26 +379,23 @@ export default async function EventsPage() {
 
   const runAnother = counts["another_investigation_started"] ?? 0;
 
-  const revenueScenario =
-    humanEvents.filter(
-      (event) =>
-        event.event === "sample_scenario_selected" &&
-        getDataValue(event, "scenario") === "revenue_rebuild",
-    ).length ?? 0;
+  const revenueScenario = humanEvents.filter(
+    (event) =>
+      event.event === "landing_cta_clicked" &&
+      getDataValue(event, "cta") === "revenue_rebuild",
+  ).length;
 
-  const customerScenario =
-    humanEvents.filter(
-      (event) =>
-        event.event === "sample_scenario_selected" &&
-        getDataValue(event, "scenario") === "customer_missing",
-    ).length ?? 0;
+  const customerScenario = humanEvents.filter(
+    (event) =>
+      event.event === "landing_cta_clicked" &&
+      getDataValue(event, "cta") === "customer_missing",
+  ).length;
 
-  const duplicateScenario =
-    humanEvents.filter(
-      (event) =>
-        event.event === "sample_scenario_selected" &&
-        getDataValue(event, "scenario") === "duplicate_snapshot",
-    ).length ?? 0;
+  const duplicateScenario = humanEvents.filter(
+    (event) =>
+      event.event === "landing_cta_clicked" &&
+      getDataValue(event, "cta") === "duplicate_snapshot",
+  ).length;
 
   const sourceCounts = entryEvents.reduce<Record<string, number>>(
     (acc, event) => {
@@ -395,20 +412,18 @@ export default async function EventsPage() {
 
   const eventTypeRows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
-  const scenarioRows = Object.entries(
+  const ctaRows = Object.entries(
     countBy(humanEvents, (event) =>
-      event.event === "sample_scenario_selected"
-        ? getDataValue(event, "scenario")
-        : null,
+      event.event === "landing_cta_clicked" ? getDataValue(event, "cta") : null,
     ),
   ).sort((a, b) => b[1] - a[1]);
 
   const reportDecisionRows = Object.entries(
     countBy(humanEvents, (event) =>
       event.event === "target_validation_completed"
-        ? getDataValue(event, "decision") ??
+        ? (getDataValue(event, "decision") ??
           getDataValue(event, "severity") ??
-          getDataValue(event, "flowState")
+          getDataValue(event, "flowState"))
         : null,
     ),
   ).sort((a, b) => b[1] - a[1]);
@@ -418,7 +433,7 @@ export default async function EventsPage() {
       if (event.event !== "scroll_depth") return acc;
 
       const page = normalizeScrollPage(getDataValue(event, "page"));
-      const visitor = event.ip_hash ? String(event.ip_hash) : "unknown";
+      const visitor = event.session_id ? String(event.session_id) : "unknown";
       const percent = Number(getDataValue(event, "percent") ?? 0);
 
       if (!page || !visitor || !percent) return acc;
@@ -480,46 +495,58 @@ export default async function EventsPage() {
       conversionFromLanding: "100%",
     },
     {
-      step: "Guided investigation started",
-      count: guidedStarted,
-      conversionFromPrevious: rate(guidedStarted, pageViews),
-      conversionFromLanding: rate(guidedStarted, pageViews),
+      step: "Landing CTA clicked",
+      count: landingCtaClicked,
+      conversionFromPrevious: rate(landingCtaClicked, pageViews),
+      conversionFromLanding: rate(landingCtaClicked, pageViews),
     },
     {
-      step: "Scenario selected",
-      count: scenarioSelected,
-      conversionFromPrevious: rate(scenarioSelected, guidedStarted),
-      conversionFromLanding: rate(scenarioSelected, pageViews),
+      step: "Guided investigation started",
+      count: guidedStarted,
+      conversionFromPrevious: rate(guidedStarted, landingCtaClicked),
+      conversionFromLanding: rate(guidedStarted, pageViews),
     },
     {
       step: "Guided investigation completed",
       count: guidedCompleted,
-      conversionFromPrevious: rate(guidedCompleted, scenarioSelected),
+      conversionFromPrevious: rate(guidedCompleted, guidedStarted),
       conversionFromLanding: rate(guidedCompleted, pageViews),
     },
     {
       step: "Sample report generated",
-      count: sampleReportGenerated,
-      conversionFromPrevious: rate(sampleReportGenerated, guidedCompleted),
-      conversionFromLanding: rate(sampleReportGenerated, pageViews),
+      count: sampleReportsGenerated,
+      conversionFromPrevious: rate(sampleReportsGenerated, guidedCompleted),
+      conversionFromLanding: rate(sampleReportsGenerated, pageViews),
+    },
+    {
+      step: "Report viewed",
+      count: reportsViewed,
+      conversionFromPrevious: rate(reportsViewed, targetReportsGenerated),
+      conversionFromLanding: rate(reportsViewed, pageViews),
     },
     {
       step: "Own table selected",
       count: ownTableSelected,
-      conversionFromPrevious: rate(ownTableSelected, sampleReportGenerated),
+      conversionFromPrevious: rate(ownTableSelected, sampleReportsGenerated),
       conversionFromLanding: rate(ownTableSelected, pageViews),
     },
     {
-      step: "Own CSV pasted / uploaded",
-      count: ownCsvUploaded,
-      conversionFromPrevious: rate(ownCsvUploaded, ownTableSelected),
-      conversionFromLanding: rate(ownCsvUploaded, pageViews),
+      step: "Own table pasted / uploaded",
+      count: ownTableInputProvided,
+      conversionFromPrevious: rate(ownTableInputProvided, ownTableSelected),
+      conversionFromLanding: rate(ownTableInputProvided, pageViews),
     },
     {
-      step: "Target report generated",
-      count: targetReportsGenerated,
-      conversionFromPrevious: rate(targetReportsGenerated, ownCsvUploaded),
-      conversionFromLanding: rate(targetReportsGenerated, pageViews),
+      step: "Own table investigation started",
+      count: ownTableStarted,
+      conversionFromPrevious: rate(ownTableStarted, ownTableInputProvided),
+      conversionFromLanding: rate(ownTableStarted, pageViews),
+    },
+    {
+      step: "Own table report generated",
+      count: ownReportsGenerated,
+      conversionFromPrevious: rate(ownReportsGenerated, ownTableStarted),
+      conversionFromLanding: rate(ownReportsGenerated, pageViews),
     },
     {
       step: "Report saved as PDF",
@@ -565,34 +592,34 @@ export default async function EventsPage() {
               hint={rate(guidedStarted, pageViews)}
             />
             <MetricCard
-              label="Scenario Selected"
-              value={scenarioSelected}
-              hint={rate(scenarioSelected, guidedStarted)}
-            />
-            <MetricCard
               label="Guided Completed"
               value={guidedCompleted}
-              hint={rate(guidedCompleted, scenarioSelected)}
+              hint={rate(guidedCompleted, guidedStarted)}
             />
             <MetricCard
               label="Sample Reports"
-              value={sampleReportGenerated}
-              hint={rate(sampleReportGenerated, guidedCompleted)}
+              value={sampleReportsGenerated}
+              hint={rate(sampleReportsGenerated, guidedCompleted)}
             />
             <MetricCard
               label="Own Data Selected"
               value={ownTableSelected}
-              hint={rate(ownTableSelected, sampleReportGenerated)}
+              hint={rate(ownTableSelected, sampleReportsGenerated)}
             />
             <MetricCard
-              label="Own CSV Uploaded"
-              value={ownCsvUploaded}
-              hint={rate(ownCsvUploaded, ownTableSelected)}
+              label="Own Input Provided"
+              value={ownTableInputProvided}
+              hint={rate(ownTableInputProvided, ownTableSelected)}
+            />
+            <MetricCard
+              label="Own Started"
+              value={ownTableStarted}
+              hint={rate(ownTableStarted, ownTableInputProvided)}
             />
             <MetricCard
               label="Reports Generated"
               value={targetReportsGenerated}
-              hint={rate(targetReportsGenerated, ownCsvUploaded)}
+              hint={rate(targetReportsGenerated, ownTableStarted)}
             />
             <MetricCard
               label="PDF Saved"
@@ -623,8 +650,8 @@ export default async function EventsPage() {
           <FunnelTable rows={funnelRows} />
         </Panel>
 
-        <Panel title="Scenario Selection">
-          <TopList rows={scenarioRows} emptyText="No scenario data yet." />
+        <Panel title="Landing CTA Clicks">
+          <TopList rows={ctaRows} emptyText="No CTA data yet." />
         </Panel>
 
         <Panel title="Report Outcomes">
@@ -681,8 +708,8 @@ export default async function EventsPage() {
 
                     <td style={tdStyle}>
                       <span style={visitorStyle}>
-                        {event.ip_hash
-                          ? String(event.ip_hash).slice(0, 10)
+                        {event.session_id
+                          ? String(event.session_id).slice(0, 10)
                           : "unknown"}
                       </span>
                     </td>

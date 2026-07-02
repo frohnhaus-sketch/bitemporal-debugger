@@ -3,9 +3,27 @@ type AnalyticsData = Record<string, unknown>;
 const PRODUCTION_HOST = "bitemporal-debugger.vercel.app";
 const IGNORE_ANALYTICS_KEY = "ignoreAnalytics";
 const DEBUG_ANALYTICS_KEY = "debugAnalytics";
+const SESSION_ID_KEY = "analyticsSessionId";
 
 function isBrowser() {
   return typeof window !== "undefined";
+}
+
+function getSessionId() {
+  if (!isBrowser()) return null;
+
+  const existing = sessionStorage.getItem(SESSION_ID_KEY);
+
+  if (existing) return existing;
+
+  const sessionId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  sessionStorage.setItem(SESSION_ID_KEY, sessionId);
+
+  return sessionId;
 }
 
 function isDebugEnabled() {
@@ -128,6 +146,7 @@ export function track(event: string, data?: AnalyticsData) {
   const payload = {
     event,
     data: sanitizeAnalyticsData(data),
+    sessionId: getSessionId(),
     page: window.location.pathname,
     search: window.location.search,
     referrer: document.referrer,
@@ -143,6 +162,7 @@ export function track(event: string, data?: AnalyticsData) {
     },
     body: JSON.stringify(payload),
     keepalive: true,
+    credentials: "omit",
   })
     .then((response) => {
       debugLog("response", event, response.status);

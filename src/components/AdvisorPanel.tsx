@@ -19,25 +19,6 @@ export function AdvisorPanel() {
   const hasTrackedAdvisorCompleted = useRef(false);
   const lastTrackedRecommendationKey = useRef<string | null>(null);
 
-  useEffect(() => {
-    const sessionKey = "advisor_viewed_tracked";
-
-    if (sessionStorage.getItem(sessionKey) === "true") return;
-    if (hasTrackedAdvisorOpened.current) return;
-
-    sessionStorage.setItem(sessionKey, "true");
-    hasTrackedAdvisorOpened.current = true;
-
-    track("advisor_viewed", {
-      defaultReportingGoal: "SNAPSHOT",
-      defaultSourceTypes: "",
-      defaultHistoryCorrected: "YES",
-      defaultMultipleSystems: "YES",
-      defaultChangingRelationships: "YES",
-      defaultHistorizedDimensions: "BITEMPORAL",
-    });
-  }, []);
-
   const [answers, setAnswers] = useState<AdvisorAnswers>({
     reportingGoal: "" as ReportingGoal,
     sourceTypes: [],
