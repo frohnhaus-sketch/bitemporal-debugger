@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ModelReviewPanel } from "@/components/ModelReviewPanel";
-import { TargetTableValidationPanel } from "@/components/TargetTableValidationPanel_v1";
+import { TargetTableValidationPanel } from "@/components/investigation/TargetTableValidationPanel";
 import { TwoSourceValidationWorkflow } from "@/components/TwoSourceValidationWorkflow";
 import { Footer } from "@/components/Footer";
 import { track } from "@/lib/analytics";

@@ -848,7 +848,7 @@ const introStyle: React.CSSProperties = {
 const introTitleStyle: React.CSSProperties = {
   margin: "7px 0 0",
   maxWidth: 760,
-  fontSize: 28,
+  fontSize: 32,
   lineHeight: 1.08,
   letterSpacing: "-0.045em",
 };

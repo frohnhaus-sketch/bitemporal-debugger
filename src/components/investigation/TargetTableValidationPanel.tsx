@@ -430,7 +430,7 @@ function Hero() {
       <div style={eyebrowStyle}>Bitemporal Debugger</div>
 
       <h2 style={heroTitleStyle}>
-        Find why historical tables break business results.
+        Debug historical reporting.
       </h2>
 
       <p style={heroTextStyle}>

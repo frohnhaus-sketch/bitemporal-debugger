@@ -43,8 +43,6 @@ export function ReportActions({
         gap: 16,
       }}
     >
-      <ReportExportActions />
-
       {isSampleReport && (
         <ContinueWithOwnData
           showUpload={showOwnTableUpload}
@@ -77,6 +75,8 @@ export function ReportActions({
       >
         Run another investigation
       </button>
+
+      <ReportExportActions />
     </div>
   );
 }
