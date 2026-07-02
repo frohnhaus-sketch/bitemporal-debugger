@@ -33,7 +33,16 @@ export function ReportActions({
   UploadArea,
 }: ReportActionsProps) {
   return (
-    <>
+    <div
+      style={{
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        display: "grid",
+        gap: 16,
+      }}
+    >
       <ReportExportActions />
 
       {isSampleReport && (
@@ -53,7 +62,8 @@ export function ReportActions({
         onClick={onRunAnother}
         className="no-print"
         style={{
-          marginTop: 12,
+          width: "100%",
+          maxWidth: 280,
           border: "1px solid #cbd5e1",
           borderRadius: 12,
           padding: "12px 16px",
@@ -62,11 +72,12 @@ export function ReportActions({
           fontWeight: 900,
           cursor: "pointer",
           fontSize: 14,
+          overflowWrap: "break-word",
         }}
       >
         Run another investigation
       </button>
-    </>
+    </div>
   );
 }
 
@@ -83,26 +94,30 @@ function ReportExportActions() {
     <section
       className="no-print"
       style={{
-        marginTop: 18,
-        padding: 18,
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        boxSizing: "border-box",
+        padding: "clamp(16px, 4vw, 18px)",
         borderRadius: 18,
         background: "#f8fafc",
         border: "1px solid #e2e8f0",
-        display: "flex",
-        justifyContent: "space-between",
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr)",
         gap: 14,
-        alignItems: "center",
-        flexWrap: "wrap",
       }}
     >
-      <div>
+      <div style={{ minWidth: 0 }}>
         <div style={blueEyebrowStyle}>Export</div>
 
         <h3
           style={{
             margin: "4px 0 4px",
-            fontSize: 20,
+            fontSize: "clamp(19px, 5vw, 20px)",
+            lineHeight: 1.2,
             color: "#0f172a",
+            overflowWrap: "break-word",
           }}
         >
           Save Investigation Report
@@ -114,6 +129,7 @@ function ReportExportActions() {
             color: "#475569",
             fontSize: 14,
             lineHeight: 1.45,
+            overflowWrap: "break-word",
           }}
         >
           Save this investigation as a PDF for review, sharing or follow-up
@@ -125,6 +141,9 @@ function ReportExportActions() {
         type="button"
         onClick={handlePrint}
         style={{
+          justifySelf: "start",
+          width: "100%",
+          maxWidth: 180,
           border: "none",
           borderRadius: 12,
           padding: "12px 16px",
@@ -133,6 +152,7 @@ function ReportExportActions() {
           fontWeight: 900,
           cursor: "pointer",
           fontSize: 14,
+          overflowWrap: "break-word",
         }}
       >
         Save as PDF
@@ -161,8 +181,12 @@ function ContinueWithOwnData({
   return (
     <section
       style={{
-        marginTop: 18,
-        padding: 22,
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        boxSizing: "border-box",
+        padding: "clamp(18px, 5vw, 22px)",
         borderRadius: 18,
         background: "#f8fafc",
         border: "1px solid #dbeafe",
@@ -173,10 +197,11 @@ function ContinueWithOwnData({
       <h3
         style={{
           margin: "0 0 8px",
-          fontSize: 26,
-          lineHeight: 1.1,
+          fontSize: "clamp(22px, 7vw, 26px)",
+          lineHeight: 1.12,
           letterSpacing: "-0.035em",
           color: "#0f172a",
+          overflowWrap: "break-word",
         }}
       >
         Run this investigation on your own historical table
@@ -189,6 +214,7 @@ function ContinueWithOwnData({
           color: "#475569",
           fontSize: 15,
           lineHeight: 1.55,
+          overflowWrap: "break-word",
         }}
       >
         The sample investigation is complete. Now upload your own CSV and
@@ -200,6 +226,8 @@ function ContinueWithOwnData({
           type="button"
           onClick={onStart}
           style={{
+            width: "100%",
+            maxWidth: 220,
             border: "none",
             borderRadius: 12,
             padding: "12px 16px",
@@ -208,12 +236,21 @@ function ContinueWithOwnData({
             fontWeight: 900,
             cursor: "pointer",
             fontSize: 14,
+            overflowWrap: "break-word",
           }}
         >
           Upload your own CSV
         </button>
       ) : (
-        <div style={{ display: "grid", gap: 12 }}>
+        <div
+          style={{
+            display: "grid",
+            gap: 12,
+            minWidth: 0,
+            maxWidth: "100%",
+            overflow: "hidden",
+          }}
+        >
           <UploadArea
             input={input}
             onInputChange={onInputChange}
@@ -225,6 +262,8 @@ function ContinueWithOwnData({
             onClick={onRun}
             disabled={!input.trim()}
             style={{
+              width: "100%",
+              maxWidth: 220,
               border: "none",
               borderRadius: 12,
               padding: "12px 16px",
@@ -233,6 +272,7 @@ function ContinueWithOwnData({
               fontWeight: 900,
               cursor: input.trim() ? "pointer" : "not-allowed",
               fontSize: 14,
+              overflowWrap: "break-word",
             }}
           >
             Investigate my CSV
@@ -250,4 +290,5 @@ const blueEyebrowStyle: React.CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: 0.8,
   marginBottom: 8,
+  overflowWrap: "break-word",
 };
