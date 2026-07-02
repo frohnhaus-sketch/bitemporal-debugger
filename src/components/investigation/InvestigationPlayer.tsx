@@ -18,17 +18,14 @@ export function InvestigationPlayer({
 }: InvestigationPlayerProps) {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [phase, setPhase] = useState<"investigating" | "result">(
-    "investigating"
+    "investigating",
   );
 
   useEffect(() => {
     if (phase !== "investigating") return;
 
     if (activeStepIndex >= steps.length) {
-      const timeout = window.setTimeout(() => {
-        setPhase("result");
-      }, 300);
-
+      const timeout = window.setTimeout(() => setPhase("result"), 300);
       return () => window.clearTimeout(timeout);
     }
 
@@ -50,16 +47,20 @@ export function InvestigationPlayer({
   return (
     <section
       style={{
+        width: "100%",
+        maxWidth: "100%",
+        overflow: "hidden",
         borderRadius: 24,
-        padding: 24,
+        padding: "clamp(18px, 5vw, 32px)",
         border: "1px solid rgba(148, 163, 184, 0.25)",
         background:
           "linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.98))",
         color: "#e5e7eb",
         boxShadow: "0 24px 80px rgba(0,0,0,0.35)",
+        boxSizing: "border-box",
       }}
     >
-      <header style={{ marginBottom: 24 }}>
+      <header style={{ marginBottom: 22, minWidth: 0 }}>
         <div
           style={{
             fontSize: 12,
@@ -67,22 +68,36 @@ export function InvestigationPlayer({
             textTransform: "uppercase",
             color: "#94a3b8",
             marginBottom: 8,
+            overflowWrap: "break-word",
           }}
         >
           Historical Investigation
         </div>
 
-        <h2 style={{ margin: 0, fontSize: 28, lineHeight: 1.15 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: "clamp(28px, 8vw, 46px)",
+            lineHeight: 1.08,
+            letterSpacing: "-0.05em",
+            color: "#ffffff",
+            overflowWrap: "break-word",
+            wordBreak: "normal",
+            maxWidth: "100%",
+          }}
+        >
           {title}
         </h2>
 
         {subtitle && (
           <p
             style={{
-              margin: "10px 0 0",
+              margin: "14px 0 0",
               color: "#cbd5e1",
               maxWidth: 760,
-              lineHeight: 1.6,
+              fontSize: "clamp(16px, 4.5vw, 22px)",
+              lineHeight: 1.45,
+              overflowWrap: "break-word",
             }}
           >
             {subtitle}
@@ -94,7 +109,8 @@ export function InvestigationPlayer({
         style={{
           display: "grid",
           gap: 12,
-          marginBottom: phase === "result" ? 28 : 0,
+          marginBottom: phase === "result" ? 24 : 0,
+          minWidth: 0,
         }}
       >
         {steps.map((step, index) => {
@@ -105,10 +121,10 @@ export function InvestigationPlayer({
               key={step.id}
               style={{
                 display: "grid",
-                gridTemplateColumns: "28px 1fr",
+                gridTemplateColumns: "28px minmax(0, 1fr)",
                 gap: 12,
                 alignItems: "start",
-                padding: "14px 16px",
+                padding: "14px 14px",
                 borderRadius: 16,
                 border:
                   status === "active"
@@ -122,6 +138,7 @@ export function InvestigationPlayer({
                       : "rgba(15,23,42,0.35)",
                 opacity: status === "pending" ? 0.45 : 1,
                 transition: "all 260ms ease",
+                minWidth: 0,
               }}
             >
               <div
@@ -149,8 +166,15 @@ export function InvestigationPlayer({
                 {status === "done" ? "✓" : status === "active" ? "…" : index + 1}
               </div>
 
-              <div>
-                <div style={{ fontWeight: 650 }}>{step.label}</div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {step.label}
+                </div>
 
                 {step.detail && status !== "pending" && (
                   <div
@@ -159,6 +183,7 @@ export function InvestigationPlayer({
                       color: "#94a3b8",
                       fontSize: 14,
                       lineHeight: 1.5,
+                      overflowWrap: "break-word",
                     }}
                   >
                     {step.detail}
@@ -174,7 +199,8 @@ export function InvestigationPlayer({
         <div
           style={{
             display: "grid",
-            gap: 18,
+            gap: 16,
+            minWidth: 0,
             animation: "investigationResultIn 420ms ease both",
           }}
         >
@@ -195,19 +221,21 @@ export function InvestigationPlayer({
                 border: "1px solid rgba(148,163,184,0.2)",
                 padding: 16,
                 background: "rgba(15,23,42,0.45)",
+                overflow: "hidden",
               }}
             >
               <summary
                 style={{
                   cursor: "pointer",
                   color: "#cbd5e1",
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  overflowWrap: "break-word",
                 }}
               >
                 Technical details
               </summary>
 
-              <div style={{ marginTop: 16 }}>{technicalDetails}</div>
+              <div style={{ marginTop: 16, minWidth: 0 }}>{technicalDetails}</div>
             </details>
           )}
         </div>
@@ -239,10 +267,14 @@ function ResultSection({
   return (
     <section
       style={{
+        minWidth: 0,
+        maxWidth: "100%",
+        overflow: "hidden",
         borderRadius: 18,
         border: "1px solid rgba(148,163,184,0.2)",
         background: "rgba(15,23,42,0.58)",
-        padding: 18,
+        padding: "clamp(16px, 4vw, 22px)",
+        boxSizing: "border-box",
       }}
     >
       <div
@@ -250,14 +282,18 @@ function ResultSection({
           fontSize: 12,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "#94a3b8",
+          color: "#93c5fd",
           marginBottom: 10,
+          fontWeight: 800,
+          overflowWrap: "break-word",
         }}
       >
         {title}
       </div>
 
-      {children}
+      <div style={{ minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
+        {children}
+      </div>
     </section>
   );
 }
