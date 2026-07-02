@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { analyzeTargetTable } from "@/lib/targetTableValidator";
 import { track } from "@/lib/analytics";
 import type { HistoricalSemantics } from "@/lib/types";
-import { AnalyzerResultScreenV2 } from "@/analyzer/AnalyzerResultScreenV2";
+import { AnalyzerResultScreenV2 } from "@/analyzer/AnalyzerResultScreenV2_v1";
 import { UploadArea } from "@/components/target-validation/UploadArea";
 
 type FlowState = "start" | "upload" | "result";
