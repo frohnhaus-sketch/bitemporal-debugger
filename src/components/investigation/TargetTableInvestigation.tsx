@@ -1,34 +1,17 @@
 "use client";
 
 import type { TargetValidationResult } from "@/lib/types";
+import { deriveInvestigation } from "@/lib/analyzer/investigation/deriveInvestigation";
 
-import {
-  ConclusionCard,
-  type InvestigationConclusion,
-} from "@/components/investigation/ConclusionCard";
+import { ConclusionCard } from "@/components/investigation/ConclusionCard";
 import { TechnicalDetails } from "@/components/investigation/TechnicalDetails";
-
-function deriveConclusion(
-  result: TargetValidationResult,
-): InvestigationConclusion {
-  switch (result.qualitySummary.severity) {
-    case "danger":
-      return "not-reproducible";
-
-    case "warning":
-      return "partial";
-
-    default:
-      return "reproducible";
-  }
-}
 
 export function TargetTableInvestigation({
   result,
 }: {
   result: TargetValidationResult;
 }) {
-  const conclusion = deriveConclusion(result);
+  const investigation = deriveInvestigation(result);
 
   return (
     <div
@@ -39,37 +22,36 @@ export function TargetTableInvestigation({
         gap: 24,
       }}
     >
-      <ConclusionCard conclusion={conclusion} />
-
+      <ConclusionCard
+        decision={investigation.diagnosis.decision}
+        presentation={investigation.presentation}
+      />
       <section
         style={{
-          display: "flex",
+          display: "grid",
           gap: 16,
-          flexWrap: "wrap",
+          gridTemplateColumns: "1fr",
         }}
       >
-        <SeverityCard
-          label="High"
-          value={result.qualitySummary.counts.high}
-          background="#fef2f2"
-          border="#fecaca"
-          color="#991b1b"
+        <InsightCard
+          title="Root Cause"
+          text={investigation.presentation.rootCause}
         />
 
-        <SeverityCard
-          label="Medium"
-          value={result.qualitySummary.counts.medium}
-          background="#fffbeb"
-          border="#fde68a"
-          color="#92400e"
+        <InsightCard
+          title="Business Impact"
+          text={investigation.presentation.businessImpact}
         />
 
-        <SeverityCard
-          label="Low"
-          value={result.qualitySummary.counts.low}
-          background="#ecfdf5"
-          border="#86efac"
-          color="#166534"
+        <InsightCard
+          title="Recommended next step"
+          text={investigation.presentation.recommendation}
+        />
+
+        <InsightCard
+          accent
+          title="Recommended next step"
+          text="Learn how to eliminate this issue using the interactive historical modeling guide."
         />
       </section>
 
@@ -85,14 +67,24 @@ export function TargetTableInvestigation({
           <h2
             style={{
               margin: 0,
-              marginBottom: 20,
-              fontSize: 22,
+              marginBottom: 8,
+              fontSize: 24,
               fontWeight: 800,
               color: "#0f172a",
             }}
           >
-            Top findings
+            Evidence
           </h2>
+
+          <p
+            style={{
+              margin: "0 0 20px",
+              color: "#64748b",
+              lineHeight: 1.6,
+            }}
+          >
+            The following observations led to this investigation result.
+          </p>
 
           <div
             style={{
@@ -103,59 +95,91 @@ export function TargetTableInvestigation({
             {result.findings.slice(0, 3).map((finding) => (
               <FindingCard key={finding.id} finding={finding} />
             ))}
+            {result.findings.length > 3 && (
+              <div
+                style={{
+                  marginTop: 18,
+                  color: "#60a5fa",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                + {result.findings.length - 3} more observations
+              </div>
+            )}
           </div>
         </section>
       )}
+      <section
+        style={{
+          background: "#ffffff",
+          border: "1px solid #e2e8f0",
+          borderRadius: 18,
+          padding: 24,
+        }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            marginBottom: 18,
+            fontSize: 22,
+            fontWeight: 800,
+            color: "#0f172a",
+          }}
+        >
+          How I reached this conclusion
+        </h2>
 
+        <ReasonCheck
+          ok={!!result.detectedColumns.businessKey}
+          label="Business Key detected"
+        />
+
+        <ReasonCheck
+          ok={
+            !!result.detectedColumns.validFrom &&
+            !!result.detectedColumns.validTo
+          }
+          label="Valid Time detected"
+        />
+
+        <ReasonCheck
+          ok={
+            !!result.detectedColumns.visibleFrom &&
+            !!result.detectedColumns.visibleTo
+          }
+          label="Visible Time detected"
+        />
+
+        <ReasonCheck
+          ok={!!result.detectedColumns.snapshotDate}
+          label="Snapshot detected"
+        />
+
+        <div
+          style={{
+            height: 1,
+            background: "#e2e8f0",
+            margin: "12px 0",
+          }}
+        />
+
+        <ReasonCheck
+          ok={result.findings.some((f) => f.id === "valid-time-overlaps")}
+          label="Overlapping intervals detected"
+        />
+
+        <ReasonCheck
+          ok={result.findings.some((f) => f.id === "valid-time-gaps")}
+          label="Coverage gaps detected"
+        />
+
+        <ReasonCheck
+          ok={result.findings.some((f) => f.id === "duplicate-snapshot-grain")}
+          label="Duplicate snapshot grain detected"
+        />
+      </section>
       <TechnicalDetails result={result} />
-    </div>
-  );
-}
-
-function SeverityCard({
-  label,
-  value,
-  background,
-  border,
-  color,
-}: {
-  label: string;
-  value: number;
-  background: string;
-  border: string;
-  color: string;
-}) {
-  return (
-    <div
-      style={{
-        padding: "14px 18px",
-        borderRadius: 12,
-        background,
-        border: `1px solid ${border}`,
-        minWidth: 120,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          color,
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          fontSize: 30,
-          fontWeight: 800,
-          color: "#0f172a",
-          marginTop: 4,
-        }}
-      >
-        {value}
-      </div>
     </div>
   );
 }
@@ -180,6 +204,36 @@ function FindingCard({
         padding: 20,
       }}
     >
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "4px 10px",
+          borderRadius: 999,
+          marginBottom: 14,
+
+          background:
+            finding.severity === "high"
+              ? "#fef2f2"
+              : finding.severity === "medium"
+                ? "#fffbeb"
+                : "#f0fdf4",
+
+          color:
+            finding.severity === "high"
+              ? "#991b1b"
+              : finding.severity === "medium"
+                ? "#92400e"
+                : "#166534",
+
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+        }}
+      >
+        {finding.severity}
+      </div>
       <div
         style={{
           display: "flex",
@@ -215,7 +269,7 @@ function FindingCard({
           color: "#0f172a",
         }}
       >
-        Why it matters
+        Evidence
       </div>
 
       <div
@@ -236,7 +290,7 @@ function FindingCard({
               color: "#0f172a",
             }}
           >
-            Recommended fix
+            Suggested action
           </div>
 
           <div
@@ -254,6 +308,80 @@ function FindingCard({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function InsightCard({
+  title,
+  text,
+  accent = false,
+}: {
+  title: string;
+  text: string;
+  accent?: boolean;
+}) {
+  return (
+    <section
+      style={{
+        background: accent ? "#eff6ff" : "#ffffff",
+        border: accent ? "1px solid #93c5fd" : "1px solid #e2e8f0",
+        borderRadius: 16,
+        padding: 22,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+          color: "#64748b",
+          marginBottom: 10,
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          fontSize: 16,
+          lineHeight: 1.7,
+          color: "#334155",
+        }}
+      >
+        {text}
+      </div>
+    </section>
+  );
+}
+
+function ReasonCheck({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "10px 0",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 18,
+        }}
+      >
+        {ok ? "✓" : "○"}
+      </div>
+
+      <div
+        style={{
+          color: ok ? "#0f172a" : "#64748b",
+          fontWeight: ok ? 600 : 400,
+        }}
+      >
+        {label}
+      </div>
     </div>
   );
 }

@@ -1,12 +1,19 @@
 import type { TargetFinding } from "@/lib/types";
+import type { RuleFacts } from "@/lib/analyzer/rules/types";
 
-export function detectEventPrioritizationRisk(
-  rows: any[],
-): TargetFinding[] {
+export function detectEventPrioritizationRisk(rows: any[]): {
+  findings: TargetFinding[];
+  facts: RuleFacts;
+} {
   const statusColumn = "prioritization_status";
 
   if (!rows.some((row) => row[statusColumn] !== undefined)) {
-    return [];
+    return {
+      findings: [],
+      facts: {
+        hasEventPrioritizationRisk: false,
+      },
+    };
   }
 
   const noisyRows = rows.filter((row) => {
@@ -23,18 +30,32 @@ export function detectEventPrioritizationRisk(
     ].includes(value);
   });
 
-  if (noisyRows.length === 0) return [];
+  if (noisyRows.length === 0) {
+    return {
+      findings: [],
+      facts: {
+        hasEventPrioritizationRisk: false,
+      },
+    };
+  }
 
-  return [
-    {
-      id: "event-prioritization-risk",
-      title: "Event prioritization noise detected",
-      severity: "medium",
-      evidence: [
-        `${noisyRows.length} row(s) contain non-business or noise events.`,
-      ],
-      recommendation:
-        "Filter or collapse technical events before building analytical models.",
+  return {
+    findings: [
+      {
+        id: "event-prioritization-risk",
+        title: "Event prioritization noise detected",
+        severity: "medium",
+        evidence: [
+          `${noisyRows.length} row${noisyRows.length === 1 ? "" : "s"} contain non-business or noise events.`,
+        ],
+        recommendation:
+          "Filter or collapse technical events before building analytical models.",
+      },
+    ],
+    facts: {
+      eventPrioritizationRiskCount: noisyRows.length,
+      hasEventPrioritizationRisk: true,
+      hasTemporalAmbiguity: true,
     },
-  ];
+  };
 }

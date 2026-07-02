@@ -9,6 +9,7 @@ import { track } from "@/lib/analytics";
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
+  const [investigationCompleted, setInvestigationCompleted] = useState(false);
 
   useEffect(() => {
     const update = () => setIsMobile(window.innerWidth < 900);
@@ -41,27 +42,37 @@ export default function Home() {
       <div
         style={{
           width: "100%",
-          maxWidth: 1320,
+          maxWidth: investigationCompleted ? 1100 : 1320,
           margin: "0 auto",
           boxSizing: "border-box",
         }}
       >
-        <TargetTableValidationPanel />
+        <TargetTableValidationPanel
+          onInvestigationCompleted={() =>
+            setInvestigationCompleted(true)
+          }
+        />
 
-        <SupportingWorkflows isMobile={isMobile} />
+        {investigationCompleted ? (
+          <>
+            <SupportingWorkflows isMobile={isMobile} />
+          </>
+        ) : (
+          <>
+            <section
+              id="advisor-section"
+              style={{
+                marginTop: 24,
+              }}
+            >
+              <AdvisorPanel />
+            </section>
 
-        <section
-          id="advisor-section"
-          style={{
-            marginTop: 24,
-          }}
-        >
-          <AdvisorPanel />
-        </section>
-
-        <AdvancedInvestigationSection isMobile={isMobile}>
-          <TwoSourceValidationWorkflow />
-        </AdvancedInvestigationSection>
+            <AdvancedInvestigationSection isMobile={isMobile}>
+              <TwoSourceValidationWorkflow />
+            </AdvancedInvestigationSection>
+          </>
+        )}
 
         <Footer />
       </div>
@@ -69,7 +80,11 @@ export default function Home() {
   );
 }
 
-function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
+function SupportingWorkflows({
+  isMobile,
+}: {
+  isMobile: boolean;
+}) {
   const links = [
     {
       title: "Learn historical modeling",
@@ -97,12 +112,12 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
   return (
     <section
       style={{
-        marginTop: 24,
-        marginBottom: 24,
+        marginTop: 40,
+        marginBottom: 28,
         padding: isMobile ? 18 : 24,
         borderRadius: 24,
         background: "rgba(15, 23, 42, 0.76)",
-        border: "1px solid rgba(148, 163, 184, 0.34)",
+        border: "1px solid rgba(148,163,184,0.34)",
         color: "#e2e8f0",
       }}
     >
@@ -117,7 +132,7 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
             marginBottom: 8,
           }}
         >
-          Next steps
+          Continue your investigation
         </div>
 
         <h2
@@ -128,7 +143,7 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
             color: "#ffffff",
           }}
         >
-          Continue after the investigation
+          Where do you want to go next?
         </h2>
 
         <p
@@ -140,8 +155,9 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
             lineHeight: 1.6,
           }}
         >
-          Use the investigation result as your starting point. Then learn the
-          underlying pattern, improve the model or compare the source tables.
+          Your investigation is complete. Continue by understanding the
+          underlying modeling pattern, improving your design or comparing
+          historical source tables.
         </p>
       </div>
 
@@ -150,7 +166,7 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
           display: "grid",
           gridTemplateColumns: isMobile
             ? "1fr"
-            : "repeat(auto-fit, minmax(260px, 1fr))",
+            : "repeat(auto-fit,minmax(260px,1fr))",
           gap: 14,
         }}
       >
@@ -158,17 +174,17 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
           <a
             key={item.event}
             href={item.href}
-            onClick={() => {
+            onClick={() =>
               track("supporting_workflow_clicked", {
                 workflow: item.event,
-              });
-            }}
+              })
+            }
             style={{
               display: "block",
               padding: 18,
               borderRadius: 18,
-              background: "rgba(255, 255, 255, 0.08)",
-              border: "1px solid rgba(191, 219, 254, 0.22)",
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(191,219,254,0.22)",
               color: "#ffffff",
               textDecoration: "none",
             }}
@@ -177,7 +193,6 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
               style={{
                 margin: "0 0 8px",
                 fontSize: 18,
-                color: "#ffffff",
               }}
             >
               {item.title}
@@ -197,8 +212,8 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
             <div
               style={{
                 color: "#93c5fd",
-                fontSize: 14,
                 fontWeight: 900,
+                fontSize: 14,
               }}
             >
               {item.cta}
@@ -226,8 +241,8 @@ function AdvancedInvestigationSection({
         padding: isMobile ? 18 : 26,
         borderRadius: 24,
         background:
-          "linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.9))",
-        border: "1px solid rgba(96, 165, 250, 0.35)",
+          "linear-gradient(135deg, rgba(15,23,42,0.94), rgba(30,41,59,0.9))",
+        border: "1px solid rgba(96,165,250,0.35)",
         color: "#e2e8f0",
       }}
     >
@@ -250,7 +265,6 @@ function AdvancedInvestigationSection({
             margin: 0,
             fontSize: isMobile ? 26 : 34,
             letterSpacing: "-0.045em",
-            color: "#ffffff",
           }}
         >
           Compare Historical Sources

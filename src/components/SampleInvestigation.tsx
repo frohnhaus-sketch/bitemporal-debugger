@@ -20,74 +20,191 @@ type SceneId =
   | "root-cause"
   | "impact";
 
-const SCENES: {
+function getScenes(scenario: SampleInvestigationScenario): {
   id: SceneId;
   label: string;
   title: string;
   description: string;
-}[] = [
-  {
-    id: "alert",
-    label: "Alert",
-    title: "Revenue changed overnight",
-    description: "Finance sees a mismatch although no new orders arrived.",
-  },
-  {
-    id: "mismatch",
-    label: "Mismatch",
-    title: "Two reports disagree",
-    description: "The business number changed, but the source total did not.",
-  },
-  {
-    id: "checks",
-    label: "Checks",
-    title: "Classic checks pass",
-    description: "Schema, rows, nulls and joins look technically fine.",
-  },
-  {
-    id: "history",
-    label: "Records",
-    title: "The record has history",
-    description: "The customer has two valid historical versions.",
-  },
-  {
-    id: "timeline",
-    label: "Timeline",
-    title: "The order belongs to the old state",
-    description: "The order happened before the customer became Premium.",
-  },
-  {
-    id: "root-cause",
-    label: "Root cause",
-    title: "The join ignored time",
-    description: "The query matched the customer, but not the valid version.",
-  },
-  {
-    id: "impact",
-    label: "Impact",
-    title: "Now verify the table",
-    description: "Run the analyzer on the generated sample target table.",
-  },
-];
+}[] {
+  if (scenario.id === "customer_missing") {
+    return [
+      {
+        id: "alert",
+        label: "Alert",
+        title: "Customer disappeared from month-end report",
+        description:
+          "A customer was active, but no longer appears in the published snapshot.",
+      },
+      {
+        id: "mismatch",
+        label: "Mismatch",
+        title: "The report and source history disagree",
+        description:
+          "The source contains the customer, but the reporting output does not.",
+      },
+      {
+        id: "checks",
+        label: "Checks",
+        title: "Classic checks do not explain it",
+        description:
+          "The table loads correctly, but the reporting date is not covered.",
+      },
+      {
+        id: "history",
+        label: "Records",
+        title: "The customer has a coverage gap",
+        description: "No valid row covers the month-end reporting date.",
+      },
+      {
+        id: "timeline",
+        label: "Timeline",
+        title: "The snapshot date falls outside valid time",
+        description:
+          "The customer may silently disappear from a point-in-time report.",
+      },
+      {
+        id: "root-cause",
+        label: "Root cause",
+        title: "Historical coverage is incomplete",
+        description:
+          "The model cannot prove which state was valid at the reporting date.",
+      },
+      {
+        id: "impact",
+        label: "Impact",
+        title: "Now verify the table",
+        description: "Run the analyzer on the generated sample target table.",
+      },
+    ];
+  }
+
+  if (scenario.id === "duplicate_snapshot") {
+    return [
+      {
+        id: "alert",
+        label: "Alert",
+        title: "Duplicate snapshot records detected",
+        description:
+          "The same business key appears more than once for one reporting date.",
+      },
+      {
+        id: "mismatch",
+        label: "Mismatch",
+        title: "The reporting grain is ambiguous",
+        description:
+          "Aggregations may double-count the same contract or customer.",
+      },
+      {
+        id: "checks",
+        label: "Checks",
+        title: "The file still looks technically valid",
+        description: "Columns parse, rows load, and no schema error is raised.",
+      },
+      {
+        id: "history",
+        label: "Records",
+        title: "Two records claim the same snapshot",
+        description:
+          "The table does not contain one clear row per business key and snapshot date.",
+      },
+      {
+        id: "timeline",
+        label: "Timeline",
+        title: "Both rows are visible at the same reporting point",
+        description:
+          "The analyzer cannot know which row represents the published result.",
+      },
+      {
+        id: "root-cause",
+        label: "Root cause",
+        title: "Snapshot uniqueness is broken",
+        description: "The output violates the expected reporting grain.",
+      },
+      {
+        id: "impact",
+        label: "Impact",
+        title: "Now verify the table",
+        description: "Run the analyzer on the generated sample target table.",
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "alert",
+      label: "Alert",
+      title: "Revenue changed overnight",
+      description: "Finance sees a mismatch although no new orders arrived.",
+    },
+    {
+      id: "mismatch",
+      label: "Mismatch",
+      title: "Two reports disagree",
+      description: "The business number changed, but the source total did not.",
+    },
+    {
+      id: "checks",
+      label: "Checks",
+      title: "Classic checks pass",
+      description: "Schema, rows, nulls and joins look technically fine.",
+    },
+    {
+      id: "history",
+      label: "Records",
+      title: "The record has history",
+      description: "The customer has two valid historical versions.",
+    },
+    {
+      id: "timeline",
+      label: "Timeline",
+      title: "The order belongs to the old state",
+      description: "The order happened before the customer became Premium.",
+    },
+    {
+      id: "root-cause",
+      label: "Root cause",
+      title: "The join ignored time",
+      description: "The query matched the customer, but not the valid version.",
+    },
+    {
+      id: "impact",
+      label: "Impact",
+      title: "Now verify the table",
+      description: "Run the analyzer on the generated sample target table.",
+    },
+  ];
+}
+
+type SampleInvestigationScenario = {
+  id: string;
+  title: string;
+  icon: string;
+  description: string;
+  csv: string;
+};
 
 export function SampleInvestigation({
-  startSignal = 0,
+  scenario,
+  startSignal,
   onRunInvestigation,
 }: {
-  startSignal?: number;
-  onRunInvestigation: (input: string) => void;
+  scenario: SampleInvestigationScenario;
+  startSignal: number;
+  onRunInvestigation: () => void;
 }) {
   const [started, setStarted] = useState(false);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [animationKey, setAnimationKey] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
-  const scene = SCENES[sceneIndex];
-  const isLast = sceneIndex === SCENES.length - 1;
+  const scenes = useMemo(() => getScenes(scenario), [scenario]);
+
+  const scene = scenes[sceneIndex];
+  const isLast = sceneIndex === scenes.length - 1;
 
   const progress = useMemo(
-    () => Math.round(((sceneIndex + 1) / SCENES.length) * 100),
-    [sceneIndex],
+    () => Math.round(((sceneIndex + 1) / scenes.length) * 100),
+    [sceneIndex, scenes.length],
   );
 
   function start() {
@@ -120,10 +237,10 @@ export function SampleInvestigation({
 
   function runAnalyzer() {
     track("guided_investigation_completed", {
-      scenario: "revenue_mismatch",
+      scenario: scenario.id,
     });
 
-    onRunInvestigation(SAMPLE_INVESTIGATION_INPUT);
+    onRunInvestigation();
   }
 
   function back() {
@@ -205,6 +322,7 @@ export function SampleInvestigation({
         }}
       >
         <TimelineNav
+          scenes={scenes}
           sceneIndex={sceneIndex}
           onSelect={goToScene}
           isMobile={isMobile}
@@ -217,7 +335,7 @@ export function SampleInvestigation({
               <h3 style={sceneTitleStyle}>{scene.title}</h3>
             </div>
             <div style={countStyle}>
-              {sceneIndex + 1} / {SCENES.length}
+              {sceneIndex + 1} / {scenes.length}
             </div>
           </div>
 
@@ -275,10 +393,17 @@ export function SampleInvestigation({
 }
 
 function TimelineNav({
+  scenes,
   sceneIndex,
   onSelect,
   isMobile,
 }: {
+  scenes: {
+    id: SceneId;
+    label: string;
+    title: string;
+    description: string;
+  }[];
   sceneIndex: number;
   onSelect: (index: number) => void;
   isMobile: boolean;
@@ -286,7 +411,7 @@ function TimelineNav({
   if (isMobile) {
     return (
       <nav style={mobileNavStyle}>
-        {SCENES.map((scene, index) => (
+        {scenes.map((scene, index) => (
           <button
             key={scene.id}
             type="button"
@@ -308,7 +433,7 @@ function TimelineNav({
       <div style={eyebrowStyle}>Story</div>
 
       <div style={{ display: "grid", gap: 6, marginTop: 12 }}>
-        {SCENES.map((scene, index) => {
+        {scenes.map((scene, index) => {
           const active = index === sceneIndex;
           const done = index < sceneIndex;
 

@@ -1,84 +1,54 @@
-import type { TargetValidationResult } from "@/lib/types";
-
-export type InvestigationConclusion =
-  | "reproducible"
-  | "partial"
-  | "not-reproducible"
-  | "insufficient";
-
-export function deriveConclusion(
-  result: TargetValidationResult,
-): InvestigationConclusion {
-  switch (result.qualitySummary.severity) {
-    case "danger":
-      return "not-reproducible";
-
-    case "warning":
-      return "partial";
-
-    default:
-      return "reproducible";
-  }
-}
+import type { InvestigationDecision } from "@/lib/analyzer/diagnosis/types";
+import type { InvestigationPresentation } from "@/lib/analyzer/presentation/types";
 
 export function ConclusionCard({
-  conclusion,
+  decision,
+  presentation,
 }: {
-  conclusion: InvestigationConclusion;
+  decision: InvestigationDecision;
+  presentation: InvestigationPresentation;
 }) {
-  const config = {
-    reproducible: {
+  const appearance = {
+    clean: {
       icon: "🟢",
       badge: "PASSED",
-      title: "Historical model looks healthy",
-      summary:
-        "No major temporal risks were detected. This table appears suitable for reproducing historical reporting.",
       bg: "#f0fdf4",
       border: "#86efac",
       accent: "#166534",
     },
 
-    partial: {
+    review: {
+      icon: "🔵",
+      badge: "REVIEW",
+      bg: "#eff6ff",
+      border: "#93c5fd",
+      accent: "#1d4ed8",
+    },
+
+    partially_reproducible: {
       icon: "🟠",
       badge: "WARNING",
-      title: "Historical model requires review",
-      summary:
-        "The table contains historical information, but some temporal assumptions cannot be verified. Reporting may depend on upstream processing.",
       bg: "#fffbeb",
       border: "#fde68a",
       accent: "#92400e",
     },
 
-    "not-reproducible": {
+    not_reproducible: {
       icon: "🔴",
       badge: "HIGH RISK",
-      title: "Historical issues detected",
-      summary:
-        "This table is unlikely to reproduce historical reports reliably. At least one high-severity temporal issue was detected.",
       bg: "#fef2f2",
       border: "#fca5a5",
       accent: "#991b1b",
     },
-
-    insufficient: {
-      icon: "⚪",
-      badge: "INSUFFICIENT DATA",
-      title: "More information required",
-      summary:
-        "This table alone does not expose enough historical semantics to determine whether reporting is reproducible.",
-      bg: "#f8fafc",
-      border: "#cbd5e1",
-      accent: "#475569",
-    },
-  }[conclusion];
+  }[decision];
 
   return (
     <section
       style={{
-        background: config.bg,
-        border: `1px solid ${config.border}`,
+        background: appearance.bg,
+        border: `1px solid ${appearance.border}`,
         borderRadius: 18,
-        padding: 26,
+        padding: 36,
       }}
     >
       <div
@@ -89,26 +59,26 @@ export function ConclusionCard({
           padding: "5px 10px",
           borderRadius: 999,
           background: "#ffffff",
-          border: `1px solid ${config.border}`,
+          border: `1px solid ${appearance.border}`,
           fontSize: 12,
           fontWeight: 800,
-          color: config.accent,
+          color: appearance.accent,
           textTransform: "uppercase",
           letterSpacing: ".08em",
         }}
       >
-        {config.badge}
+        {appearance.badge}
       </div>
 
       <h2
         style={{
           margin: "18px 0 10px",
-          fontSize: 30,
+          fontSize: 38,
           lineHeight: 1.15,
           color: "#0f172a",
         }}
       >
-        {config.icon} {config.title}
+        {appearance.icon} {presentation.title}
       </h2>
 
       <p
@@ -120,7 +90,7 @@ export function ConclusionCard({
           lineHeight: 1.65,
         }}
       >
-        {config.summary}
+        {presentation.subtitle}
       </p>
     </section>
   );

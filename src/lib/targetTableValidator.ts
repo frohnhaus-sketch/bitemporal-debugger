@@ -3,14 +3,13 @@ import {
   detectInvalidIntervals,
   detectValidTimeOverlaps,
   detectValidTimeGaps,
-  detectValidTimeOverlapsWithinVisibleSlices
+  detectValidTimeOverlapsWithinVisibleSlices,
 } from "@/lib/validation/intervals";
 import {
   detectSnapshotDuplicates,
   detectMissingSnapshotCoverage,
   detectMonthlySnapshotGaps,
 } from "./findings/snapshotFindings";
-
 import type {
   DetectedColumns,
   HistoricalSemantics,
@@ -22,32 +21,49 @@ import type {
   OpenEndedValue,
   CorrectionMode,
 } from "@/lib/types";
+import type { RuleFacts } from "@/lib/analyzer/rules/types";
+
+export type TargetTableAnalysis = {
+  result: TargetValidationResult;
+  ruleFacts: RuleFacts;
+};
 
 export function validateTargetTable(
   rawInput: string,
   semanticsOverride: Partial<HistoricalSemantics> = {},
   columnOverrides: Partial<DetectedColumns> = {},
 ): TargetValidationResult {
+  return analyzeTargetTable(rawInput, semanticsOverride, columnOverrides)
+    .result;
+}
+
+export function analyzeTargetTable(
+  rawInput: string,
+  semanticsOverride: Partial<HistoricalSemantics> = {},
+  columnOverrides: Partial<DetectedColumns> = {},
+): TargetTableAnalysis {
+  const ruleFacts: RuleFacts = {};
   const parsed = parseCSV(rawInput, { maxColumns: "all" });
   const rows = parsed.rows;
   const columns = parsed.headerMappings.map((m) => m.normalized);
   const headerMappings = parsed.headerMappings;
 
   const detectedColumns: DetectedColumns = {
-    businessKey: detectColumnOriginal(headerMappings, [
-      "business_key",
-      "entity_id",
-      "id",
-      "contract_id",
-      "policy_id",
-      "police_id",
-      "police_nummer",
-      "vnr",
-      "bk_contract",
-      "bk_policy",
-      "bk_police",
-      "fk__police",
-    ]) ?? null,
+    businessKey:
+      detectColumnOriginal(headerMappings, [
+        "business_key",
+        "entity_id",
+        "id",
+        "contract_id",
+        "policy_id",
+        "police_id",
+        "police_nummer",
+        "vnr",
+        "bk_contract",
+        "bk_policy",
+        "bk_police",
+        "fk__police",
+      ]) ?? null,
 
     validFrom:
       detectColumnOriginal(headerMappings, [
@@ -69,29 +85,32 @@ export function validateTargetTable(
         "gueltig_bis",
       ]) ?? null,
 
-    visibleFrom: detectColumnOriginal(headerMappings, [
-      "visible_from",
-      "bk_visible_from",
-      "loaded_from",
-      "system_from",
-      "technical_from",
-    ]) ?? null,
+    visibleFrom:
+      detectColumnOriginal(headerMappings, [
+        "visible_from",
+        "bk_visible_from",
+        "loaded_from",
+        "system_from",
+        "technical_from",
+      ]) ?? null,
 
-    visibleTo: detectColumnOriginal(headerMappings, [
-      "visible_to",
-      "bk_visible_to",
-      "loaded_to",
-      "system_to",
-      "technical_to",
-    ]) ?? null,
+    visibleTo:
+      detectColumnOriginal(headerMappings, [
+        "visible_to",
+        "bk_visible_to",
+        "loaded_to",
+        "system_to",
+        "technical_to",
+      ]) ?? null,
 
-    snapshotDate: detectColumnOriginal(headerMappings, [
-      "snapshot_date",
-      "reference_date",
-      "reporting_date",
-      "as_of_date",
-      "stichtag",
-    ]) ?? null,
+    snapshotDate:
+      detectColumnOriginal(headerMappings, [
+        "snapshot_date",
+        "reference_date",
+        "reporting_date",
+        "as_of_date",
+        "stichtag",
+      ]) ?? null,
     dimensionColumns: detectDimensionColumns(columns ?? []),
   };
 
@@ -121,22 +140,25 @@ export function validateTargetTable(
   // =========================
 
   if (rows.length === 0) {
-    return buildResult(
-      rows,
-      columns,
-      headerMappings,
-      detectedColumns,
-      semantics,
-      [
-        {
-          id: "no-rows",
-          title: "No rows detected",
-          severity: "high",
-          evidence: ["Input could not be parsed."],
-          recommendation: "Provide valid tabular data.",
-        },
-      ],
-    );
+    return {
+      result: buildResult(
+        rows,
+        columns,
+        headerMappings,
+        detectedColumns,
+        semantics,
+        [
+          {
+            id: "no-rows",
+            title: "No rows detected",
+            severity: "high",
+            evidence: ["Input could not be parsed."],
+            recommendation: "Provide valid tabular data.",
+          },
+        ],
+      ),
+      ruleFacts,
+    };
   }
 
   if (!effectiveColumns.businessKey) {
@@ -183,7 +205,6 @@ export function validateTargetTable(
     effectiveColumns.validFrom &&
     effectiveColumns.validTo
   ) {
-    // invalid intervals
     findings.push(
       ...detectInvalidIntervals(
         rows,
@@ -192,16 +213,40 @@ export function validateTargetTable(
       ),
     );
 
-    // basic overlaps (always)
-    findings.push(
-      ...detectValidTimeOverlaps(
-        rows,
-        effectiveColumns.businessKey,
-        effectiveColumns.validFrom,
-        effectiveColumns.validTo,
-        semantics,
-      ),
+    const duplicateIntervalResult = detectDuplicateIntervals(
+      rows,
+      effectiveColumns.businessKey,
+      effectiveColumns.validFrom,
+      effectiveColumns.validTo,
     );
+
+    Object.assign(ruleFacts, duplicateIntervalResult.facts);
+
+    findings.push(...duplicateIntervalResult.findings);
+
+    const validTimeOverlapResult = detectValidTimeOverlaps(
+      rows,
+      effectiveColumns.businessKey,
+      effectiveColumns.validFrom,
+      effectiveColumns.validTo,
+      semantics,
+    );
+
+    Object.assign(ruleFacts, validTimeOverlapResult.facts);
+
+    findings.push(...validTimeOverlapResult.findings);
+
+    const validTimeGapResult = detectValidTimeGaps(
+      rows,
+      effectiveColumns.businessKey,
+      effectiveColumns.validFrom,
+      effectiveColumns.validTo,
+      semantics,
+    );
+
+    Object.assign(ruleFacts, validTimeGapResult.facts);
+
+    findings.push(...validTimeGapResult.findings);
 
     // =========================
     // BITEMPORAL DETECTION
@@ -212,8 +257,9 @@ export function validateTargetTable(
 
     const hasVisibleVariance =
       hasVisibleColumns &&
-      (new Set(rows.map((r) => r[effectiveColumns.visibleFrom!])).size > 1 ||
-        new Set(rows.map((r) => r[effectiveColumns.visibleTo!])).size > 1);
+      (new Set(rows.map((row) => row[effectiveColumns.visibleFrom!])).size >
+        1 ||
+        new Set(rows.map((row) => row[effectiveColumns.visibleTo!])).size > 1);
 
     const useBitemporal =
       hasVisibleColumns &&
@@ -246,30 +292,61 @@ export function validateTargetTable(
     effectiveColumns.businessKey &&
     rows.length > 0
   ) {
-    findings.push(
-      ...detectSnapshotDuplicates(
-        rows,
-        effectiveColumns.businessKey,
-        effectiveColumns.snapshotDate,
-      ),
+    const snapshotDuplicateResult = detectSnapshotDuplicates(
+      rows,
+      effectiveColumns.businessKey,
+      effectiveColumns.snapshotDate,
     );
 
-    findings.push(
-      ...detectMissingSnapshotCoverage(
-        rows,
-        effectiveColumns.businessKey,
-        effectiveColumns.snapshotDate,
-      ),
+    Object.assign(ruleFacts, snapshotDuplicateResult.facts);
+
+    findings.push(...snapshotDuplicateResult.findings);
+
+    const snapshotCoverageResult = detectMissingSnapshotCoverage(
+      rows,
+      effectiveColumns.businessKey,
+      effectiveColumns.snapshotDate,
     );
 
-    findings.push(
-      ...detectMonthlySnapshotGaps(
-        rows,
-        effectiveColumns.businessKey,
-        effectiveColumns.snapshotDate,
-      ),
+    Object.assign(ruleFacts, snapshotCoverageResult.facts);
+
+    findings.push(...snapshotCoverageResult.findings);
+
+    const monthlySnapshotGapResult = detectMonthlySnapshotGaps(
+      rows,
+      effectiveColumns.businessKey,
+      effectiveColumns.snapshotDate,
     );
+
+    Object.assign(ruleFacts, monthlySnapshotGapResult.facts);
+
+    findings.push(...monthlySnapshotGapResult.findings);
   }
+
+  const snapshotReproducibilityRiskResult = detectSnapshotReproducibilityRisk(
+    rows,
+    effectiveColumns,
+  );
+
+  Object.assign(ruleFacts, snapshotReproducibilityRiskResult.facts);
+
+  findings.push(...snapshotReproducibilityRiskResult.findings);
+
+  // =========================
+  // STATUS / MARKER RULES
+  // =========================
+
+  const coverageGapRiskResult = detectCoverageGapRisk(rows);
+  Object.assign(ruleFacts, coverageGapRiskResult.facts);
+  findings.push(...coverageGapRiskResult.findings);
+
+  const stateReductionRiskResult = detectStateReductionRisk(rows);
+  Object.assign(ruleFacts, stateReductionRiskResult.facts);
+  findings.push(...stateReductionRiskResult.findings);
+
+  const eventPrioritizationRiskResult = detectEventPrioritizationRisk(rows);
+  Object.assign(ruleFacts, eventPrioritizationRiskResult.facts);
+  findings.push(...eventPrioritizationRiskResult.findings);
 
   // =========================
   // DIMENSIONS
@@ -281,14 +358,17 @@ export function validateTargetTable(
     );
   }
 
-  return buildResult(
-    rows,
-    columns,
-    headerMappings,
-    detectedColumns,
-    semantics,
-    findings,
-  );
+  return {
+    result: buildResult(
+      rows,
+      columns,
+      headerMappings,
+      detectedColumns,
+      semantics,
+      findings,
+    ),
+    ruleFacts,
+  };
 }
 
 export function detectHistoricalSemantics(
@@ -435,9 +515,7 @@ function isMissingValue(value: any) {
 }
 
 function uniqueFindingsById(findings: TargetFinding[]) {
-  return Array.from(
-    new Map(findings.map((f) => [f.id, f])).values()
-  );
+  return Array.from(new Map(findings.map((f) => [f.id, f])).values());
 }
 
 function detectDuplicateIntervals(
@@ -445,7 +523,10 @@ function detectDuplicateIntervals(
   keyColumn: string,
   validFromColumn: string,
   validToColumn: string,
-): TargetFinding[] {
+): {
+  findings: TargetFinding[];
+  facts: RuleFacts;
+} {
   const counts = new Map<string, number>();
 
   rows.forEach((row) => {
@@ -460,28 +541,45 @@ function detectDuplicateIntervals(
     ([, count]) => count > 1,
   );
 
-  if (duplicates.length === 0) return [];
+  if (duplicates.length === 0) {
+    return {
+      findings: [],
+      facts: {
+        duplicateIntervalCount: 0,
+        hasDuplicateIntervals: false,
+      },
+    };
+  }
 
-  return [
-    {
-      id: "duplicate-valid-intervals",
-      title: "Duplicate historical intervals detected",
-      severity: "medium",
-      evidence: [
-        `${duplicates.length} duplicate business-key / valid-time interval combination${
-          duplicates.length === 1 ? "" : "s"
-        } found.`,
-      ],
-      recommendation:
-        "Check whether duplicates should be removed, aggregated or differentiated by another grain column.",
+  return {
+    findings: [
+      {
+        id: "duplicate-valid-intervals",
+        title: "Duplicate historical intervals detected",
+        severity: "medium",
+        evidence: [
+          `${duplicates.length} duplicate business-key / valid-time interval combination${
+            duplicates.length === 1 ? "" : "s"
+          } found.`,
+        ],
+        recommendation:
+          "Check whether duplicates should be removed, aggregated or differentiated by another grain column.",
+      },
+    ],
+    facts: {
+      duplicateIntervalCount: duplicates.length,
+      hasDuplicateIntervals: true,
     },
-  ];
+  };
 }
 
 function detectSnapshotReproducibilityRisk(
   rows: any[],
   detectedColumns: DetectedColumns,
-): TargetFinding[] {
+): {
+  findings: TargetFinding[];
+  facts: RuleFacts;
+} {
   const methodColumns = [
     "reproducibility_method",
     "snapshot_method",
@@ -493,7 +591,14 @@ function detectSnapshotReproducibilityRisk(
     rows.some((row) => row[column] !== undefined),
   );
 
-  if (!existingMethodColumn) return [];
+  if (!existingMethodColumn) {
+    return {
+      findings: [],
+      facts: {
+        hasCriticalReproducibilityRisk: false,
+      },
+    };
+  }
 
   const riskyValues = new Set([
     "current_rebuild_only",
@@ -512,14 +617,28 @@ function detectSnapshotReproducibilityRisk(
     return riskyValues.has(value);
   });
 
-  if (riskyRows.length === 0) return [];
+  if (riskyRows.length === 0) {
+    return {
+      findings: [],
+      facts: {
+        hasCriticalReproducibilityRisk: false,
+      },
+    };
+  }
 
   const hasSnapshotDate = Boolean(detectedColumns.snapshotDate);
   const hasVisibleTime = Boolean(
     detectedColumns.visibleFrom && detectedColumns.visibleTo,
   );
 
-  if (!hasSnapshotDate) return [];
+  if (!hasSnapshotDate) {
+    return {
+      findings: [],
+      facts: {
+        hasCriticalReproducibilityRisk: false,
+      },
+    };
+  }
 
   const evidence: string[] = [];
 
@@ -549,23 +668,31 @@ function detectSnapshotReproducibilityRisk(
 
   evidence.push(`Example affected periods: ${examplePeriods}.`);
 
-  return [
-    {
-      id: "snapshot-reproducibility-risk",
-      title: "Snapshot reproducibility risk detected",
-      severity: "high",
-      evidence,
-      assumptions: [
-        "snapshot_date indicates a published or reportable snapshot.",
-        "Without visible-time or publication metadata, old reports may not be reproducible after corrections.",
-      ],
-      recommendation:
-        "If published reports must be reproducible, include visible-time information or persist the exact snapshot state used at publication time. Otherwise, rebuilding old reports may silently use later corrections or future knowledge.",
+  return {
+    findings: [
+      {
+        id: "snapshot-reproducibility-risk",
+        title: "Snapshot reproducibility risk detected",
+        severity: "high",
+        evidence,
+        assumptions: [
+          "snapshot_date indicates a published or reportable snapshot.",
+          "Without visible-time or publication metadata, old reports may not be reproducible after corrections.",
+        ],
+        recommendation:
+          "If published reports must be reproducible, include visible-time information or persist the exact snapshot state used at publication time. Otherwise, rebuilding old reports may silently use later corrections or future knowledge.",
+      },
+    ],
+    facts: {
+      hasCriticalReproducibilityRisk: true,
     },
-  ];
+  };
 }
 
-function detectCoverageGapRisk(rows: any[]): TargetFinding[] {
+function detectCoverageGapRisk(rows: any[]): {
+  findings: TargetFinding[];
+  facts: RuleFacts;
+} {
   const statusColumns = [
     "coverage_status",
     "historical_coverage_status",
@@ -576,7 +703,12 @@ function detectCoverageGapRisk(rows: any[]): TargetFinding[] {
     rows.some((row) => row[column] !== undefined),
   );
 
-  if (!existingStatusColumn) return [];
+  if (!existingStatusColumn) {
+    return {
+      findings: [],
+      facts: {},
+    };
+  }
 
   const riskyValues = new Set([
     "coverage_gap",
@@ -595,28 +727,108 @@ function detectCoverageGapRisk(rows: any[]): TargetFinding[] {
     return riskyValues.has(value);
   });
 
-  if (riskyRows.length === 0) return [];
+  if (riskyRows.length === 0) {
+    return {
+      findings: [],
+      facts: {},
+    };
+  }
 
-  return [
-    {
-      id: "historical-coverage-gap-risk",
-      title: "Historical coverage gap risk detected",
-      severity: "high",
-      evidence: [
-        `${riskyRows.length} row${
-          riskyRows.length === 1 ? "" : "s"
-        } have ${existingStatusColumn} marked as missing or unhandled coverage.`,
-      ],
-      recommendation:
-        "Explicitly handle missing historical coverage before publishing the model. Mark the gap, complete the history or use a controlled unknown member.",
+  return {
+    findings: [
+      {
+        id: "historical-coverage-gap-risk",
+        title: "Historical coverage gap risk detected",
+        severity: "high",
+        evidence: [
+          `${riskyRows.length} row${
+            riskyRows.length === 1 ? "" : "s"
+          } have ${existingStatusColumn} marked as missing or unhandled coverage.`,
+        ],
+        recommendation:
+          "Explicitly handle missing historical coverage before publishing the model. Mark the gap, complete the history or use a controlled unknown member.",
+      },
+    ],
+    facts: {
+      hasCoverageProblem: true,
+      coverageGapRiskCount: riskyRows.length,
     },
-  ];
+  };
 }
 
-function detectStateReductionRisk(rows: any[]): TargetFinding[] {
+export function detectEventPrioritizationRisk(rows: any[]): {
+  findings: TargetFinding[];
+  facts: RuleFacts;
+} {
+  const statusColumn = "prioritization_status";
+
+  if (!rows.some((row) => row[statusColumn] !== undefined)) {
+    return {
+      findings: [],
+      facts: {
+        hasEventPrioritizationRisk: false,
+      },
+    };
+  }
+
+  const noisyRows = rows.filter((row) => {
+    const value = String(row[statusColumn] ?? "")
+      .trim()
+      .toLowerCase();
+
+    return [
+      "operational_noise_kept",
+      "technical_event_kept",
+      "workflow_noise_kept",
+      "duplicate_milestone",
+      "raw_event_kept",
+    ].includes(value);
+  });
+
+  if (noisyRows.length === 0) {
+    return {
+      findings: [],
+      facts: {
+        hasEventPrioritizationRisk: false,
+      },
+    };
+  }
+
+  return {
+    findings: [
+      {
+        id: "event-prioritization-risk",
+        title: "Event prioritization noise detected",
+        severity: "medium",
+        evidence: [
+          `${noisyRows.length} row${noisyRows.length === 1 ? "" : "s"} contain non-business or noise events.`,
+        ],
+        recommendation:
+          "Filter or collapse technical events before building analytical models.",
+      },
+    ],
+    facts: {
+      eventPrioritizationRiskCount: noisyRows.length,
+      hasEventPrioritizationRisk: true,
+      hasTemporalAmbiguity: true,
+    },
+  };
+}
+
+function detectStateReductionRisk(rows: any[]): {
+  findings: TargetFinding[];
+  facts: RuleFacts;
+} {
   const statusColumn = "reduction_status";
 
-  if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
+  if (!rows.some((row) => row[statusColumn] !== undefined)) {
+    return {
+      findings: [],
+      facts: {
+        hasStateReductionRisk: false,
+      },
+    };
+  }
 
   const riskyRows = rows.filter((row) => {
     const value = String(row[statusColumn] ?? "")
@@ -632,67 +844,36 @@ function detectStateReductionRisk(rows: any[]): TargetFinding[] {
     ].includes(value);
   });
 
-  if (riskyRows.length === 0) return [];
+  if (riskyRows.length === 0) {
+    return {
+      findings: [],
+      facts: {
+        hasStateReductionRisk: false,
+      },
+    };
+  }
 
-  return [
-    {
-      id: "state-reduction-risk",
-      title: "State reduction risk detected",
-      severity: "medium",
-      evidence: [
-        `${riskyRows.length} row${riskyRows.length === 1 ? "" : "s"} keep redundant or unreduced state versions.`,
-      ],
-      recommendation:
-        "Review whether these operational state changes should be collapsed before publishing the reporting model.",
+  return {
+    findings: [
+      {
+        id: "state-reduction-risk",
+        title: "State reduction risk detected",
+        severity: "medium",
+        evidence: [
+          `${riskyRows.length} row${
+            riskyRows.length === 1 ? "" : "s"
+          } keep redundant or unreduced state versions.`,
+        ],
+        recommendation:
+          "Review whether these operational state changes should be collapsed before publishing the reporting model.",
+      },
+    ],
+    facts: {
+      stateReductionRiskCount: riskyRows.length,
+      hasStateReductionRisk: true,
+      hasTemporalAmbiguity: true,
     },
-  ];
-}
-
-function detectEventPrioritizationRisk(rows: any[]): TargetFinding[] {
-  const statusColumn = "prioritization_status";
-
-  if (!rows.some((row) => row[statusColumn] !== undefined)) return [];
-
-  const riskyRows = rows.filter((row) => {
-    const value = String(row[statusColumn] ?? "")
-      .trim()
-      .toLowerCase();
-
-    return [
-      "operational_noise_kept",
-      "technical_event_kept",
-      "not_prioritized",
-      "duplicate_milestone",
-      "workflow_noise_kept",
-      "raw_event_kept",
-    ].includes(value);
-  });
-
-  if (riskyRows.length === 0) return [];
-
-  const exampleEvents = riskyRows
-    .slice(0, 3)
-    .map(
-      (row) =>
-        row.event_id ?? row.event_type ?? row.event_time ?? "unknown event",
-    )
-    .join(", ");
-
-  return [
-    {
-      id: "event-prioritization-risk",
-      title: "Event prioritization risk detected",
-      severity: "medium",
-      evidence: [
-        `${riskyRows.length} row${
-          riskyRows.length === 1 ? "" : "s"
-        } keep operational or unprioritized event noise.`,
-        `Example affected events: ${exampleEvents}.`,
-      ],
-      recommendation:
-        "Review whether these operational events should be excluded, collapsed or ranked before publishing the reporting model.",
-    },
-  ];
+  };
 }
 
 function detectDimensionColumns(columns: string[]) {
@@ -826,7 +1007,7 @@ function detectMissingDimensionValues(
 function detectColumnOriginal(headers: HeaderMapping[], candidates: string[]) {
   const match = headers.find((h) => candidates.includes(h.normalized));
 
-  return match?.original ?? null;
+  return match?.normalized ?? null;
 }
 
 function buildResult(

@@ -1,12 +1,18 @@
 import type { TargetFinding } from "@/lib/types";
+import type { RuleFacts } from "@/lib/analyzer/rules/types";
 import { groupRowsByKey } from "@/lib/utils/group";
 import { formatDate, nextMonthEnd, sameDay, parseDate } from "@/lib/utils/date";
+
+type RuleResult = {
+  findings: TargetFinding[];
+  facts: RuleFacts;
+};
 
 export function detectMonthlySnapshotGaps(
   rows: any[],
   keyColumn: string,
   snapshotColumn: string,
-): TargetFinding[] {
+): RuleResult {
   const byKey = groupRowsByKey(rows, keyColumn);
   let missingCount = 0;
   const examples: string[] = [];
@@ -38,30 +44,45 @@ export function detectMonthlySnapshotGaps(
     }
   });
 
-  if (missingCount === 0) return [];
+  if (missingCount === 0) {
+    return {
+      findings: [],
+      facts: {
+        snapshotCoverageGapCount: 0,
+        hasSnapshotCoverageGap: false,
+      },
+    };
+  }
 
-  return [
-    {
-      id: "monthly-snapshot-gap",
-      title: "Monthly snapshot coverage gap detected",
-      severity: "high",
-      evidence: [
-        `${missingCount} missing monthly snapshot step${
-          missingCount === 1 ? "" : "s"
-        } detected within a business key timeline.`,
-        `Examples: ${examples.join("; ")}.`,
-      ],
-      recommendation:
-        "Check whether the missing snapshot month should be present. If the fact or dimension is required for every month-end snapshot, explicitly mark the gap, complete the history or use a controlled unknown member.",
+  return {
+    findings: [
+      {
+        id: "monthly-snapshot-gap",
+        title: "Monthly snapshot coverage gap detected",
+        severity: "high",
+        evidence: [
+          `${missingCount} missing monthly snapshot step${
+            missingCount === 1 ? "" : "s"
+          } detected within a business key timeline.`,
+          `Examples: ${examples.join("; ")}.`,
+        ],
+        recommendation:
+          "Check whether the missing snapshot month should be present. If the fact or dimension is required for every month-end snapshot, explicitly mark the gap, complete the history or use a controlled unknown member.",
+      },
+    ],
+    facts: {
+      snapshotCoverageGapCount: missingCount,
+      hasSnapshotCoverageGap: true,
+      hasCoverageProblem: true,
     },
-  ];
+  };
 }
 
 export function detectMissingSnapshotCoverage(
   rows: any[],
   keyColumn: string,
   snapshotColumn: string,
-): TargetFinding[] {
+): RuleResult {
   const snapshots = new Set(
     rows.map((row) => String(row[snapshotColumn] ?? "")),
   );
@@ -78,29 +99,44 @@ export function detectMissingSnapshotCoverage(
     });
   });
 
-  if (snapshots.size <= 1 || missingCoverageCount === 0) return [];
+  if (snapshots.size <= 1 || missingCoverageCount === 0) {
+    return {
+      findings: [],
+      facts: {
+        snapshotCoverageGapCount: 0,
+        hasSnapshotCoverageGap: false,
+      },
+    };
+  }
 
-  return [
-    {
-      id: "missing-snapshot-coverage",
-      title: "Potential missing snapshot coverage detected",
-      severity: "medium",
-      evidence: [
-        `${missingCoverageCount} business-key / snapshot-date combination${
-          missingCoverageCount === 1 ? "" : "s"
-        } missing from the pasted sample.`,
-      ],
-      recommendation:
-        "Check whether every required business key should appear in every reporting snapshot. If not, document the expected sparsity.",
+  return {
+    findings: [
+      {
+        id: "missing-snapshot-coverage",
+        title: "Potential missing snapshot coverage detected",
+        severity: "medium",
+        evidence: [
+          `${missingCoverageCount} business-key / snapshot-date combination${
+            missingCoverageCount === 1 ? "" : "s"
+          } missing from the pasted sample.`,
+        ],
+        recommendation:
+          "Check whether every required business key should appear in every reporting snapshot. If not, document the expected sparsity.",
+      },
+    ],
+    facts: {
+      snapshotCoverageGapCount: missingCoverageCount,
+      hasSnapshotCoverageGap: true,
+      hasCoverageProblem: true,
     },
-  ];
+  };
 }
 
 export function detectSnapshotDuplicates(
   rows: any[],
   businessKey: string,
   snapshotDate: string,
-): TargetFinding[] {
+): RuleResult {
   const counts = new Map<string, number>();
 
   for (const row of rows) {
@@ -112,18 +148,33 @@ export function detectSnapshotDuplicates(
     ([, count]) => count > 1,
   );
 
-  if (duplicates.length === 0) return [];
+  if (duplicates.length === 0) {
+    return {
+      findings: [],
+      facts: {
+        duplicateSnapshotGrainCount: 0,
+        hasDuplicateSnapshotGrain: false,
+      },
+    };
+  }
 
-  return [
-    {
-      id: "snapshot-duplicates",
-      title: "Duplicate snapshot records detected",
-      severity: "medium",
-      evidence: [
-        `${duplicates.length} duplicate business-key / snapshot-date combinations found.`,
-      ],
-      recommendation:
-        "Ensure snapshot output is deduplicated at business_key + snapshot_date grain.",
+  return {
+    findings: [
+      {
+        id: "snapshot-duplicates",
+        title: "Duplicate snapshot records detected",
+        severity: "medium",
+        evidence: [
+          `${duplicates.length} duplicate business-key / snapshot-date combinations found.`,
+        ],
+        recommendation:
+          "Ensure snapshot output is deduplicated at business_key + snapshot_date grain.",
+      },
+    ],
+    facts: {
+      duplicateSnapshotGrainCount: duplicates.length,
+      hasDuplicateSnapshotGrain: true,
+      hasTemporalAmbiguity: true,
     },
-  ];
+  };
 }

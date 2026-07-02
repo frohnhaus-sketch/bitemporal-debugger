@@ -1,8 +1,4 @@
-import type {
-  HeaderMapping,
-  ParseResult,
-  ParseOptions,
-} from "@/lib/types";
+import type { HeaderMapping, ParseResult, ParseOptions } from "@/lib/types";
 
 const COLUMN_ALIASES: Record<string, string> = {
   id: "entity_id",
@@ -57,9 +53,24 @@ const COLUMN_ALIASES: Record<string, string> = {
   deleted_at: "visible_to",
   removed_at: "visible_to",
   expired_at: "visible_to",
+
+  snapshot_date: "snapshot_date",
+  reference_date: "snapshot_date",
+  reporting_date: "snapshot_date",
+  as_of_date: "snapshot_date",
+  stichtag: "snapshot_date",
 };
 
-const REQUIRED_COLUMNS = ["entity_id", "valid_from", "valid_to"];
+const HEADER_HINT_COLUMNS = [
+  "entity_id",
+  "valid_from",
+  "valid_to",
+  "visible_from",
+  "visible_to",
+  "snapshot_date",
+  "value",
+  "source",
+];
 
 function inferHeaderlessMapping(firstValues: string[]): HeaderMapping[] {
   const columnCount = firstValues.length;
@@ -181,9 +192,9 @@ export function parseCSV(
     (v) => normalizeHeader(v).normalized,
   );
 
-  const useHeaderRow = REQUIRED_COLUMNS.every((col) =>
-    normalizedFirstRow.includes(col),
-  );
+  const useHeaderRow =
+    normalizedFirstRow.some((col) => HEADER_HINT_COLUMNS.includes(col)) ||
+    firstValues.some((value) => /[a-zA-Z_]/.test(value));
 
   const headerMappings = useHeaderRow
     ? firstValues.map((h) => normalizeHeader(h))
