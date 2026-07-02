@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
-import { TargetTableValidationPanel } from "@/components/TargetTableValidationPanel";
+import { TargetTableValidationPanel } from "@/components/TargetTableValidationPanel_v1";
 import { TwoSourceValidationWorkflow } from "@/components/TwoSourceValidationWorkflow";
 import { Footer } from "@/components/Footer";
 import { track } from "@/lib/analytics";
@@ -13,10 +13,8 @@ export default function Home() {
 
   useEffect(() => {
     const update = () => setIsMobile(window.innerWidth < 900);
-
     update();
     window.addEventListener("resize", update);
-
     return () => window.removeEventListener("resize", update);
   }, []);
 
@@ -31,37 +29,43 @@ export default function Home() {
   return (
     <main
       style={{
+        width: "100%",
+        maxWidth: "100vw",
         minHeight: "100vh",
+        overflowX: "hidden",
         background:
           "radial-gradient(circle at 24% 8%, #2563eb 0, #1e3a8a 22%, #0f172a 54%, #020617 100%)",
-        padding: isMobile ? "14px 10px" : "28px 32px",
+        padding: isMobile ? "12px 8px" : "28px 32px",
         fontFamily: "Inter, Arial, sans-serif",
         color: "#0f172a",
+        boxSizing: "border-box",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: investigationCompleted ? 1100 : 1320,
+          minWidth: 0,
           margin: "0 auto",
           boxSizing: "border-box",
+          overflowX: "hidden",
         }}
       >
         <TargetTableValidationPanel
-          onInvestigationCompleted={() =>
-            setInvestigationCompleted(true)
-          }
+          onInvestigationCompleted={() => setInvestigationCompleted(true)}
         />
 
         {investigationCompleted ? (
-          <>
-            <SupportingWorkflows isMobile={isMobile} />
-          </>
+          <SupportingWorkflows isMobile={isMobile} />
         ) : (
           <>
             <section
               id="advisor-section"
               style={{
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: 0,
+                overflow: "hidden",
                 marginTop: 24,
               }}
             >
@@ -80,11 +84,7 @@ export default function Home() {
   );
 }
 
-function SupportingWorkflows({
-  isMobile,
-}: {
-  isMobile: boolean;
-}) {
+function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
   const links = [
     {
       title: "Learn historical modeling",
@@ -112,16 +112,21 @@ function SupportingWorkflows({
   return (
     <section
       style={{
-        marginTop: 40,
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        boxSizing: "border-box",
+        marginTop: 32,
         marginBottom: 28,
-        padding: isMobile ? 18 : 24,
+        padding: isMobile ? 16 : 24,
         borderRadius: 24,
         background: "rgba(15, 23, 42, 0.76)",
         border: "1px solid rgba(148,163,184,0.34)",
         color: "#e2e8f0",
       }}
     >
-      <div style={{ maxWidth: 820, marginBottom: 20 }}>
+      <div style={{ maxWidth: 820, marginBottom: 20, minWidth: 0 }}>
         <div
           style={{
             fontSize: 12,
@@ -130,6 +135,7 @@ function SupportingWorkflows({
             textTransform: "uppercase",
             letterSpacing: 0.8,
             marginBottom: 8,
+            overflowWrap: "break-word",
           }}
         >
           Continue your investigation
@@ -138,9 +144,11 @@ function SupportingWorkflows({
         <h2
           style={{
             margin: 0,
-            fontSize: isMobile ? 25 : 32,
+            fontSize: "clamp(24px, 7vw, 32px)",
+            lineHeight: 1.1,
             letterSpacing: "-0.04em",
             color: "#ffffff",
+            overflowWrap: "break-word",
           }}
         >
           Where do you want to go next?
@@ -153,6 +161,7 @@ function SupportingWorkflows({
             color: "#cbd5e1",
             fontSize: 15,
             lineHeight: 1.6,
+            overflowWrap: "break-word",
           }}
         >
           Your investigation is complete. Continue by understanding the
@@ -165,9 +174,10 @@ function SupportingWorkflows({
         style={{
           display: "grid",
           gridTemplateColumns: isMobile
-            ? "1fr"
+            ? "minmax(0, 1fr)"
             : "repeat(auto-fit,minmax(260px,1fr))",
           gap: 14,
+          minWidth: 0,
         }}
       >
         {links.map((item) => (
@@ -181,18 +191,24 @@ function SupportingWorkflows({
             }
             style={{
               display: "block",
+              minWidth: 0,
+              maxWidth: "100%",
+              overflow: "hidden",
               padding: 18,
               borderRadius: 18,
               background: "rgba(255,255,255,0.08)",
               border: "1px solid rgba(191,219,254,0.22)",
               color: "#ffffff",
               textDecoration: "none",
+              boxSizing: "border-box",
             }}
           >
             <h3
               style={{
                 margin: "0 0 8px",
                 fontSize: 18,
+                lineHeight: 1.25,
+                overflowWrap: "break-word",
               }}
             >
               {item.title}
@@ -204,6 +220,7 @@ function SupportingWorkflows({
                 color: "#cbd5e1",
                 fontSize: 14,
                 lineHeight: 1.55,
+                overflowWrap: "break-word",
               }}
             >
               {item.text}
@@ -214,6 +231,7 @@ function SupportingWorkflows({
                 color: "#93c5fd",
                 fontWeight: 900,
                 fontSize: 14,
+                overflowWrap: "break-word",
               }}
             >
               {item.cta}
@@ -230,15 +248,20 @@ function AdvancedInvestigationSection({
   children,
 }: {
   isMobile: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section
       id="advanced-investigation"
       style={{
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        boxSizing: "border-box",
         marginTop: 24,
         marginBottom: 28,
-        padding: isMobile ? 18 : 26,
+        padding: isMobile ? 16 : 26,
         borderRadius: 24,
         background:
           "linear-gradient(135deg, rgba(15,23,42,0.94), rgba(30,41,59,0.9))",
@@ -246,7 +269,7 @@ function AdvancedInvestigationSection({
         color: "#e2e8f0",
       }}
     >
-      <div style={{ maxWidth: 820, marginBottom: 22 }}>
+      <div style={{ maxWidth: 820, marginBottom: 22, minWidth: 0 }}>
         <div
           style={{
             fontSize: 12,
@@ -255,6 +278,7 @@ function AdvancedInvestigationSection({
             textTransform: "uppercase",
             letterSpacing: 0.8,
             marginBottom: 8,
+            overflowWrap: "break-word",
           }}
         >
           Advanced investigation
@@ -263,8 +287,10 @@ function AdvancedInvestigationSection({
         <h2
           style={{
             margin: 0,
-            fontSize: isMobile ? 26 : 34,
+            fontSize: "clamp(24px, 7vw, 34px)",
+            lineHeight: 1.1,
             letterSpacing: "-0.045em",
+            overflowWrap: "break-word",
           }}
         >
           Compare Historical Sources
@@ -276,6 +302,7 @@ function AdvancedInvestigationSection({
             color: "#cbd5e1",
             fontSize: 16,
             lineHeight: 1.6,
+            overflowWrap: "break-word",
           }}
         >
           Use this expert workflow after the model exists and you need row-level
@@ -283,7 +310,9 @@ function AdvancedInvestigationSection({
         </p>
       </div>
 
-      {children}
+      <div style={{ minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
+        {children}
+      </div>
     </section>
   );
 }
