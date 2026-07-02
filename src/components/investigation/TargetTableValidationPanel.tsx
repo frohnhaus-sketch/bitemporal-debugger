@@ -1,5 +1,6 @@
 "use client";
 
+import { SampleInvestigation } from "@/components/SampleInvestigation";
 import {
   useEffect,
   useMemo,
@@ -26,6 +27,7 @@ type SampleScenario = {
   icon: string;
   description: string;
   csv: string;
+  rows: Record<string, string>[];
 };
 
 const SAMPLE_SCENARIOS: Record<SampleScenarioId, SampleScenario> = {
@@ -35,6 +37,7 @@ const SAMPLE_SCENARIOS: Record<SampleScenarioId, SampleScenario> = {
     icon: "💰",
     description:
       "A corrected historical row overlaps a previously published state.",
+    rows: [],
     csv: `contract_id,snapshot_date,premium,valid_from,valid_to,visible_from,visible_to,method
 C-1001,2024-01-31,100,2024-01-01,9999-12-31,2024-01-31,2024-02-15,published
 C-1001,2024-01-31,120,2024-01-15,9999-12-31,2024-02-15,9999-12-31,rebuild
@@ -46,6 +49,7 @@ C-1002,2024-01-31,80,2024-01-01,9999-12-31,2024-01-31,9999-12-31,published`,
     icon: "👤",
     description:
       "A customer is missing because no row covers the reporting date.",
+    rows: [],
     csv: `customer_id,snapshot_date,status,valid_from,valid_to
 C-204,2024-03-31,ACTIVE,2024-01-01,2024-03-15
 C-205,2024-03-31,ACTIVE,2024-01-01,9999-12-31`,
@@ -55,6 +59,7 @@ C-205,2024-03-31,ACTIVE,2024-01-01,9999-12-31`,
     title: "Duplicate snapshot records",
     icon: "📅",
     description: "The same business key appears twice for one snapshot date.",
+    rows: [],
     csv: `contract_id,snapshot_date,premium
 C-301,2024-05-31,250
 C-301,2024-05-31,250`,
@@ -73,6 +78,7 @@ export function TargetTableValidationPanel({
   const [draft, setDraft] = useState("");
   const [selectedScenario, setSelectedScenario] =
     useState<SampleScenarioId>("revenue_rebuild");
+  const [sampleStartToken, setSampleStartToken] = useState(0);
 
   const [validIntervalEnd, setValidIntervalEnd] = useState<
     "exclusive" | "inclusive"
@@ -105,6 +111,10 @@ export function TargetTableValidationPanel({
   }, [input, semanticsOverride]);
 
   const result = analysis?.result ?? null;
+
+  function runGuidedInvestigation() {
+    setSampleStartToken((x) => x + 1);
+  }
 
   function runSample(scenarioId: SampleScenarioId) {
     const scenario = SAMPLE_SCENARIOS[scenarioId];
@@ -243,33 +253,50 @@ export function TargetTableValidationPanel({
             <Hero />
 
             {flowState === "start" && (
-              <section style={choiceGridStyle}>
-                <div style={primaryCardStyle}>
-                  <div style={eyebrowStyle}>Recommended start</div>
-                  <h3 style={cardTitleStyle}>Run a sample investigation</h3>
-                  <p style={cardTextStyle}>
-                    See how the debugger finds temporal issues before you share
-                    your own data.
-                  </p>
+              <>
+                <div style={{ marginTop: 18 }}>
+                  <SampleInvestigation
+                    scenario={SAMPLE_SCENARIOS[selectedScenario]}
+                    startSignal={sampleStartToken}
+                    onRunInvestigation={() => runSample(selectedScenario)}
+                  />
+                </div>
 
-                  <div style={scenarioGridStyle}>
-                    {Object.values(SAMPLE_SCENARIOS).map((scenario) => (
-                      <button
-                        key={scenario.id}
-                        type="button"
-                        onClick={() => runSample(scenario.id)}
-                        style={scenarioButtonStyle}
-                      >
-                        <span style={{ fontSize: 22 }}>{scenario.icon}</span>
-                        <span style={scenarioTextStyle}>
-                          <strong>{scenario.title}</strong>
-                          <span>{scenario.description}</span>
-                        </span>
-                      </button>
-                    ))}
+                <section style={choiceGridStyle}>
+                  <div style={primaryCardStyle}>
+                    <div style={eyebrowStyle}>
+                      Or choose another sample investigation
+                    </div>
+
+                    <div style={scenarioGridStyle}>
+                      {Object.values(SAMPLE_SCENARIOS).map((scenario) => (
+                        <button
+                          key={scenario.id}
+                          type="button"
+                          onClick={() => setSelectedScenario(scenario.id)}
+                          style={scenarioButtonStyle}
+                        >
+                          <span style={{ fontSize: 22 }}>{scenario.icon}</span>
+
+                          <span style={scenarioTextStyle}>
+                            <strong>{scenario.title}</strong>
+                            <span>{scenario.description}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ marginTop: 16 }}>
+
+                  <div style={primaryCardStyle}>
                     <div style={eyebrowStyle}>Or use your own data</div>
+
+                    <h3 style={cardTitleStyle}>Analyze your own table</h3>
+
+                    <p style={cardTextStyle}>
+                      Paste or upload a CSV output from a notebook, dbt model or
+                      pipeline. Analysis runs in your browser; nothing is
+                      stored.
+                    </p>
 
                     <button
                       type="button"
@@ -283,10 +310,9 @@ export function TargetTableValidationPanel({
                       Upload your own CSV
                     </button>
                   </div>
-                </div>
-              </section>
+                </section>
+              </>
             )}
-
             {flowState === "upload" && (
               <section style={uploadSectionStyle}>
                 <div style={eyebrowStyle}>Your data</div>
@@ -320,8 +346,6 @@ export function TargetTableValidationPanel({
 
         {analysis && (
           <div ref={resultRef} style={resultWrapperStyle}>
-            console.log("Detected columns", analysis.result.detectedColumns);
-            console.log("CSV", input);
             <AnalyzerResultScreenV2
               result={analysis.result}
               ruleFacts={analysis.ruleFacts}
@@ -427,11 +451,9 @@ export function TargetTableValidationPanel({
 function Hero() {
   return (
     <header style={{ minWidth: 0 }}>
-      <div style={eyebrowStyle}>Bitemporal Debugger</div>
+      <div style={eyebrowStyle}>HISTORICAL DATA TOOLKIT</div>
 
-      <h2 style={heroTitleStyle}>
-        Debug historical reporting.
-      </h2>
+      <h2 style={heroTitleStyle}>Debug historical reporting.</h2>
 
       <p style={heroTextStyle}>
         Investigate unstable grains, missing coverage and reproducibility risks

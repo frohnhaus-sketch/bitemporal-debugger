@@ -407,7 +407,7 @@ export default function PatternsPage() {
               color: "#ffffff",
             }}
           >
-            Historical Modeling Knowledge Catalog
+            Historical Data Patterns
           </h1>
 
           <p

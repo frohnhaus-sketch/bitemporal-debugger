@@ -81,7 +81,7 @@ export function LandingSection({
 
           <ChoiceCard
             eyebrow=""
-            title="Upload your own CSV"
+            title="Analyze your own table"
             description="Paste or upload a CSV output from a notebook, dbt model or pipeline. Analysis runs in your browser; nothing is stored."
             buttonLabel="Upload your own CSV"
             active={false}
