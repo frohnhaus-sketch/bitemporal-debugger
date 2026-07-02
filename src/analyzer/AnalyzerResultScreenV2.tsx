@@ -49,6 +49,9 @@ export function AnalyzerResultScreenV2({
         ? "MEDIUM RISK"
         : "LOW RISK";
 
+  console.log(JSON.stringify(presentation.title));
+  console.log(JSON.stringify(presentation.rootCause));
+
   return (
     <section style={screenStyle}>
       <div style={heroStyle}>
@@ -71,7 +74,7 @@ export function AnalyzerResultScreenV2({
 
       {showSampleTable && (
         <div style={sampleCtaStyle}>
-          <div style={{ minWidth: 0 }}>
+          <div>
             <div style={sampleCtaEyebrowStyle}>Next step</div>
             <h2 style={sampleCtaTitleStyle}>
               Run this investigation on your own historical table
@@ -92,10 +95,12 @@ export function AnalyzerResultScreenV2({
           </button>
         </div>
       )}
-
       <EvidenceSection findings={diagnosis.evidence} />
 
-      <StoryBlock eyebrow="Business impact" body={presentation.businessImpact} />
+      <StoryBlock
+        eyebrow="Business impact"
+        body={presentation.businessImpact}
+      />
 
       <div style={actionStyle}>
         <div style={eyebrowStyle}>What you should do next</div>
@@ -109,7 +114,7 @@ export function AnalyzerResultScreenV2({
       <details style={detailsStyle}>
         <summary style={summaryStyle}>Investigation configuration</summary>
 
-        <div style={{ marginTop: 14, minWidth: 0 }}>
+        <div style={{ marginTop: 14 }}>
           <AnalysisAssumptionsBar
             validIntervalEnd={validIntervalEnd}
             visibleIntervalEnd={visibleIntervalEnd}
@@ -177,18 +182,18 @@ function EvidenceSection({
 }) {
   const topFindings = findings.slice(0, 3);
 
-  if (topFindings.length === 0) return null;
+  if (topFindings.length === 0) {
+    return null;
+  }
 
   return (
     <ReportSection title="Why we reached this conclusion">
-      <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+      <div style={{ display: "grid", gap: 12 }}>
         {topFindings.map((finding) => (
           <div key={finding.id} style={findingStyle}>
-            <div style={findingHeaderStyle}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <SeverityDot severity={finding.severity} />
-              <strong style={{ overflowWrap: "anywhere" }}>
-                {finding.title}
-              </strong>
+              <strong>{finding.title}</strong>
             </div>
 
             <ul style={evidenceListStyle}>
@@ -304,7 +309,7 @@ function AssumptionToggle<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div style={toggleGroupStyle}>
+    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
       <span style={toggleLabelStyle}>{label}</span>
 
       {options.map(([optionValue, optionLabel]) => (
@@ -334,7 +339,7 @@ function AssumptionToggle<T extends string>({
 
 function MiniTable() {
   return (
-    <div style={tableScrollerStyle}>
+    <div style={{ overflowX: "auto", marginTop: 14 }}>
       <table style={tableStyle}>
         <thead>
           <tr>
@@ -376,7 +381,7 @@ function MiniTable() {
 
 function Meta({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ minWidth: 0 }}>
+    <div>
       <dt style={metaLabelStyle}>{label}</dt>
       <dd style={metaValueStyle}>{value}</dd>
     </div>
@@ -408,39 +413,60 @@ const screenStyle: CSSProperties = {
   width: "100%",
   maxWidth: "100%",
   minWidth: 0,
+
   overflow: "hidden",
-  boxSizing: "border-box",
-  padding: "clamp(18px, 5vw, 32px)",
+
+  padding: "clamp(16px,4vw,32px)",
+
   borderRadius: 22,
   background:
     "radial-gradient(circle at 50% 0%, rgba(59,130,246,0.14), transparent 34%), #020617",
-  color: "#ffffff",
+
+  color: "#fff",
+
   border: "1px solid rgba(148,163,184,0.24)",
+
   display: "grid",
   gap: 18,
 };
 
+const assumptionsStyle: CSSProperties = {
+  padding: 12,
+  borderRadius: 14,
+  background: "rgba(255,255,255,0.045)",
+  border: "1px solid rgba(255,255,255,0.10)",
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  alignItems: "center",
+};
+
 const heroStyle: CSSProperties = {
-  padding: "clamp(12px, 4vw, 28px) 0 clamp(10px, 4vw, 20px)",
-  maxWidth: 1120,
+  width: "100%",
+  maxWidth: "100%",
   minWidth: 0,
+
   overflow: "hidden",
+
+  padding: "24px 0 18px",
 };
 
 const titleStyle: CSSProperties = {
   margin: "14px 0 0",
-  fontSize: "clamp(31px, 9vw, 44px)",
-  lineHeight: 1.05,
+  fontSize: "clamp(28px, 9vw, 44px)",
+  lineHeight: 1.08,
   letterSpacing: "-0.045em",
   overflowWrap: "anywhere",
+  wordBreak: "break-word",
+  maxWidth: "100%",
 };
 
 const subtitleStyle: CSSProperties = {
-  margin: "16px 0 0",
+  margin: "18px 0 0",
   color: "rgba(255,255,255,0.82)",
-  fontSize: "clamp(18px, 5.5vw, 26px)",
-  lineHeight: 1.42,
-  maxWidth: 980,
+  fontSize: "clamp(18px,5vw,26px)",
+  lineHeight: 1.55,
+  maxWidth: "100%",
   overflowWrap: "anywhere",
 };
 
@@ -454,7 +480,6 @@ const riskRowStyle: CSSProperties = {
   fontWeight: 800,
   textTransform: "uppercase",
   letterSpacing: "0.08em",
-  minWidth: 0,
 };
 
 const chipStyle: CSSProperties = {
@@ -463,22 +488,17 @@ const chipStyle: CSSProperties = {
   border: "1px solid",
   fontSize: 11,
   fontWeight: 900,
-  whiteSpace: "normal",
 };
 
 const storyBlockStyle: CSSProperties = {
-  minWidth: 0,
-  overflow: "hidden",
-  padding: "clamp(16px, 4vw, 18px)",
+  padding: 18,
   borderRadius: 16,
   background: "rgba(255,255,255,0.045)",
   border: "1px solid rgba(255,255,255,0.10)",
 };
 
 const actionStyle: CSSProperties = {
-  minWidth: 0,
-  overflow: "hidden",
-  padding: "clamp(16px, 4vw, 20px)",
+  padding: 20,
   borderRadius: 18,
   background: "rgba(37,99,235,0.14)",
   border: "1px solid rgba(147,197,253,0.35)",
@@ -490,7 +510,6 @@ const eyebrowStyle: CSSProperties = {
   textTransform: "uppercase",
   color: "#93c5fd",
   fontWeight: 900,
-  overflowWrap: "anywhere",
 };
 
 const storyTextStyle: CSSProperties = {
@@ -498,13 +517,10 @@ const storyTextStyle: CSSProperties = {
   color: "rgba(255,255,255,0.74)",
   fontSize: 15.5,
   lineHeight: 1.65,
-  overflowWrap: "anywhere",
 };
 
 const detailsStyle: CSSProperties = {
-  minWidth: 0,
-  overflow: "hidden",
-  padding: "clamp(14px, 4vw, 16px)",
+  padding: 16,
   borderRadius: 16,
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(255,255,255,0.10)",
@@ -517,23 +533,13 @@ const summaryStyle: CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "0.12em",
   fontSize: 11,
-  overflowWrap: "anywhere",
 };
 
 const findingStyle: CSSProperties = {
-  minWidth: 0,
-  overflow: "hidden",
-  padding: "clamp(14px, 4vw, 16px)",
+  padding: 16,
   borderRadius: 14,
   background: "rgba(15,23,42,0.58)",
   border: "1px solid rgba(255,255,255,0.10)",
-};
-
-const findingHeaderStyle: CSSProperties = {
-  display: "flex",
-  gap: 10,
-  alignItems: "center",
-  minWidth: 0,
 };
 
 const recommendationNoteStyle: CSSProperties = {
@@ -544,7 +550,6 @@ const recommendationNoteStyle: CSSProperties = {
   color: "#bfdbfe",
   fontSize: 12,
   lineHeight: 1.5,
-  overflowWrap: "anywhere",
 };
 
 const evidenceListStyle: CSSProperties = {
@@ -553,7 +558,6 @@ const evidenceListStyle: CSSProperties = {
   color: "rgba(255,255,255,0.68)",
   fontSize: 14,
   lineHeight: 1.55,
-  overflowWrap: "anywhere",
 };
 
 const mutedTextStyle: CSSProperties = {
@@ -561,26 +565,6 @@ const mutedTextStyle: CSSProperties = {
   color: "rgba(255,255,255,0.52)",
   fontSize: 13,
   lineHeight: 1.5,
-  overflowWrap: "anywhere",
-};
-
-const assumptionsStyle: CSSProperties = {
-  minWidth: 0,
-  overflow: "hidden",
-  padding: 12,
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.045)",
-  border: "1px solid rgba(255,255,255,0.10)",
-  display: "grid",
-  gap: 10,
-};
-
-const toggleGroupStyle: CSSProperties = {
-  minWidth: 0,
-  display: "flex",
-  flexWrap: "wrap",
-  gap: 6,
-  alignItems: "center",
 };
 
 const toggleLabelStyle: CSSProperties = {
@@ -590,21 +574,18 @@ const toggleLabelStyle: CSSProperties = {
 };
 
 const toggleButtonStyle: CSSProperties = {
-  maxWidth: "100%",
   borderRadius: 999,
   padding: "6px 9px",
   fontSize: 11.5,
   fontWeight: 900,
   cursor: "pointer",
-  overflowWrap: "anywhere",
 };
 
 const metaGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
   gap: 12,
   margin: "14px 0 0",
-  minWidth: 0,
 };
 
 const metaLabelStyle: CSSProperties = {
@@ -620,18 +601,11 @@ const metaValueStyle: CSSProperties = {
   overflowWrap: "anywhere",
 };
 
-const tableScrollerStyle: CSSProperties = {
-  width: "100%",
-  maxWidth: "100%",
-  overflowX: "auto",
-  marginTop: 14,
-};
-
 const tableStyle: CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
   fontSize: 12,
-  minWidth: 560,
+  minWidth: 620,
 };
 
 const thStyle: CSSProperties = {
@@ -639,23 +613,20 @@ const thStyle: CSSProperties = {
   padding: "8px 10px",
   color: "rgba(255,255,255,0.48)",
   borderBottom: "1px solid rgba(255,255,255,0.10)",
-  whiteSpace: "nowrap",
 };
 
 const tdStyle: CSSProperties = {
   padding: "8px 10px",
   color: "rgba(255,255,255,0.84)",
   borderBottom: "1px solid rgba(255,255,255,0.06)",
-  whiteSpace: "nowrap",
 };
 
 const consequenceListStyle: CSSProperties = {
   margin: "16px 0 0",
-  paddingLeft: 20,
+  paddingLeft: 22,
   color: "rgba(255,255,255,0.72)",
   fontSize: 15,
-  lineHeight: 1.65,
-  overflowWrap: "anywhere",
+  lineHeight: 1.7,
 };
 
 const nextStepsStyle: CSSProperties = {
@@ -663,22 +634,25 @@ const nextStepsStyle: CSSProperties = {
   paddingLeft: 20,
   color: "#ffffff",
   fontSize: 15.5,
-  lineHeight: 1.65,
+  lineHeight: 1.75,
   fontWeight: 700,
-  overflowWrap: "anywhere",
 };
 
 const sampleCtaStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr)",
-  gap: 16,
-  alignItems: "start",
-  minWidth: 0,
-  overflow: "hidden",
-  padding: "clamp(16px, 4vw, 20px)",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: 18,
+
+  padding: 20,
   borderRadius: 18,
+
   background: "rgba(37,99,235,0.16)",
   border: "1px solid rgba(147,197,253,0.35)",
+
+  width: "100%",
+  maxWidth: "100%",
+  overflow: "hidden",
 };
 
 const sampleCtaEyebrowStyle: CSSProperties = {
@@ -687,35 +661,32 @@ const sampleCtaEyebrowStyle: CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "0.12em",
   color: "#93c5fd",
-  overflowWrap: "anywhere",
 };
 
 const sampleCtaTitleStyle: CSSProperties = {
   margin: "6px 0 0",
-  fontSize: "clamp(20px, 6vw, 22px)",
+  fontSize: 22,
   lineHeight: 1.2,
   color: "#ffffff",
-  overflowWrap: "anywhere",
 };
 
 const sampleCtaTextStyle: CSSProperties = {
   margin: "8px 0 0",
   maxWidth: 720,
   color: "rgba(255,255,255,0.72)",
-  lineHeight: 1.55,
+  lineHeight: 1.6,
   fontSize: 14.5,
-  overflowWrap: "anywhere",
 };
 
 const sampleCtaButtonStyle: CSSProperties = {
-  justifySelf: "start",
-  maxWidth: "100%",
   border: "none",
   borderRadius: 12,
   padding: "12px 18px",
   background: "#2563eb",
-  color: "#ffffff",
+  color: "#fff",
   fontWeight: 900,
   cursor: "pointer",
-  whiteSpace: "normal",
+
+  width: "100%",
+  maxWidth: 320,
 };

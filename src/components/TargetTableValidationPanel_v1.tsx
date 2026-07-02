@@ -7,7 +7,7 @@ import {
 import { track } from "@/lib/analytics";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { HistoricalSemantics } from "@/lib/types";
-import { AnalyzerResultScreenV2 } from "@/analyzer/AnalyzerResultScreenV2_v1";
+import { AnalyzerResultScreenV2 } from "@/analyzer/AnalyzerResultScreenV2";
 import { SampleInvestigation } from "@/components/SampleInvestigation";
 import { LandingSection } from "@/components/target-validation/LandingSection";
 import { ReportActions } from "@/components/target-validation/ReportActions";
