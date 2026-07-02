@@ -62,22 +62,13 @@ export function LandingSection({
         />
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(360px, 620px) minmax(340px, 420px)",
-          columnGap: 28,
-          rowGap: 18,
-          marginTop: 22,
-          alignItems: "start",
-        }}
-      >
-        <div>
+      <div style={landingGridStyle}>
+        <div style={{ minWidth: 0 }}>
           <div style={blueEyebrowStyle}>
             Or choose another sample investigation
           </div>
 
-          <div style={{ maxWidth: 620 }}>
+          <div style={{ maxWidth: 620, minWidth: 0 }}>
             <ScenarioPicker
               selectedScenario={selectedScenario}
               onSelect={onScenarioSelected}
@@ -85,14 +76,14 @@ export function LandingSection({
           </div>
         </div>
 
-        <div>
-          <div style={blueEyebrowStyle}>Your data</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={blueEyebrowStyle}>Or use your own data</div>
 
           <ChoiceCard
             eyebrow=""
-            title="Analyze your own table"
+            title="Upload your own CSV"
             description="Paste or upload a CSV output from a notebook, dbt model or pipeline. Analysis runs in your browser; nothing is stored."
-            buttonLabel="Use your own table"
+            buttonLabel="Upload your own CSV"
             active={false}
             primary
             badge="Recommended after the sample"
@@ -111,4 +102,14 @@ const blueEyebrowStyle: React.CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: 0.8,
   marginBottom: 8,
+};
+
+const landingGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))",
+  columnGap: 28,
+  rowGap: 18,
+  marginTop: 22,
+  alignItems: "start",
+  minWidth: 0,
 };

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { analyzeTargetTable } from "@/lib/targetTableValidator";
 import { track } from "@/lib/analytics";
 import type { HistoricalSemantics } from "@/lib/types";
@@ -199,9 +205,10 @@ export function TargetTableValidationPanel({
       durationMs: investigationStartedAt.current
         ? Math.round(performance.now() - investigationStartedAt.current)
         : null,
-      source: selectedScenario && input === SAMPLE_SCENARIOS[selectedScenario].csv
-        ? "sample"
-        : "own_table",
+      source:
+        selectedScenario && input === SAMPLE_SCENARIOS[selectedScenario].csv
+          ? "sample"
+          : "own_table",
       scenario: selectedScenario,
       rowCount: result.rowCount,
       columnCount: result.columns.length,
@@ -261,18 +268,21 @@ export function TargetTableValidationPanel({
                       </button>
                     ))}
                   </div>
-                </div>
+                  <div style={{ marginTop: 16 }}>
+                    <div style={eyebrowStyle}>Or use your own data</div>
 
-                <div style={secondaryCardStyle}>
-                  <div style={eyebrowStyle}>Use your own data</div>
-                  <h3 style={cardTitleStyle}>Upload historical table</h3>
-                  <p style={cardTextStyle}>
-                    Paste CSV output from SQL, dbt, Excel, Spark or a notebook.
-                  </p>
-
-                  <button type="button" onClick={startUpload} style={darkButtonStyle}>
-                    Upload my own CSV
-                  </button>
+                    <button
+                      type="button"
+                      onClick={startUpload}
+                      style={{
+                        ...darkButtonStyle,
+                        width: "100%",
+                        marginTop: 8,
+                      }}
+                    >
+                      Upload your own CSV
+                    </button>
+                  </div>
                 </div>
               </section>
             )}
@@ -280,7 +290,9 @@ export function TargetTableValidationPanel({
             {flowState === "upload" && (
               <section style={uploadSectionStyle}>
                 <div style={eyebrowStyle}>Your data</div>
-                <h3 style={cardTitleStyle}>Analyze your own historical table</h3>
+                <h3 style={cardTitleStyle}>
+                  Analyze your own historical table
+                </h3>
                 <p style={cardTextStyle}>
                   The debugger checks keys, validity intervals, snapshot signals
                   and historical consistency risks.
@@ -294,7 +306,11 @@ export function TargetTableValidationPanel({
                   runLabel="Run investigation"
                 />
 
-                <button type="button" onClick={reset} style={secondaryButtonStyle}>
+                <button
+                  type="button"
+                  onClick={reset}
+                  style={secondaryButtonStyle}
+                >
                   Back to start
                 </button>
               </section>
@@ -304,6 +320,8 @@ export function TargetTableValidationPanel({
 
         {analysis && (
           <div ref={resultRef} style={resultWrapperStyle}>
+            console.log("Detected columns", analysis.result.detectedColumns);
+            console.log("CSV", input);
             <AnalyzerResultScreenV2
               result={analysis.result}
               ruleFacts={analysis.ruleFacts}
@@ -315,7 +333,30 @@ export function TargetTableValidationPanel({
               onChangeVisibleIntervalEndAction={setVisibleIntervalEnd}
               onChangeTemporalModelAction={setTemporalModel}
             />
+            {input === SAMPLE_SCENARIOS[selectedScenario].csv && (
+              <section style={nextStepStyle}>
+                <div>
+                  <div style={eyebrowStyle}>Next step</div>
 
+                  <h3 style={nextStepTitleStyle}>
+                    Run this investigation on your own historical table
+                  </h3>
+
+                  <p style={cardTextStyle}>
+                    Upload your own CSV and investigate your own historical
+                    reporting output.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={startUpload}
+                  style={darkButtonStyle}
+                >
+                  Upload your own CSV
+                </button>
+              </section>
+            )}
             <section style={nextStepStyle}>
               <div>
                 <div style={eyebrowStyle}>Next step</div>
@@ -328,10 +369,18 @@ export function TargetTableValidationPanel({
               </div>
 
               <div style={nextStepActionsStyle}>
-                <button type="button" onClick={reset} style={secondaryButtonStyle}>
+                <button
+                  type="button"
+                  onClick={reset}
+                  style={secondaryButtonStyle}
+                >
                   Start over
                 </button>
-                <button type="button" onClick={startUpload} style={darkButtonStyle}>
+                <button
+                  type="button"
+                  onClick={startUpload}
+                  style={darkButtonStyle}
+                >
                   Upload CSV
                 </button>
               </div>

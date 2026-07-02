@@ -10,14 +10,6 @@ import { ReportSection } from "@/components/investigation/ReportSection";
 type IntervalEnd = "exclusive" | "inclusive";
 type TemporalModel = "valid_time" | "bitemporal" | "tritemporal_unknown";
 
-const SAMPLE_ROWS = [
-  ["C-1001", "2024-01-31", "120", "2024-01-01", "2024-02-01"],
-  ["C-1001", "2024-02-29", "120", "2024-02-01", "2024-03-01"],
-  ["C-1001", "2024-04-30", "135", "2024-04-01", "2024-05-01"],
-  ["C-1002", "2024-01-31", "90", "2024-01-01", "2024-02-01"],
-  ["C-1002", "2024-01-31", "90", "2024-01-01", "2024-02-01"],
-];
-
 export function AnalyzerResultScreenV2({
   result,
   ruleFacts,
@@ -42,15 +34,22 @@ export function AnalyzerResultScreenV2({
   const context = createAnalyzerContext(result, ruleFacts);
   const { diagnosis, presentation } = context;
 
+  const hasValidTime = Boolean(
+    result.detectedColumns.validFrom && result.detectedColumns.validTo,
+  );
+
+  const hasVisibleTime = Boolean(
+    result.detectedColumns.visibleFrom && result.detectedColumns.visibleTo,
+  );
+
+  const hasSnapshot = Boolean(result.detectedColumns.snapshotDate);
+
   const severity =
     diagnosis.decision === "not_reproducible"
       ? "HIGH RISK"
       : diagnosis.decision === "partially_reproducible"
         ? "MEDIUM RISK"
         : "LOW RISK";
-
-  console.log(JSON.stringify(presentation.title));
-  console.log(JSON.stringify(presentation.rootCause));
 
   return (
     <section style={screenStyle}>
@@ -72,29 +71,6 @@ export function AnalyzerResultScreenV2({
         </ul>
       </div>
 
-      {showSampleTable && (
-        <div style={sampleCtaStyle}>
-          <div>
-            <div style={sampleCtaEyebrowStyle}>Next step</div>
-            <h2 style={sampleCtaTitleStyle}>
-              Run this investigation on your own historical table
-            </h2>
-            <p style={sampleCtaTextStyle}>
-              The sample investigation is complete. Upload your CSV to check
-              whether your own target table has similar reproducibility,
-              coverage or temporal consistency risks.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            style={sampleCtaButtonStyle}
-          >
-            Upload your own CSV
-          </button>
-        </div>
-      )}
       <EvidenceSection findings={diagnosis.evidence} />
 
       <StoryBlock
@@ -119,47 +95,56 @@ export function AnalyzerResultScreenV2({
             validIntervalEnd={validIntervalEnd}
             visibleIntervalEnd={visibleIntervalEnd}
             temporalModel={temporalModel}
+            hasVisibleTime={hasVisibleTime}
             onChangeValidIntervalEndAction={onChangeValidIntervalEndAction}
             onChangeVisibleIntervalEndAction={onChangeVisibleIntervalEndAction}
             onChangeTemporalModelAction={onChangeTemporalModelAction}
           />
+          <div style={detectedStructureStyle}>
+            <Meta
+              label="Business key"
+              value={result.detectedColumns.businessKey ?? "not detected"}
+            />
+
+            <Meta
+              label="Valid time"
+              value={
+                hasValidTime
+                  ? `${result.detectedColumns.validFrom} → ${result.detectedColumns.validTo}`
+                  : "not detected"
+              }
+            />
+
+            <Meta
+              label="Visible time"
+              value={
+                hasVisibleTime
+                  ? `${result.detectedColumns.visibleFrom} → ${result.detectedColumns.visibleTo}`
+                  : "not detected"
+              }
+            />
+
+            <Meta
+              label="Snapshot"
+              value={
+                hasSnapshot
+                  ? result.detectedColumns.snapshotDate!
+                  : "not detected"
+              }
+            />
+          </div>
         </div>
       </details>
 
       <details style={detailsStyle}>
         <summary style={summaryStyle}>Technical details</summary>
 
-        {showSampleTable && <MiniTable />}
+        <MiniTable rows={result.rows} columns={result.columns} />
 
         <dl style={metaGridStyle}>
           <Meta label="Rows" value={String(result.rowCount)} />
           <Meta label="Columns" value={String(result.columns.length)} />
           <Meta label="Findings" value={String(result.findings.length)} />
-          <Meta
-            label="Business key"
-            value={result.detectedColumns.businessKey ?? "not detected"}
-          />
-          <Meta
-            label="Valid time"
-            value={
-              result.detectedColumns.validFrom && result.detectedColumns.validTo
-                ? `${result.detectedColumns.validFrom} → ${result.detectedColumns.validTo}`
-                : "not detected"
-            }
-          />
-          <Meta
-            label="Visible time"
-            value={
-              result.detectedColumns.visibleFrom &&
-              result.detectedColumns.visibleTo
-                ? `${result.detectedColumns.visibleFrom} → ${result.detectedColumns.visibleTo}`
-                : "not detected"
-            }
-          />
-          <Meta
-            label="Snapshot"
-            value={result.detectedColumns.snapshotDate ?? "not detected"}
-          />
         </dl>
       </details>
     </section>
@@ -250,6 +235,7 @@ function AnalysisAssumptionsBar({
   validIntervalEnd,
   visibleIntervalEnd,
   temporalModel,
+  hasVisibleTime,
   onChangeValidIntervalEndAction,
   onChangeVisibleIntervalEndAction,
   onChangeTemporalModelAction,
@@ -257,12 +243,19 @@ function AnalysisAssumptionsBar({
   validIntervalEnd: IntervalEnd;
   visibleIntervalEnd: IntervalEnd;
   temporalModel: TemporalModel;
+  hasVisibleTime: boolean;
   onChangeValidIntervalEndAction: (value: IntervalEnd) => void;
   onChangeVisibleIntervalEndAction: (value: IntervalEnd) => void;
   onChangeTemporalModelAction: (value: TemporalModel) => void;
 }) {
   return (
-    <div style={assumptionsStyle}>
+    <div
+      style={{
+        display: "grid",
+        gap: 7,
+        minWidth: 0,
+      }}
+    >
       <AssumptionToggle
         label="Valid end"
         value={validIntervalEnd}
@@ -276,6 +269,7 @@ function AnalysisAssumptionsBar({
       <AssumptionToggle
         label="Visible end"
         value={visibleIntervalEnd}
+        disabledOptions={hasVisibleTime ? [] : ["exclusive", "inclusive"]}
         options={[
           ["exclusive", "Exclusive"],
           ["inclusive", "Inclusive"],
@@ -286,6 +280,9 @@ function AnalysisAssumptionsBar({
       <AssumptionToggle
         label="Temporal model"
         value={temporalModel}
+        disabledOptions={
+          hasVisibleTime ? [] : ["bitemporal", "tritemporal_unknown"]
+        }
         options={[
           ["valid_time", "Valid-time"],
           ["bitemporal", "Bitemporal"],
@@ -301,55 +298,80 @@ function AssumptionToggle<T extends string>({
   label,
   value,
   options,
+  disabledOptions = [],
   onChange,
 }: {
   label: string;
   value: T;
   options: [T, string][];
+  disabledOptions?: T[];
   onChange: (value: T) => void;
 }) {
   return (
-    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        gap: 6,
+        alignItems: "center",
+        flexWrap: "wrap",
+      }}
+    >
       <span style={toggleLabelStyle}>{label}</span>
 
-      {options.map(([optionValue, optionLabel]) => (
-        <button
-          key={optionValue}
-          type="button"
-          onClick={() => onChange(optionValue)}
-          style={{
-            ...toggleButtonStyle,
-            border:
-              value === optionValue
-                ? "1px solid rgba(147,197,253,0.70)"
-                : "1px solid rgba(255,255,255,0.12)",
-            background:
-              value === optionValue
-                ? "rgba(37,99,235,0.32)"
-                : "rgba(15,23,42,0.52)",
-            color: value === optionValue ? "#bfdbfe" : "rgba(255,255,255,0.62)",
-          }}
-        >
-          {optionLabel}
-        </button>
-      ))}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", minWidth: 0 }}>
+        {options.map(([optionValue, optionLabel]) => {
+          const disabled = disabledOptions.includes(optionValue);
+
+          return (
+            <button
+              key={optionValue}
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                if (!disabled) {
+                  onChange(optionValue);
+                }
+              }}
+              style={{
+                ...toggleButtonStyle,
+                border:
+                  value === optionValue
+                    ? "1px solid rgba(147,197,253,0.70)"
+                    : "1px solid rgba(255,255,255,0.12)",
+                background:
+                  value === optionValue
+                    ? "rgba(37,99,235,0.32)"
+                    : "rgba(15,23,42,0.52)",
+                color:
+                  value === optionValue ? "#bfdbfe" : "rgba(255,255,255,0.62)",
+                opacity: disabled ? 0.35 : 1,
+                cursor: disabled ? "not-allowed" : "pointer",
+              }}
+            >
+              {optionLabel}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function MiniTable() {
+function MiniTable({
+  rows,
+  columns,
+}: {
+  rows: Record<string, unknown>[];
+  columns: string[];
+}) {
+  const visibleColumns = columns.slice(0, 8);
+
   return (
-    <div style={{ overflowX: "auto", marginTop: 14 }}>
+    <div style={{ overflowX: "auto", marginTop: 14, maxWidth: "100%" }}>
       <table style={tableStyle}>
         <thead>
           <tr>
-            {[
-              "contract_id",
-              "snapshot_date",
-              "premium",
-              "valid_from",
-              "valid_to",
-            ].map((column) => (
+            {visibleColumns.map((column) => (
               <th key={column} style={thStyle}>
                 {column}
               </th>
@@ -358,17 +380,11 @@ function MiniTable() {
         </thead>
 
         <tbody>
-          {SAMPLE_ROWS.map((row, rowIndex) => (
-            <tr
-              key={rowIndex}
-              style={{
-                background:
-                  rowIndex === 4 ? "rgba(251,191,36,0.16)" : "transparent",
-              }}
-            >
-              {row.map((value, columnIndex) => (
-                <td key={columnIndex} style={tdStyle}>
-                  {value}
+          {rows.slice(0, 8).map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {visibleColumns.map((column) => (
+                <td key={column} style={tdStyle}>
+                  {String(row[column] ?? "")}
                 </td>
               ))}
             </tr>
@@ -435,10 +451,10 @@ const assumptionsStyle: CSSProperties = {
   borderRadius: 14,
   background: "rgba(255,255,255,0.045)",
   border: "1px solid rgba(255,255,255,0.10)",
-  display: "flex",
-  flexWrap: "wrap",
-  gap: 10,
-  alignItems: "center",
+  display: "grid",
+  gap: 12,
+  minWidth: 0,
+  overflow: "hidden",
 };
 
 const heroStyle: CSSProperties = {
@@ -524,6 +540,8 @@ const detailsStyle: CSSProperties = {
   borderRadius: 16,
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(255,255,255,0.10)",
+  minWidth: 0,
+  overflow: "hidden",
 };
 
 const summaryStyle: CSSProperties = {
@@ -604,21 +622,25 @@ const metaValueStyle: CSSProperties = {
 const tableStyle: CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
-  fontSize: 12,
-  minWidth: 620,
+  fontSize: "clamp(9px, 2.4vw, 12px)",
+  tableLayout: "fixed",
 };
 
 const thStyle: CSSProperties = {
   textAlign: "left",
-  padding: "8px 10px",
+  padding: "8px 6px",
   color: "rgba(255,255,255,0.48)",
   borderBottom: "1px solid rgba(255,255,255,0.10)",
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
 };
 
 const tdStyle: CSSProperties = {
-  padding: "8px 10px",
+  padding: "8px 6px",
   color: "rgba(255,255,255,0.84)",
   borderBottom: "1px solid rgba(255,255,255,0.06)",
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
 };
 
 const consequenceListStyle: CSSProperties = {
@@ -638,55 +660,9 @@ const nextStepsStyle: CSSProperties = {
   fontWeight: 700,
 };
 
-const sampleCtaStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "flex-start",
-  gap: 18,
-
-  padding: 20,
-  borderRadius: 18,
-
-  background: "rgba(37,99,235,0.16)",
-  border: "1px solid rgba(147,197,253,0.35)",
-
-  width: "100%",
-  maxWidth: "100%",
-  overflow: "hidden",
-};
-
-const sampleCtaEyebrowStyle: CSSProperties = {
-  fontSize: 11,
-  fontWeight: 900,
-  textTransform: "uppercase",
-  letterSpacing: "0.12em",
-  color: "#93c5fd",
-};
-
-const sampleCtaTitleStyle: CSSProperties = {
-  margin: "6px 0 0",
-  fontSize: 22,
-  lineHeight: 1.2,
-  color: "#ffffff",
-};
-
-const sampleCtaTextStyle: CSSProperties = {
-  margin: "8px 0 0",
-  maxWidth: 720,
-  color: "rgba(255,255,255,0.72)",
-  lineHeight: 1.6,
-  fontSize: 14.5,
-};
-
-const sampleCtaButtonStyle: CSSProperties = {
-  border: "none",
-  borderRadius: 12,
-  padding: "12px 18px",
-  background: "#2563eb",
-  color: "#fff",
-  fontWeight: 900,
-  cursor: "pointer",
-
-  width: "100%",
-  maxWidth: 320,
+const detectedStructureStyle: CSSProperties = {
+  marginTop: 18,
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+  gap: 12,
 };

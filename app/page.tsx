@@ -55,28 +55,28 @@ export default function Home() {
           onInvestigationCompleted={() => setInvestigationCompleted(true)}
         />
 
-        {investigationCompleted ? (
-          <SupportingWorkflows isMobile={isMobile} />
-        ) : (
-          <>
-            <section
-              id="advisor-section"
-              style={{
-                width: "100%",
-                maxWidth: "100%",
-                minWidth: 0,
-                overflow: "hidden",
-                marginTop: 24,
-              }}
-            >
-              <AdvisorPanel />
-            </section>
+        <>
+          {investigationCompleted && (
+            <SupportingWorkflows isMobile={isMobile} />
+          )}
 
-            <AdvancedInvestigationSection isMobile={isMobile}>
-              <TwoSourceValidationWorkflow />
-            </AdvancedInvestigationSection>
-          </>
-        )}
+          <section
+            id="advisor-section"
+            style={{
+              width: "100%",
+              maxWidth: "100%",
+              minWidth: 0,
+              overflow: "hidden",
+              marginTop: 24,
+            }}
+          >
+            <AdvisorPanel />
+          </section>
+
+          <AdvancedInvestigationSection isMobile={isMobile}>
+            <TwoSourceValidationWorkflow />
+          </AdvancedInvestigationSection>
+        </>
 
         <Footer />
       </div>
@@ -96,14 +96,14 @@ function SupportingWorkflows({ isMobile }: { isMobile: boolean }) {
     {
       title: "Design a better model",
       text: "Answer a few questions and get a recommended historical modeling strategy.",
-      href: "#advisor-section",
+      href: "/#advisor-section",
       cta: "Open Advisor →",
       event: "advisor",
     },
     {
       title: "Compare two sources",
       text: "Investigate temporal joins, visibility lag, overlaps, gaps and historical inconsistencies.",
-      href: "#advanced-investigation",
+      href: "/#advanced-investigation",
       cta: "Open Advanced Investigation →",
       event: "advanced_investigation",
     },
